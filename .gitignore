@@ -1,0 +1,19 @@
+
+# macOS system files
+# Finder and metadata
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Resource forks and other hidden files
+._*
+
+# Spotlight, Trash and other system folders
+.Spotlight-V100/
+.Trashes/
+.fseventsd/
+.DocumentRevisions-V100/
+
+# Temporary items and Volume icon
+Temporary Items/
+.VolumeIcon.icns
