@@ -11,15 +11,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# TARGETARCH is injected automatically by Docker BuildKit: "amd64" or "arm64"
 ARG ZELLIJ_VERSION=0.43.1
 
-# Use uname -m for arch detection — works reliably across Docker, Podman, Buildah.
-# We use the glibc-linked gnu target rather than musl-static, since we are on
-# Debian (glibc-based). Both work, but gnu is the natural fit for this system.
+# Use uname -m for arch detection — works reliably across Docker, Podman, Buildah
 RUN ARCH=$(uname -m) && \
     curl -fsSL \
-      "https://github.com/zellij-org/zellij/releases/download/v${ZELLIJ_VERSION}/zellij-${ARCH}-unknown-linux-gnu.tar.gz" \
+      "https://github.com/zellij-org/zellij/releases/download/v${ZELLIJ_VERSION}/zellij-${ARCH}-unknown-linux-musl.tar.gz" \
       | tar -xz -C /usr/local/bin && \
     chmod +x /usr/local/bin/zellij
 
@@ -28,12 +25,21 @@ RUN ARCH=$(uname -m) && \
 # =============================================================================
 FROM debian:trixie-slim AS runtime
 
-# Suppress debconf warnings during build — no TTY available in docker build.
-# Unset after apt so runtime behaviour is unaffected.
+# Suppress debconf warnings during build — no TTY available in docker build
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Set timezone early so tzdata installs silently
 ENV TZ=Europe/Berlin
+
+# Explicitly declare path exclusions before any package is installed.
+# debian:trixie-slim already strips man pages, but making it explicit here
+# silences the update-alternatives warnings about missing man page symlinks
+# that would otherwise appear during vim installation.
+RUN printf 'path-exclude=/usr/share/man/*\n\
+path-exclude=/usr/share/groff/*\n\
+path-exclude=/usr/share/info/*\n\
+path-exclude=/usr/share/lintian/*\n' \
+    > /etc/dpkg/dpkg.cfg.d/excludes
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     # Core utilities
@@ -54,12 +60,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && locale-gen \
     && ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime \
     && echo ${TZ} > /etc/timezone \
-    && rm -rf /var/lib/apt/lists/* \
-    # Remove build-time frontend override — runtime should behave normally
-    && unset DEBIAN_FRONTEND || true
+    && rm -rf /var/lib/apt/lists/*
 
 # Set locale vars only after locale-gen has run, so perl/dpkg never see
-# an LC_ALL that points to a non-existent locale during the build
+# an LC_ALL pointing to a non-existent locale during the build
 ENV LANG=en_US.UTF-8 \
     LANGUAGE=en_US:en \
     LC_ALL=en_US.UTF-8 \
