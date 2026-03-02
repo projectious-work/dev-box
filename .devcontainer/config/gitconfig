@@ -1,0 +1,64 @@
+[core]
+    editor        = vim
+    autocrlf      = input
+    whitespace    = fix,-indent-with-non-tab,trailing-space,cr-at-eol
+    pager         = less -FRX
+
+[color]
+    ui            = auto
+
+[color "branch"]
+    current       = yellow bold
+    local         = green bold
+    remote        = cyan bold
+
+[color "diff"]
+    meta          = yellow bold
+    frag          = magenta bold
+    old           = red bold
+    new           = green bold
+    whitespace    = red reverse
+
+[color "status"]
+    added         = green bold
+    changed       = yellow bold
+    untracked     = red bold
+
+[diff]
+    tool          = vimdiff
+    algorithm     = histogram
+    colorMoved    = default
+
+[merge]
+    tool          = vimdiff
+    conflictstyle = zdiff3
+
+[pull]
+    rebase        = false
+
+[push]
+    default       = current
+    autoSetupRemote = true
+
+[fetch]
+    prune         = true
+
+[rebase]
+    autoStash     = true
+
+[init]
+    defaultBranch = main
+
+[alias]
+    st  = status -sb
+    co  = checkout
+    br  = branch -vv
+    cm  = commit -v
+    ca  = commit -av
+    lg  = log --oneline --graph --decorate --all
+    lp  = log --pretty=format:'%C(yellow)%h%Creset %ad | %s%d [%an]' --date=short
+    d   = diff
+    ds  = diff --staged
+    unstage = reset HEAD --
+    last    = log -1 HEAD --stat
+    aliases = config --get-regexp alias

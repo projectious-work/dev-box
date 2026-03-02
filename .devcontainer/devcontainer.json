@@ -1,0 +1,46 @@
+{
+    "name": "dev-box-base",
+    "dockerComposeFile": "docker-compose.yml",
+    "service": "devcontainer",
+    "workspaceFolder": "/workspace",
+
+    // Override CMD — VS Code needs the container to idle so it can exec into it.
+    // Zellij is launched manually once inside, not as the container entrypoint.
+    "overrideCommand": true,
+
+    // Shell to use for the integrated terminal and exec sessions
+    "remoteUser": "root",
+
+
+    // Useful VS Code extensions to install into the container
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                
+            ],
+            "settings": {
+                // Start zellij automatically when a new VS Code terminal is opened
+                "terminal.integrated.defaultProfile.linux": "zellij",
+                "terminal.integrated.profiles.linux": {
+                    "zellij": {
+                        "path": "/usr/local/bin/zellij",
+                        "args": [
+                        "--layout",
+                        "dev"
+                        ]
+                    },
+                    "bash": {
+                        "path": "/bin/bash"
+                    }
+                }
+            }
+        }
+    },
+
+    // Forward common dev ports if needed — add your own here
+    "forwardPorts": [],
+
+    // Run once after the container is created
+    "postCreateCommand": ""
+    }
+}

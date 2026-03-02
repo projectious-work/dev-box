@@ -1,0 +1,114 @@
+" =============================================================================
+" Vim configuration — programming-focused, no plugins required
+" =============================================================================
+
+" ── Basics ────────────────────────────────────────────────────────────────────
+set nocompatible            " disable Vi compatibility
+set encoding=utf-8
+set fileencoding=utf-8
+set fileencodings=utf-8,latin1
+
+" ── Appearance ────────────────────────────────────────────────────────────────
+syntax on
+set background=dark
+colorscheme desert           " ships with vim, decent dark theme
+set number                   " absolute line numbers
+set relativenumber           " relative numbers for fast motion
+set cursorline               " highlight current line
+set colorcolumn=88           " column guide (PEP8 / Black default)
+set signcolumn=yes           " always show sign column (no jitter)
+set termguicolors            " 24-bit colour if terminal supports it
+set laststatus=2             " always show statusline
+set ruler                    " show cursor position
+set showcmd                  " show partial commands
+set showmatch                " highlight matching brackets
+set wildmenu                 " enhanced command completion
+set wildmode=list:longest,full
+
+" ── Indentation ───────────────────────────────────────────────────────────────
+set tabstop=4                " visual width of a tab character
+set softtabstop=4            " spaces inserted on <Tab>
+set shiftwidth=4             " spaces for auto-indent
+set expandtab                " use spaces instead of tabs
+set autoindent
+set smartindent
+filetype plugin indent on    " per-filetype indentation rules
+
+" Override for common file types
+autocmd FileType yaml,json,html,css,javascript,typescript,kdl
+    \ setlocal tabstop=2 softtabstop=2 shiftwidth=2
+autocmd FileType go
+    \ setlocal noexpandtab tabstop=4 shiftwidth=4
+
+" ── Search ────────────────────────────────────────────────────────────────────
+set incsearch                " incremental search
+set hlsearch                 " highlight all matches
+set ignorecase               " case-insensitive …
+set smartcase                " … unless pattern has uppercase
+nnoremap <silent> <Esc><Esc> :nohlsearch<CR>
+
+" ── Editor behaviour ──────────────────────────────────────────────────────────
+set backspace=indent,eol,start
+set hidden                   " allow unsaved background buffers
+set scrolloff=8              " keep 8 lines above/below cursor
+set sidescrolloff=4
+set wrap                     " wrap long lines visually
+set linebreak                " wrap at word boundary
+set list                     " show invisible characters
+set listchars=tab:→\ ,trail:·,nbsp:␣
+set noerrorbells
+set visualbell t_vb=         " disable all bells
+set mouse=a                  " mouse support
+
+" ── Files & persistence ───────────────────────────────────────────────────────
+set noswapfile               " no .swp clutter in containers
+set nobackup
+set undofile                 " persistent undo
+set undodir=/root/.vim/undo
+silent !mkdir -p /root/.vim/undo
+
+" ── Clipboard ─────────────────────────────────────────────────────────────────
+" Use system clipboard when available (e.g. clipboard forwarding in dev containers)
+if has('clipboard')
+    set clipboard=unnamedplus
+endif
+
+" ── Key mappings ──────────────────────────────────────────────────────────────
+let mapleader=" "            " Space as leader
+
+" Quick save / quit
+nnoremap <leader>w :w<CR>
+nnoremap <leader>q :q<CR>
+nnoremap <leader>x :x<CR>
+
+" Buffer navigation
+nnoremap <leader>n :bnext<CR>
+nnoremap <leader>p :bprev<CR>
+nnoremap <leader>l :ls<CR>
+
+" Split navigation (no Ctrl-W prefix gymnastics)
+nnoremap <C-h> <C-w>h
+nnoremap <C-j> <C-w>j
+nnoremap <C-k> <C-w>k
+nnoremap <C-l> <C-w>l
+
+" Open netrw file explorer
+nnoremap <leader>e :Explore<CR>
+
+" Strip trailing whitespace on save
+autocmd BufWritePre * :%s/\s\+$//e
+
+" ── Netrw (built-in file browser) ────────────────────────────────────────────
+let g:netrw_banner=0         " no banner
+let g:netrw_liststyle=3      " tree view
+let g:netrw_browse_split=4   " open in previous window
+let g:netrw_winsize=25       " 25% width
+
+" ── Status line (lightweight, no plugin needed) ───────────────────────────────
+set statusline=
+set statusline+=\ %f                     " file path
+set statusline+=\ %m%r%h%w              " flags: modified, readonly, etc.
+set statusline+=%=                       " right align
+set statusline+=\ %y                     " file type
+set statusline+=\ [%{&ff}]              " file format
+set statusline+=\ %l/%L:%c\             " line/total:column

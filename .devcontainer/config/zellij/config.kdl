@@ -1,0 +1,141 @@
+// =============================================================================
+// Zellij configuration
+// Docs: https://zellij.dev/documentation/configuration
+// =============================================================================
+
+// Theme — matches the gruvbox.kdl file in themes/
+theme "gruvbox"
+
+// Default shell
+default_shell "bash"
+
+// Default layout loaded on startup
+default_layout "dev"
+
+// Mouse support
+mouse_mode true
+
+// Copy on selection (requires OSC-52 or clipboard tool in container)
+copy_on_select true
+
+// Scroll buffer size
+scroll_buffer_size 10000
+
+// Rounded pane frames look nicer
+rounded_corners true
+
+// Always show tabs (useful in dev work with multiple panes)
+simplified_ui false
+
+// Pane frames — show borders
+pane_frames true
+
+// =============================================================================
+// Key bindings — using default Ctrl-g prefix with sensible overrides
+// =============================================================================
+keybinds clear-defaults=false {
+
+    // ── Normal mode ──────────────────────────────────────────────────────────
+    normal {
+        // Open strider (filepicker) with Ctrl-g f
+        bind "Ctrl g" { SwitchToMode "Locked"; }
+    }
+
+    // ── Shared across modes ──────────────────────────────────────────────────
+    shared_except "locked" {
+        bind "Ctrl g" { SwitchToMode "Normal"; }
+        bind "Ctrl q" { Quit; }
+
+        // Pane management
+        bind "Alt n"     { NewPane; }
+        bind "Alt d"     { NewPane "Down"; }
+        bind "Alt r"     { NewPane "Right"; }
+        bind "Alt x"     { CloseFocus; SwitchToMode "Normal"; }
+        bind "Alt f"     { ToggleFocusFullscreen; SwitchToMode "Normal"; }
+        bind "Alt z"     { TogglePaneFrames; SwitchToMode "Normal"; }
+        bind "Alt e"     { TogglePaneEmbedOrFloating; SwitchToMode "Normal"; }
+        bind "Alt i"     { MoveTab "Left"; }
+        bind "Alt o"     { MoveTab "Right"; }
+
+        // Pane navigation (Alt + arrows or hjkl)
+        bind "Alt h" "Alt Left"  { MoveFocus "Left"; }
+        bind "Alt l" "Alt Right" { MoveFocus "Right"; }
+        bind "Alt k" "Alt Up"    { MoveFocus "Up"; }
+        bind "Alt j" "Alt Down"  { MoveFocus "Down"; }
+
+        // Resize panes
+        bind "Alt =" { Resize "Increase"; }
+        bind "Alt -" { Resize "Decrease"; }
+
+        // Tab management
+        bind "Alt t"     { NewTab; SwitchToMode "Normal"; }
+        bind "Alt w"     { CloseTab; SwitchToMode "Normal"; }
+        bind "Alt 1"     { GoToTab 1; SwitchToMode "Normal"; }
+        bind "Alt 2"     { GoToTab 2; SwitchToMode "Normal"; }
+        bind "Alt 3"     { GoToTab 3; SwitchToMode "Normal"; }
+        bind "Alt 4"     { GoToTab 4; SwitchToMode "Normal"; }
+        bind "Alt 5"     { GoToTab 5; SwitchToMode "Normal"; }
+        bind "Alt ["     { GoToPreviousTab; }
+        bind "Alt ]"     { GoToNextTab; }
+
+        // Strider filepicker — open in a floating pane
+        bind "Alt s" {
+            LaunchOrFocusPlugin "zellij:strider" {
+                floating true
+                move_to_focused_tab true
+            }
+            SwitchToMode "Normal"
+        }
+
+        // Session manager
+        bind "Alt m" {
+            LaunchOrFocusPlugin "zellij:session-manager" {
+                floating true
+                move_to_focused_tab true
+            }
+            SwitchToMode "Normal"
+        }
+
+        // Scroll mode shortcut
+        bind "Alt u" { SwitchToMode "Scroll"; }
+
+        // Search in scrollback
+        bind "Alt /" { SwitchToMode "EnterSearch"; SearchInput 0; }
+    }
+
+    // ── Scroll mode ──────────────────────────────────────────────────────────
+    scroll {
+        bind "Ctrl c" "Escape" "q" { SwitchToMode "Normal"; }
+        bind "j" "Down"  { ScrollDown; }
+        bind "k" "Up"    { ScrollUp; }
+        bind "d"         { HalfPageScrollDown; }
+        bind "u"         { HalfPageScrollUp; }
+        bind "f" "PageDown" { PageScrollDown; }
+        bind "b" "PageUp"   { PageScrollUp; }
+        bind "g"         { ScrollToTop; }
+        bind "G"         { ScrollToBottom; }
+        bind "/"         { SwitchToMode "EnterSearch"; SearchInput 0; }
+    }
+
+    // ── Search mode ──────────────────────────────────────────────────────────
+    search {
+        bind "Ctrl c" "Escape" { SwitchToMode "Normal"; }
+        bind "n"     { Search "down"; }
+        bind "N"     { Search "up"; }
+        bind "c"     { SearchToggleOption "CaseSensitivity"; }
+        bind "w"     { SearchToggleOption "Wrap"; }
+        bind "o"     { SearchToggleOption "WholeWord"; }
+    }
+}
+
+// =============================================================================
+// Plugins — declare built-in plugins explicitly so they can be referenced
+// =============================================================================
+plugins {
+    tab-bar          location="zellij:tab-bar"
+    status-bar       location="zellij:status-bar"
+    strider          location="zellij:strider"
+    compact-bar      location="zellij:compact-bar"
+    session-manager  location="zellij:session-manager"
+    welcome-screen   location="zellij:session-manager"
+}

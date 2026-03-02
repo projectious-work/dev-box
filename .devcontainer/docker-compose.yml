@@ -1,0 +1,49 @@
+services:
+  devcontainer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    image: devcontainer:latest
+    container_name: devcontainer
+    hostname: devbox
+    stdin_open: true
+    tty: true
+    volumes:
+      # ── Workspace ─────────────────────────────────────────────────────────
+      - type: bind
+        source: ${WORKSPACE_DIR:-..}
+        target: /workspace
+
+      # ── Persisted configuration (all live under .root/ on the host) ───────
+      # SSH keys — read-only; manage keys only on the host
+      - type: bind
+        source: ${HOST_ROOT:-.root}/.ssh
+        target: /root/.ssh
+        read_only: true
+
+      # Vim: config file + undo history + netrw bookmarks
+      - type: bind
+        source: ${HOST_ROOT:-.root}/.vim
+        target: /root/.vim
+
+      # Zellij: config.kdl, themes/, layouts/, plugins cache
+      - type: bind
+        source: ${HOST_ROOT:-.root}/.config/zellij
+        target: /root/.config/zellij
+
+      # Git: global config + credentials helper store
+      - type: bind
+        source: ${HOST_ROOT:-.root}/.config/git
+        target: /root/.config/git
+
+    environment:
+      - TZ=Europe/Berlin
+      - LANG=en_US.UTF-8
+      - COLORTERM=truecolor
+      - TERM=xterm-256color
+      # Tell git to look for its config in XDG location (matches mount above)
+      - GIT_CONFIG_GLOBAL=/root/.config/git/config
+    working_dir: /workspace
+
+volumes: {}

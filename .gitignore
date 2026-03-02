@@ -1,53 +1,35 @@
-config/opencode
+# =============================================================================
+# Project Specific
+# =============================================================================
 
+.root/
+scratch.txt
+.claude
 
-
-# macOS system files
-# Finder and metadata
+# =============================================================================
+# OS Generated Files
+# =============================================================================
 .DS_Store
-.AppleDouble
-.LSOverride
-
-# Resource forks and other hidden files
+.DS_Store?
 ._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
-# Spotlight, Trash and other system folders
-.Spotlight-V100/
-.Trashes/
-.fseventsd/
-.DocumentRevisions-V100/
+.DocumentRevisions-V100
+.fseventsd
 
-# Temporary items and Volume icon
-Temporary Items/
-.VolumeIcon.icns
+# =============================================================================
+# MkDocs
+# =============================================================================
+site/
 
-
-
-# Node.js
-# dependencies
-node_modules/
-
-# debug logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# dotenv environment variables
-.env
-.env.*.local
-
-# Yarn Plug'n'Play
-.pnp.*
-
-# Local caches and build outputs
-.cache/
-dist/
-build/
-out/
-
-# Editor directories and log files
+# =============================================================================
+# IDE
+# =============================================================================
+.idea/
 .vscode/
-*.log
-
-
+*.swp
+*.swo
+*~
