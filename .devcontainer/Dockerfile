@@ -14,10 +14,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # TARGETARCH is injected automatically by Docker BuildKit: "amd64" or "arm64"
 ARG ZELLIJ_VERSION=0.43.1
 
-# Use uname -m for arch detection — works reliably across Docker, Podman, Buildah
+# Use uname -m for arch detection — works reliably across Docker, Podman, Buildah.
+# We use the glibc-linked gnu target rather than musl-static, since we are on
+# Debian (glibc-based). Both work, but gnu is the natural fit for this system.
 RUN ARCH=$(uname -m) && \
     curl -fsSL \
-      "https://github.com/zellij-org/zellij/releases/download/v${ZELLIJ_VERSION}/zellij-${ARCH}-unknown-linux-musl.tar.gz" \
+      "https://github.com/zellij-org/zellij/releases/download/v${ZELLIJ_VERSION}/zellij-${ARCH}-unknown-linux-gnu.tar.gz" \
       | tar -xz -C /usr/local/bin && \
     chmod +x /usr/local/bin/zellij
 
