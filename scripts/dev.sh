@@ -39,6 +39,47 @@ COMPOSE_FILE="${DEVCONTAINER_DIR}/docker-compose.yml"
 HOST_ROOT="${HOST_ROOT:-${PROJECT_ROOT}/.root}"
 WORKSPACE_DIR="${WORKSPACE_DIR:-${PROJECT_ROOT}}"
 
+# ── Read service/container name from docker-compose.yml ───────────────────────
+# SERVICE_NAME  = the key under `services:` (used by compose subcommands)
+# CONTAINER_NAME = the `container_name:` value (used by runtime inspect)
+# Falls back to the service name if container_name is not explicitly set.
+_parse_compose_names() {
+  if ! command -v python3 &>/dev/null; then
+    die "python3 is required to parse docker-compose.yml"
+  fi
+  python3 - "${COMPOSE_FILE}" << 'PYEOF'
+import sys, json
+try:
+    import yaml
+    with open(sys.argv[1]) as f:
+        data = yaml.safe_load(f)
+except ImportError:
+    # No PyYAML — fall back to a minimal grep-based approach signalled by exit 2
+    sys.exit(2)
+services = data.get("services", {})
+if not services:
+    sys.exit(1)
+service_name = next(iter(services))
+container_name = services[service_name].get("container_name", service_name)
+print(f"{service_name}:{container_name}")
+PYEOF
+}
+
+_init_names() {
+  local result
+  result=$(_parse_compose_names 2>/dev/null) || {
+    # PyYAML not available — fall back to grep (covers simple single-service files)
+    local svc cn
+    svc=$(grep -E '^\s{2}[a-zA-Z0-9_-]+:' "${COMPOSE_FILE}" | head -1 | tr -d ' :')
+    cn=$(grep 'container_name:' "${COMPOSE_FILE}" | head -1 | awk '{print $2}')
+    result="${svc}:${cn:-${svc}}"
+  }
+  SERVICE_NAME="${result%%:*}"
+  CONTAINER_NAME="${result##*:}"
+}
+
+_init_names
+
 # ── Colours ───────────────────────────────────────────────────────────────────
 bold=$'\e[1m'
 cyan=$'\e[36m'
@@ -68,7 +109,12 @@ ${bold}Commands:${reset}
   status    Show current container status
   help      Show this help
 
-${bold}Options (start / build):${reset}
+${bold}Options (build):${reset}
+  --no-cache            Build without using the layer cache
+  --workspace <path>    Host path to mount as /workspace  (default: ./workspace)
+  --root <path>         Host path for persisted config    (default: ./.root)
+
+${bold}Options (start):${reset}
   --workspace <path>    Host path to mount as /workspace  (default: ./workspace)
   --root <path>         Host path for persisted config    (default: ./.root)
 
@@ -81,8 +127,10 @@ HELP
 # ── Resolve compose binary ────────────────────────────────────────────────────
 if command -v podman &>/dev/null; then
   COMPOSE_BIN="podman compose"
+  RUNTIME_BIN="podman"
 elif command -v docker &>/dev/null; then
   COMPOSE_BIN="docker compose"
+  RUNTIME_BIN="docker"
 else
   die "Neither podman nor docker found in PATH."
 fi
@@ -128,14 +176,28 @@ ensure_host_dirs() {
 
 container_status() {
   # Returns: running | exited | missing
+  # Query the runtime directly by container name — reliable across all
+  # podman/docker versions regardless of compose ps output format.
   local state
-  state=$(${COMPOSE_BIN} -f "${COMPOSE_FILE}" ps --format json devcontainer 2>/dev/null \
-    | grep -o '"State":"[^"]*"' | head -1 | cut -d'"' -f4 || true)
-  if [[ -z "${state}" ]]; then
-    echo "missing"
-  else
-    echo "${state}"
-  fi
+  state=$(${RUNTIME_BIN} inspect --format '{{.State.Status}}' "${CONTAINER_NAME}" 2>/dev/null || true)
+  case "${state}" in
+    running)           echo "running" ;;
+    exited|stopped)    echo "exited"  ;;
+    *)                 echo "missing" ;;
+  esac
+}
+
+wait_for_running() {
+  # Poll until the container is running or we time out.
+  local attempts=0 max=15
+  while [[ $attempts -lt $max ]]; do
+    if [[ "$(container_status)" == "running" ]]; then
+      return 0
+    fi
+    sleep 0.5
+    (( attempts++ ))
+  done
+  die "Container did not reach running state after ${max} attempts. Run './scripts/dev.sh status' to investigate."
 }
 
 export_env() {
@@ -144,8 +206,10 @@ export_env() {
 
 # ── Commands ──────────────────────────────────────────────────────────────────
 cmd_build() {
+  local no_cache=""
   while [[ $# -gt 0 ]]; do
     case "$1" in
+      --no-cache)  no_cache="--no-cache"; shift ;;
       --workspace) WORKSPACE_DIR="$2"; shift 2 ;;
       --root)      HOST_ROOT="$2";      shift 2 ;;
       *)           die "Unknown option: $1" ;;
@@ -153,8 +217,8 @@ cmd_build() {
   done
   export_env
   ensure_host_dirs
-  info "Building image…"
-  ${COMPOSE_BIN} -f "${COMPOSE_FILE}" build
+  info "Building image${no_cache:+ (no cache)}…"
+  ${COMPOSE_BIN} -f "${COMPOSE_FILE}" build ${no_cache}
   ok "Build complete."
 }
 
@@ -178,18 +242,20 @@ cmd_start() {
       ;;
     exited)
       info "Container exists but is stopped — starting…"
-      ${COMPOSE_BIN} -f "${COMPOSE_FILE}" start devcontainer
+      ${COMPOSE_BIN} -f "${COMPOSE_FILE}" start "${SERVICE_NAME}"
+      wait_for_running
       ;;
     missing)
       # Check if image exists; build if not
       local image_exists
-      image_exists=$(${COMPOSE_BIN} -f "${COMPOSE_FILE}" images -q devcontainer 2>/dev/null || true)
+      image_exists=$(${COMPOSE_BIN} -f "${COMPOSE_FILE}" images -q "${SERVICE_NAME}" 2>/dev/null || true)
       if [[ -z "${image_exists}" ]]; then
         warn "Image not found — building first…"
         ${COMPOSE_BIN} -f "${COMPOSE_FILE}" build
       fi
       info "Starting container…"
-      ${COMPOSE_BIN} -f "${COMPOSE_FILE}" up -d devcontainer
+      ${COMPOSE_BIN} -f "${COMPOSE_FILE}" up -d "${SERVICE_NAME}"
+      wait_for_running
       ;;
   esac
 
@@ -205,7 +271,7 @@ cmd_stop() {
     exit 0
   fi
   info "Stopping container…"
-  ${COMPOSE_BIN} -f "${COMPOSE_FILE}" stop devcontainer
+  ${COMPOSE_BIN} -f "${COMPOSE_FILE}" stop "${SERVICE_NAME}"
   ok "Container stopped. Your work in .root/ and workspace/ is preserved."
 }
 
@@ -218,7 +284,7 @@ cmd_attach() {
   fi
   info "Attaching — launching zellij…"
   echo ""
-  ${COMPOSE_BIN} -f "${COMPOSE_FILE}" exec devcontainer \
+  ${COMPOSE_BIN} -f "${COMPOSE_FILE}" exec "${SERVICE_NAME}" \
     zellij --layout dev
 }
 

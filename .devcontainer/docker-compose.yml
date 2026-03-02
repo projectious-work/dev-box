@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile
       target: runtime
-    image: devcontainer:latest
+    image: localhost/devcontainer:latest
     container_name: devcontainer
     hostname: devbox
     stdin_open: true
