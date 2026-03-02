@@ -242,7 +242,10 @@ cmd_start() {
       ;;
     exited)
       info "Container exists but is stopped — starting…"
-      ${COMPOSE_BIN} -f "${COMPOSE_FILE}" start "${SERVICE_NAME}"
+      if ! ${COMPOSE_BIN} -f "${COMPOSE_FILE}" start "${SERVICE_NAME}" 2>/dev/null; then
+        warn "Compose start unavailable (container not owned by this project) — starting directly."
+        ${RUNTIME_BIN} start "${CONTAINER_NAME}"
+      fi
       wait_for_running
       ;;
     missing)
