@@ -3,6 +3,9 @@
 # =============================================================================
 FROM debian:trixie-slim AS builder
 
+# Suppress debconf warnings during apt — no TTY available in docker build
+ENV DEBIAN_FRONTEND=noninteractive
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
@@ -11,25 +14,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # TARGETARCH is injected automatically by Docker BuildKit: "amd64" or "arm64"
 ARG ZELLIJ_VERSION=0.43.1
 
-RUN ARCH=$(uname -m | sed 's/x86_64/x86_64/;s/aarch64/aarch64/') && \
+# Use uname -m for arch detection — works reliably across Docker, Podman, Buildah
+RUN ARCH=$(uname -m) && \
     curl -fsSL \
       "https://github.com/zellij-org/zellij/releases/download/v${ZELLIJ_VERSION}/zellij-${ARCH}-unknown-linux-musl.tar.gz" \
       | tar -xz -C /usr/local/bin && \
     chmod +x /usr/local/bin/zellij
-
 
 # =============================================================================
 # Stage 2: Runtime — minimal dev-container
 # =============================================================================
 FROM debian:trixie-slim AS runtime
 
-# ── Locale & timezone ────────────────────────────────────────────────────────
-ENV LANG=en_US.UTF-8 \
-    LANGUAGE=en_US:en \
-    LC_ALL=en_US.UTF-8 \
-    TZ=Europe/Berlin \
-    TERM=xterm-256color \
-    COLORTERM=truecolor
+# Suppress debconf warnings during build — no TTY available in docker build.
+# Unset after apt so runtime behaviour is unaffected.
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Set timezone early so tzdata installs silently
+ENV TZ=Europe/Berlin
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     # Core utilities
@@ -50,7 +52,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && locale-gen \
     && ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime \
     && echo ${TZ} > /etc/timezone \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    # Remove build-time frontend override — runtime should behave normally
+    && unset DEBIAN_FRONTEND || true
+
+# Set locale vars only after locale-gen has run, so perl/dpkg never see
+# an LC_ALL that points to a non-existent locale during the build
+ENV LANG=en_US.UTF-8 \
+    LANGUAGE=en_US:en \
+    LC_ALL=en_US.UTF-8 \
+    TERM=xterm-256color \
+    COLORTERM=truecolor
 
 # Copy Zellij binary from builder stage
 COPY --from=builder /usr/local/bin/zellij /usr/local/bin/zellij
@@ -77,4 +89,5 @@ COPY config/gitconfig /root/.config/git/config
 # ── Entrypoint ────────────────────────────────────────────────────────────────
 WORKDIR /workspace
 
-CMD ["zellij", "--layout", "dev"]
+# Keep the container alive — VS Code execs into it; zellij is launched via the terminal profile
+CMD ["sleep", "infinity"]
