@@ -1,6 +1,6 @@
 # Image Flavors
 
-dev-box provides six container image flavors. All build on top of the [base image](base-image.md).
+dev-box provides eight container image flavors. All build on top of the [base image](base-image.md).
 
 ## Overview
 
@@ -9,9 +9,11 @@ dev-box provides six container image flavors. All build on top of the [base imag
 | `base` | Debian Trixie Slim | Zellij, Vim, Git, lazygit, Claude CLI, audio | General development, shell scripting |
 | `python` | base | Python 3.13, uv, MkDocs Material | Python projects, documentation |
 | `latex` | base | TeX Live (basic scheme + packages) | Academic papers, technical documents |
+| `typst` | base | Typst | Modern typesetting, technical documents |
 | `rust` | base | Rust toolchain (stable), clippy, rustfmt | Rust projects |
-| `python-latex` | base | Python + TeX Live | Data science with LaTeX reports |
-| `rust-latex` | base | Rust + TeX Live | Rust projects with LaTeX documentation |
+| `python-latex` | python | Python + TeX Live | Data science with LaTeX reports |
+| `python-typst` | python | Python + Typst | Data science with Typst reports |
+| `rust-latex` | rust | Rust + TeX Live | Rust projects with LaTeX documentation |
 
 ## base
 
@@ -115,6 +117,46 @@ image = "rust"
 - Use `rustup` to add components or switch toolchains
 - `cargo` is available on PATH immediately
 
+## typst
+
+Adds [Typst](https://typst.app/), a modern typesetting system that is simpler and faster than LaTeX.
+
+**What it includes:**
+
+- Typst binary (static musl build from GitHub releases)
+
+**Who it is for:** Technical documents, academic papers, presentations — anyone who wants LaTeX-quality output with a modern, readable markup language.
+
+**Select it with:**
+
+```toml
+[dev-box]
+image = "typst"
+```
+
+**Usage notes:**
+
+- Compile with `typst compile document.typ`
+- Watch mode: `typst watch document.typ` (recompiles on save)
+- Packages are downloaded automatically on first use from [Typst Universe](https://typst.app/universe/) — no manual install step
+- Package cache lives at `~/.cache/typst/packages/` — persist it via `.root/.cache/typst` in compose mounts
+- Import packages in your `.typ` files: `#import "@preview/package-name:1.0.0"`
+
+## python-typst
+
+Combines Python and Typst in a single image.
+
+**What it includes:** Everything from both `python` and `typst`.
+
+**Who it is for:** Data science projects that generate Typst reports, Python analysis with Typst writeups.
+
+**Select it with:**
+
+```toml
+[dev-box]
+image = "python-typst"
+```
+
 ## python-latex
 
 Combines Python and TeX Live in a single image.
@@ -166,8 +208,10 @@ These packages are installed during `dev-box build` via the generated Dockerfile
 | `base` | ~300 MB |
 | `python` | ~450 MB |
 | `latex` | ~600 MB |
+| `typst` | ~310 MB |
 | `rust` | ~800 MB |
 | `python-latex` | ~750 MB |
+| `python-typst` | ~460 MB |
 | `rust-latex` | ~1.1 GB |
 
 !!! note "Sizes are approximate"

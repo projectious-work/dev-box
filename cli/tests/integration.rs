@@ -245,8 +245,10 @@ fn init_with_all_image_flavors() {
         "base",
         "python",
         "latex",
+        "typst",
         "rust",
         "python-latex",
+        "python-typst",
         "rust-latex",
     ] {
         let dir = tempfile::tempdir().unwrap();

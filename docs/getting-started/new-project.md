@@ -16,7 +16,7 @@ The `init` command accepts three options:
 | Option | Default | Description |
 |--------|---------|-------------|
 | `--name` | Current directory name | Container and hostname |
-| `--image` | `base` | Image flavor (`base`, `python`, `latex`, `rust`, `python-latex`, `rust-latex`) |
+| `--image` | `base` | Image flavor (`base`, `python`, `latex`, `typst`, `rust`, `python-latex`, `python-typst`, `rust-latex`) |
 | `--process` | `product` | Work process flavor (`minimal`, `managed`, `research`, `product`) |
 
 ## What Gets Created

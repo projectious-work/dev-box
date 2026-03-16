@@ -22,8 +22,10 @@ pub enum ImageFlavor {
     Base,
     Python,
     Latex,
+    Typst,
     Rust,
     PythonLatex,
+    PythonTypst,
     RustLatex,
 }
 
@@ -33,8 +35,10 @@ impl std::fmt::Display for ImageFlavor {
             ImageFlavor::Base => write!(f, "base"),
             ImageFlavor::Python => write!(f, "python"),
             ImageFlavor::Latex => write!(f, "latex"),
+            ImageFlavor::Typst => write!(f, "typst"),
             ImageFlavor::Rust => write!(f, "rust"),
             ImageFlavor::PythonLatex => write!(f, "python-latex"),
+            ImageFlavor::PythonTypst => write!(f, "python-typst"),
             ImageFlavor::RustLatex => write!(f, "rust-latex"),
         }
     }
@@ -46,24 +50,36 @@ impl ImageFlavor {
             "base" => Ok(ImageFlavor::Base),
             "python" => Ok(ImageFlavor::Python),
             "latex" => Ok(ImageFlavor::Latex),
+            "typst" => Ok(ImageFlavor::Typst),
             "rust" => Ok(ImageFlavor::Rust),
             "python-latex" => Ok(ImageFlavor::PythonLatex),
+            "python-typst" => Ok(ImageFlavor::PythonTypst),
             "rust-latex" => Ok(ImageFlavor::RustLatex),
             _ => bail!(
-                "Unknown image flavor: '{}'. Valid: base, python, latex, rust, python-latex, rust-latex",
+                "Unknown image flavor: '{}'. Valid: base, python, latex, typst, rust, python-latex, python-typst, rust-latex",
                 s
             ),
         }
     }
 
     pub fn contains_python(&self) -> bool {
-        matches!(self, ImageFlavor::Python | ImageFlavor::PythonLatex)
+        matches!(
+            self,
+            ImageFlavor::Python | ImageFlavor::PythonLatex | ImageFlavor::PythonTypst
+        )
     }
 
     pub fn contains_latex(&self) -> bool {
         matches!(
             self,
             ImageFlavor::Latex | ImageFlavor::PythonLatex | ImageFlavor::RustLatex
+        )
+    }
+
+    pub fn contains_typst(&self) -> bool {
+        matches!(
+            self,
+            ImageFlavor::Typst | ImageFlavor::PythonTypst
         )
     }
 
@@ -448,12 +464,20 @@ name = ""
             ImageFlavor::Latex
         );
         assert_eq!(
+            ImageFlavor::from_str_loose("typst").unwrap(),
+            ImageFlavor::Typst
+        );
+        assert_eq!(
             ImageFlavor::from_str_loose("rust").unwrap(),
             ImageFlavor::Rust
         );
         assert_eq!(
             ImageFlavor::from_str_loose("python-latex").unwrap(),
             ImageFlavor::PythonLatex
+        );
+        assert_eq!(
+            ImageFlavor::from_str_loose("python-typst").unwrap(),
+            ImageFlavor::PythonTypst
         );
         assert_eq!(
             ImageFlavor::from_str_loose("rust-latex").unwrap(),
@@ -477,8 +501,10 @@ name = ""
         assert!(!ImageFlavor::Base.contains_python());
         assert!(ImageFlavor::Python.contains_python());
         assert!(!ImageFlavor::Latex.contains_python());
+        assert!(!ImageFlavor::Typst.contains_python());
         assert!(!ImageFlavor::Rust.contains_python());
         assert!(ImageFlavor::PythonLatex.contains_python());
+        assert!(ImageFlavor::PythonTypst.contains_python());
         assert!(!ImageFlavor::RustLatex.contains_python());
     }
 
@@ -487,9 +513,23 @@ name = ""
         assert!(!ImageFlavor::Base.contains_latex());
         assert!(!ImageFlavor::Python.contains_latex());
         assert!(ImageFlavor::Latex.contains_latex());
+        assert!(!ImageFlavor::Typst.contains_latex());
         assert!(!ImageFlavor::Rust.contains_latex());
         assert!(ImageFlavor::PythonLatex.contains_latex());
+        assert!(!ImageFlavor::PythonTypst.contains_latex());
         assert!(ImageFlavor::RustLatex.contains_latex());
+    }
+
+    #[test]
+    fn image_flavor_contains_typst() {
+        assert!(!ImageFlavor::Base.contains_typst());
+        assert!(!ImageFlavor::Python.contains_typst());
+        assert!(!ImageFlavor::Latex.contains_typst());
+        assert!(ImageFlavor::Typst.contains_typst());
+        assert!(!ImageFlavor::Rust.contains_typst());
+        assert!(!ImageFlavor::PythonLatex.contains_typst());
+        assert!(ImageFlavor::PythonTypst.contains_typst());
+        assert!(!ImageFlavor::RustLatex.contains_typst());
     }
 
     #[test]
@@ -497,8 +537,10 @@ name = ""
         assert!(!ImageFlavor::Base.contains_rust());
         assert!(!ImageFlavor::Python.contains_rust());
         assert!(!ImageFlavor::Latex.contains_rust());
+        assert!(!ImageFlavor::Typst.contains_rust());
         assert!(ImageFlavor::Rust.contains_rust());
         assert!(!ImageFlavor::PythonLatex.contains_rust());
+        assert!(!ImageFlavor::PythonTypst.contains_rust());
         assert!(ImageFlavor::RustLatex.contains_rust());
     }
 
@@ -541,8 +583,10 @@ name = ""
         assert_eq!(format!("{}", ImageFlavor::Base), "base");
         assert_eq!(format!("{}", ImageFlavor::Python), "python");
         assert_eq!(format!("{}", ImageFlavor::Latex), "latex");
+        assert_eq!(format!("{}", ImageFlavor::Typst), "typst");
         assert_eq!(format!("{}", ImageFlavor::Rust), "rust");
         assert_eq!(format!("{}", ImageFlavor::PythonLatex), "python-latex");
+        assert_eq!(format!("{}", ImageFlavor::PythonTypst), "python-typst");
         assert_eq!(format!("{}", ImageFlavor::RustLatex), "rust-latex");
     }
 

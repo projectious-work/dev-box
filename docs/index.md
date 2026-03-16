@@ -22,15 +22,17 @@ dev-box provides three integrated pillars:
 
 ### 1. Published Container Images
 
-Six pre-built images based on Debian Trixie Slim, each with a complete development environment:
+Eight pre-built images based on Debian Trixie Slim, each with a complete development environment:
 
 | Image | What it adds |
 |-------|-------------|
 | `base` | Zellij, Vim, Git, lazygit, Claude CLI, audio support |
 | `python` | Python 3.13, uv, MkDocs Material |
 | `latex` | TeX Live with common packages |
+| `typst` | Typst (modern typesetting) |
 | `rust` | Rust toolchain via rustup |
 | `python-latex` | Python + TeX Live combined |
+| `python-typst` | Python + Typst combined |
 | `rust-latex` | Rust + TeX Live combined |
 
 ### 2. A Rust CLI

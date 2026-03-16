@@ -9,8 +9,8 @@ scaffolding, AI context structure, and work process management.
 
 ## What it provides
 
-- **6 container images** — base, python, latex, rust, python-latex, rust-latex —
-  published to GHCR, built on Debian Trixie Slim
+- **8 container images** — base, python, latex, typst, rust, python-latex,
+  python-typst, rust-latex — published to GHCR, built on Debian Trixie Slim
 - **A Rust CLI (`dev-box`)** — init, generate, build, start, stop, doctor, update
 - **`dev-box.toml`** — single source of truth for project configuration
 - **4 work process flavors** — minimal, managed, research, product — with
@@ -53,8 +53,10 @@ All images include:
 | `base` | Core tools only |
 | `python` | Python 3.13 + uv + MkDocs Material |
 | `latex` | TeX Live (LuaLaTeX, 100+ packages) |
+| `typst` | Typst (modern typesetting) |
 | `rust` | Rust toolchain (stable + clippy + rustfmt) |
 | `python-latex` | Python + TeX Live |
+| `python-typst` | Python + Typst |
 | `rust-latex` | Rust + TeX Live |
 
 ## Work process flavors

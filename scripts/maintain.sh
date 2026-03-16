@@ -10,7 +10,7 @@
 #
 # Commands:
 #   test              Run cargo fmt, clippy, and tests
-#   build-images      Build all 6 published images locally
+#   build-images      Build all 8 published images locally
 #   docs-serve        Serve MkDocs locally for preview
 #   docs-deploy       Build MkDocs and push HTML to gh-pages
 #   release <version> Tag, build, compile CLI, generate release prompt
@@ -80,7 +80,7 @@ ${bold}Usage:${reset}
 
 ${bold}Development:${reset}
   test                     Run cargo fmt check, clippy, and tests
-  build-images [--no-cache] Build all 6 published images locally
+  build-images [--no-cache] Build all 8 published images locally
   docs-serve               Serve MkDocs locally (http://localhost:8000)
   docs-deploy [--dry-run]  Build MkDocs and push to gh-pages branch
 
@@ -175,7 +175,7 @@ cmd_build_images() {
   local no_cache=""
   [[ "${1:-}" == "--no-cache" ]] && no_cache="--no-cache"
 
-  local flavors=("base" "python" "rust" "latex" "python-latex" "rust-latex")
+  local flavors=("base" "python" "rust" "latex" "typst" "python-latex" "python-typst" "rust-latex")
 
   for flavor in "${flavors[@]}"; do
     info "Building ${flavor} image..."
@@ -186,7 +186,7 @@ cmd_build_images() {
     ok "Built ${IMAGE_REGISTRY}:${flavor}-latest"
   done
 
-  ok "All 6 images built"
+  ok "All 8 images built"
 }
 
 cmd_docs_serve() {
@@ -307,7 +307,7 @@ cmd_release() {
   # ── Step 4: Build images (if runtime available) ────────────────────────────
   if [[ -n "${RUNTIME_BIN}" ]]; then
     info "Building container images..."
-    local flavors=("base" "python" "rust" "latex" "python-latex" "rust-latex")
+    local flavors=("base" "python" "rust" "latex" "typst" "python-latex" "python-typst" "rust-latex")
     for flavor in "${flavors[@]}"; do
       ${RUNTIME_BIN} build \
         -t "${IMAGE_REGISTRY}:${flavor}-v${version}" \
@@ -348,7 +348,7 @@ cmd_release() {
     echo ""
     echo "| Image | Tag |"
     echo "|-------|-----|"
-    for flavor in base python latex rust python-latex rust-latex; do
+    for flavor in base python latex typst rust python-latex python-typst rust-latex; do
       echo "| ${flavor} | \`${IMAGE_REGISTRY}:${flavor}-v${version}\` |"
     done
     echo ""
@@ -386,7 +386,7 @@ cmd_release() {
     echo "### Step 2: Push container images to GHCR"
     echo ""
     echo "\`\`\`bash"
-    for flavor in base python latex rust python-latex rust-latex; do
+    for flavor in base python latex typst rust python-latex python-typst rust-latex; do
       echo "${RUNTIME_BIN:-podman} push ${IMAGE_REGISTRY}:${flavor}-v${version}"
     done
     echo "\`\`\`"

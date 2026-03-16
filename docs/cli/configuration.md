@@ -41,7 +41,7 @@ Top-level project metadata.
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `version` | String (semver) | Yes | -- | Project version |
-| `image` | String | Yes | -- | Image flavor: `base`, `python`, `latex`, `rust`, `python-latex`, `rust-latex` |
+| `image` | String | Yes | -- | Image flavor: `base`, `python`, `latex`, `typst`, `rust`, `python-latex`, `python-typst`, `rust-latex` |
 | `process` | String | Yes | -- | Work process: `minimal`, `managed`, `research`, `product` |
 
 ### [container]

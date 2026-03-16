@@ -8,7 +8,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 ### Added
 - Initial release
 - Rust CLI with commands: init, generate, build, start, stop, attach, status, doctor, update
-- 6 container image flavors: base, python, latex, rust, python-latex, rust-latex
+- 8 container image flavors: base, python, latex, typst, rust, python-latex, python-typst, rust-latex
 - dev-box.toml configuration system
 - 4 work process flavors: minimal, managed, research, product
 - Context scaffolding with OWNER.md sharing

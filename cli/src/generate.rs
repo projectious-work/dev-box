@@ -190,6 +190,9 @@ fn generate_devcontainer_json(config: &DevBoxConfig, dir: &Path) -> Result<bool>
         extensions.push("james-yu.latex-workshop".to_string());
         extensions.push("mblode.zotero".to_string());
     }
+    if image.contains_typst() {
+        extensions.push("myriad-dreamin.tinymist".to_string());
+    }
 
     // Use serde_json for proper JSON formatting
     let devcontainer = serde_json::json!({
@@ -427,6 +430,25 @@ mod tests {
         let content = fs::read_to_string(dir.path().join("devcontainer.json")).unwrap();
         assert!(content.contains("ms-python.python"));
         assert!(content.contains("james-yu.latex-workshop"));
+    }
+
+    #[test]
+    fn devcontainer_json_typst_extension() {
+        let dir = tempfile::tempdir().unwrap();
+        let config = make_config(ImageFlavor::Typst, false);
+        generate_devcontainer_json(&config, dir.path()).unwrap();
+        let content = fs::read_to_string(dir.path().join("devcontainer.json")).unwrap();
+        assert!(content.contains("myriad-dreamin.tinymist"));
+    }
+
+    #[test]
+    fn devcontainer_json_python_typst_extensions() {
+        let dir = tempfile::tempdir().unwrap();
+        let config = make_config(ImageFlavor::PythonTypst, false);
+        generate_devcontainer_json(&config, dir.path()).unwrap();
+        let content = fs::read_to_string(dir.path().join("devcontainer.json")).unwrap();
+        assert!(content.contains("ms-python.python"));
+        assert!(content.contains("myriad-dreamin.tinymist"));
     }
 
     #[test]
