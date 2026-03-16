@@ -1,0 +1,369 @@
+# CLI Commands
+
+Complete reference for all `dev-box` commands.
+
+## Global Options
+
+These options apply to all commands:
+
+| Option | Environment Variable | Default | Description |
+|--------|---------------------|---------|-------------|
+| `--config <PATH>` | -- | `./dev-box.toml` | Path to configuration file |
+| `--log-level <LEVEL>` | `DEV_BOX_LOG_LEVEL` | `info` | Log verbosity: `trace`, `debug`, `info`, `warn`, `error` |
+
+---
+
+## dev-box init
+
+Initialize a new project with `dev-box.toml` and generated devcontainer files.
+
+### Usage
+
+```bash
+dev-box init [OPTIONS]
+```
+
+### Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--name <NAME>` | Current directory name | Project and container name |
+| `--image <FLAVOR>` | `base` | Image flavor |
+| `--process <FLAVOR>` | `product` | Work process flavor |
+
+### What It Does
+
+1. Creates `dev-box.toml` with the specified settings
+2. Generates `.devcontainer/Dockerfile`, `docker-compose.yml`, and `devcontainer.json`
+3. Scaffolds context files based on the chosen process flavor
+
+### Examples
+
+```bash
+# Basic initialization (uses directory name, base image, product process)
+dev-box init
+
+# Specify all options
+dev-box init --name my-api --image python --process managed
+
+# Rust project with minimal context
+dev-box init --image rust --process minimal
+```
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | Success |
+| 1 | `dev-box.toml` already exists, or invalid option value |
+
+!!! warning "Will not overwrite"
+    If `dev-box.toml` already exists, `init` exits with an error. Delete the file first or edit it directly.
+
+---
+
+## dev-box generate
+
+Re-generate devcontainer files from `dev-box.toml`.
+
+### Usage
+
+```bash
+dev-box generate
+```
+
+### What It Does
+
+Reads `dev-box.toml` and regenerates:
+
+- `.devcontainer/Dockerfile`
+- `.devcontainer/docker-compose.yml`
+- `.devcontainer/devcontainer.json`
+
+This is useful after editing `dev-box.toml` to apply changes without rebuilding the container.
+
+### Examples
+
+```bash
+# Edit config, then regenerate
+vim dev-box.toml
+dev-box generate
+```
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | Success |
+| 1 | No `dev-box.toml` found, or invalid config |
+
+!!! note "Overwrites generated files"
+    `generate` always overwrites the devcontainer files. Do not hand-edit files in `.devcontainer/` if you are using `dev-box generate` -- your changes will be lost.
+
+---
+
+## dev-box build
+
+Build the container image.
+
+### Usage
+
+```bash
+dev-box build [OPTIONS]
+```
+
+### Options
+
+| Option | Description |
+|--------|-------------|
+| `--no-cache` | Build without using the layer cache |
+
+### What It Does
+
+1. Loads and validates `dev-box.toml`
+2. Runs `generate` to ensure devcontainer files are current
+3. Runs `docker compose build` (or `podman compose build`)
+
+### Examples
+
+```bash
+# Standard build (uses cache)
+dev-box build
+
+# Full rebuild from scratch
+dev-box build --no-cache
+```
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | Build succeeded |
+| 1 | Config error, runtime not found, or build failure |
+
+---
+
+## dev-box start
+
+Start the container and attach via Zellij.
+
+### Usage
+
+```bash
+dev-box start
+```
+
+### What It Does
+
+This is the primary command for daily use. It handles the full lifecycle:
+
+1. Seeds `.root/` directory with default configs (first run only)
+2. Generates devcontainer files from `dev-box.toml`
+3. Checks container state:
+   - **Running:** Skips to attach
+   - **Stopped:** Starts the existing container
+   - **Missing:** Builds the image (if needed) and creates the container
+4. Waits for the container to be ready (up to 7.5 seconds)
+5. Attaches via `zellij --layout dev`
+
+### Examples
+
+```bash
+# Start working (handles everything)
+dev-box start
+```
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | Success (after Zellij session ends) |
+| 1 | Config error, runtime not found, container failed to start |
+
+---
+
+## dev-box stop
+
+Stop the running container.
+
+### Usage
+
+```bash
+dev-box stop
+```
+
+### What It Does
+
+Stops the container via `docker compose stop` (or `podman compose stop`). All data in `.root/` and the workspace is preserved. The container can be restarted with `dev-box start`.
+
+### Examples
+
+```bash
+dev-box stop
+```
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | Container stopped, or was already stopped/missing |
+| 1 | Config error or runtime not found |
+
+---
+
+## dev-box attach
+
+Attach to a running container via Zellij.
+
+### Usage
+
+```bash
+dev-box attach
+```
+
+### What It Does
+
+Execs into the container and launches `zellij --layout dev`. Unlike `start`, this command does not create or start the container -- it must already be running.
+
+### Examples
+
+```bash
+# Attach from a second terminal
+dev-box attach
+```
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | Success (after Zellij session ends) |
+| 1 | Container is not running |
+
+---
+
+## dev-box status
+
+Show the current container state.
+
+### Usage
+
+```bash
+dev-box status
+```
+
+### What It Does
+
+Inspects the container and reports one of three states:
+
+- **Running** -- container is active
+- **Stopped** -- container exists but is not running
+- **Missing** -- no container found with the configured name
+
+### Examples
+
+```bash
+dev-box status
+```
+
+Output:
+
+```
+ ✓ Container 'my-app' is running
+```
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | Status retrieved successfully (regardless of container state) |
+| 1 | Config error or runtime not found |
+
+---
+
+## dev-box doctor
+
+Validate project structure and run diagnostics.
+
+### Usage
+
+```bash
+dev-box doctor
+```
+
+### What It Does
+
+1. Validates `dev-box.toml` (syntax, field values, semver versions)
+2. Detects the container runtime
+3. Checks for `.root/` directory
+4. Checks for `.devcontainer/` directory
+5. Reports image flavor, process flavor, and container name
+6. Compares schema versions for migration needs
+
+### Examples
+
+```bash
+dev-box doctor
+```
+
+Output:
+
+```
+==> Running diagnostics...
+ ✓ Config version: 0.1.0
+ ✓ Image: python
+ ✓ Process: product
+ ✓ Container name: my-app
+ ✓ Container runtime: podman
+ ✓ .root/ directory exists at .root
+ ✓ .devcontainer/ directory exists
+ ✓ Diagnostics complete
+```
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | All checks passed |
+| 1 | Config error or critical issue detected |
+
+---
+
+## dev-box update
+
+Check for or apply updates.
+
+### Usage
+
+```bash
+dev-box update [OPTIONS]
+```
+
+### Options
+
+| Option | Description |
+|--------|-------------|
+| `--check` | Only check for updates, do not apply |
+
+### What It Does
+
+Checks the current version against the latest available release. Without `--check`, applies the update.
+
+### Examples
+
+```bash
+# Check for updates
+dev-box update --check
+
+# Apply updates
+dev-box update
+```
+
+!!! note "Not yet implemented"
+    The update mechanism is planned but not yet functional. Currently reports the installed version and exits.
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | Success |
+| 1 | Config error |
