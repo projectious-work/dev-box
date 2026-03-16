@@ -1,0 +1,25 @@
+# CLAUDE.md — {{project_name}}
+
+This file provides guidance to Claude Code when working with this repository.
+
+## Project Overview
+
+<!-- Describe your project here -->
+
+## Building
+
+<!-- Document build commands here -->
+
+## Project Structure
+
+<!-- Document key directories and files -->
+
+## Context Files
+
+The `context/` directory contains structured project management files:
+
+- `context/OWNER.md` — Profile of the project owner (shared across projects)
+- `context/DECISIONS.md` — Decision log (inverse chronological)
+- `context/BACKLOG.md` — Task registry with unique IDs
+- `context/STANDUPS.md` — Daily standup template and log
+- `context/work-instructions/GENERAL.md` — General rules for AI agents

@@ -1,0 +1,28 @@
+# CLAUDE.md — {{project_name}}
+
+This file provides guidance to Claude Code when working with this repository.
+
+## Project Overview
+
+<!-- Describe your project here -->
+
+## Building
+
+<!-- Document build commands here -->
+
+## Verifying Output
+
+<!-- How to verify build results (e.g., pdftoppm for PDF projects) -->
+
+## Project Structure
+
+<!-- Document key directories and files -->
+
+## Context Files
+
+The `context/` directory contains structured project files:
+
+- `context/OWNER.md` — Profile of the project owner (shared across projects)
+- `context/PROGRESS.md` — Tracks completion across chapters/sections
+- `context/research/` — Research notes and source material
+- `context/analysis/` — Structural analysis and design documents
