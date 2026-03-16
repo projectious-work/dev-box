@@ -65,7 +65,7 @@ Four process flavors (`minimal`, `managed`, `research`, `product`) scale from si
 
 ```bash
 # Install dev-box
-cargo install dev-box
+curl -fsSL https://raw.githubusercontent.com/bnaard/dev-box/main/scripts/install.sh | bash
 
 # Create a new project
 mkdir my-project && cd my-project
