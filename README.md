@@ -20,8 +20,11 @@ scaffolding, AI context structure, and work process management.
 ## Quick start
 
 ```bash
-# Install (from source for now)
-cargo install --path cli
+# Install
+curl -fsSL https://raw.githubusercontent.com/bnaard/dev-box/main/scripts/install.sh | bash
+
+# Or from source (requires Rust)
+# cargo install --path cli
 
 # Create a new project
 mkdir my-project && cd my-project
