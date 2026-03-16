@@ -1,0 +1,61 @@
+# dev-box.toml — internal (operations hub with LaTeX + Python)
+# Generated: 2026-03-16
+
+[dev-box]
+version = "0.1.0"
+image = "python-latex"
+process = "product"
+
+[container]
+name = "projectious-internal"
+hostname = "projectious-internal"
+ports = []
+
+# Packages beyond the standard python-latex image:
+# - Node.js 20 (MkDocs or other tooling)
+# - inkscape (SVG processing for LaTeX)
+# - poppler-utils (PDF utilities)
+# - Playwright system dependencies (Excalidraw rendering)
+extra_packages = [
+    "nodejs",
+    "inkscape",
+    "poppler-utils",
+    "libgbm1",
+    "libasound2t64",
+    "libatk-bridge2.0-0t64",
+    "libatk1.0-0t64",
+    "libatspi2.0-0t64",
+    "libcairo2",
+    "libcups2t64",
+    "libdbus-1-3",
+    "libdrm2",
+    "libglib2.0-0t64",
+    "libnspr4",
+    "libnss3",
+    "libpango-1.0-0",
+    "libx11-6",
+    "libxcb1",
+    "libxcomposite1",
+    "libxdamage1",
+    "libxext6",
+    "libxfixes3",
+    "libxkbcommon0",
+    "libxrandr2",
+]
+
+extra_volumes = [
+    # Claude config + memory
+    { source = ".root/.claude", target = "/root/.claude" },
+]
+
+[container.environment]
+# postCreateCommand replacement — git identity must be set manually
+# or via a hook script until dev-box supports post-create hooks.
+# See MIGRATION.md for details.
+
+[context]
+owner_path = "context/OWNER.md"
+schema_version = "1.0.0"
+
+[audio]
+enabled = false

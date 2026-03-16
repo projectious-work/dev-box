@@ -1,0 +1,46 @@
+[dev-box]
+version = "0.1.0"
+image = "python-latex"
+process = "research"
+
+[container]
+name = "kubernetes-learning"
+hostname = "kubernetes-learning"
+ports = []
+extra_packages = [
+    "inkscape",
+    "tree",
+    "poppler-utils",
+    "npm",
+    "pulseaudio-utils",
+    "libpulse0",
+    "libasound2-plugins",
+    "sox",
+]
+
+[container.environment]
+TZ = "Europe/Berlin"
+AUDIODRIVER = "pulseaudio"
+
+# Audio bridging (.asoundrc)
+[[container.extra_volumes]]
+source = ".root/.asoundrc"
+target = "/root/.asoundrc"
+read_only = true
+
+# Gemini CLI config + memory
+[[container.extra_volumes]]
+source = ".root/.gemini"
+target = "/root/.gemini"
+
+# Jules CLI config + memory
+[[container.extra_volumes]]
+source = ".root/.config/google-jules"
+target = "/root/.config/google-jules"
+
+[context]
+schema_version = "1.0.0"
+
+[audio]
+enabled = true
+pulse_server = "tcp:host.docker.internal:4714"

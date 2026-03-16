@@ -1,0 +1,20 @@
+[dev-box]
+version = "0.1.0"
+image = "python-latex"
+process = "research"
+
+[container]
+name = "ai-learning"
+hostname = "ai-learning"
+ports = []
+extra_packages = []
+
+[container.environment]
+TZ = "Europe/Berlin"
+
+[context]
+schema_version = "1.0.0"
+
+[audio]
+enabled = true
+pulse_server = "tcp:host.docker.internal:4714"

@@ -1,0 +1,49 @@
+# dev-box.toml — kaits (Python/Reflex web application)
+# Generated: 2026-03-16
+
+[dev-box]
+version = "0.1.0"
+image = "python"
+process = "product"
+
+[container]
+name = "kaits-dev"
+hostname = "kaits-dev"
+ports = []
+
+# Packages beyond the standard python image:
+# - Node.js 20 (Reflex compiles to Next.js)
+# - Playwright + headless Chromium deps
+# - PulseAudio client libs (Claude voice)
+# - sox (audio processing)
+# - tree, wget, unzip (utilities)
+extra_packages = [
+    "nodejs",
+    "playwright",
+    "pulseaudio-utils",
+    "libpulse0",
+    "libasound2-plugins",
+    "sox",
+    "tree",
+    "wget",
+    "unzip",
+]
+
+extra_volumes = [
+    # Claude config + memory
+    { source = ".root/.claude", target = "/root/.claude" },
+    # PulseAudio client config
+    { source = ".root/.asoundrc", target = "/root/.asoundrc", read_only = true },
+]
+
+[container.environment]
+PULSE_SERVER = "tcp:host.docker.internal:4714"
+AUDIODRIVER = "pulseaudio"
+
+[context]
+owner_path = "context/OWNER.md"
+schema_version = "1.0.0"
+
+[audio]
+enabled = true
+pulse_server = "tcp:host.docker.internal:4714"
