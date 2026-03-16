@@ -91,12 +91,14 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uvx /usr/local/bin/uvx
 
 # MkDocs Material (installed via uv into a global tool environment)
-RUN uv tool install mkdocs-material
+RUN uv tool install mkdocs --with mkdocs-material
 
 # ── Rust toolchain via rustup ─────────────────────────────────────────────────
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
+    sh -s -- -y \
     --default-toolchain stable \
-    --component clippy rustfmt
+    --component clippy \
+    --component rustfmt
 
 # ── Bake default configs into the image ───────────────────────────────────────
 # These act as fallback defaults when no host directory is mounted.

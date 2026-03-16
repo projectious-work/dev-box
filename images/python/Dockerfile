@@ -15,7 +15,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uvx /usr/local/bin/uvx
 
 # MkDocs Material (installed via uv into a global tool environment)
-RUN uv tool install mkdocs-material
+RUN uv tool install mkdocs --with mkdocs-material
 
 ENV PATH="/root/.local/bin:${PATH}"
 
