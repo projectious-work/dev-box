@@ -1,0 +1,23 @@
+# dev-box.toml — this project's own configuration (dogfooding)
+# Note: this project's .devcontainer/ is hand-maintained (not generated)
+# because it's the project that builds the images, avoiding circular deps.
+
+[dev-box]
+version = "0.1.0"
+image = "base"
+process = "product"
+
+[container]
+name = "devcontainer"
+hostname = "devbox"
+ports = []
+extra_packages = ["build-essential", "pkg-config", "libssl-dev", "python3", "python3-pip", "python3-venv"]
+environment = {}
+
+[context]
+owner = "~/.config/dev-box/OWNER.md"
+schema_version = "1.0.0"
+
+[audio]
+enabled = true
+pulse_server = "tcp:host.docker.internal:4714"
