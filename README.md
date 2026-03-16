@@ -1,103 +1,131 @@
-# dev-container
+# dev-box
 
-A minimal, programming-focused dev-container based on **Debian Trixie Slim**.
-Zellij is compiled from source in a multi-stage Docker build.
+**Manage AI-ready development container environments.**
 
-## Included tools
+dev-box is a CLI tool and container image suite that provides reproducible,
+AI-integrated development environments. Think of it as **uv for AI work
+environments** — a single tool that handles container images, project
+scaffolding, AI context structure, and work process management.
 
-| Tool      | Purpose                              |
-|-----------|--------------------------------------|
-| zellij    | Terminal multiplexer (compiled from source) |
-| vim       | Editor with programming config       |
-| git       | Version control                      |
-| lazygit   | Git TUI                              |
-| curl      | HTTP client                          |
-| jq        | JSON processor                       |
-| tzdata    | Timezone data                        |
-| ca-certs  | CA certificates                      |
-| locales   | Locale support (en_US.UTF-8)         |
+## What it provides
 
-## File structure
+- **6 container images** — base, python, latex, rust, python-latex, rust-latex —
+  published to GHCR, built on Debian Trixie Slim
+- **A Rust CLI (`dev-box`)** — init, generate, build, start, stop, doctor, update
+- **`dev-box.toml`** — single source of truth for project configuration
+- **4 work process flavors** — minimal, managed, research, product — with
+  structured AI context scaffolding
+- **Context schemas** — versioned structure definitions with AI-driven migration
 
-```
-.
-├── Dockerfile
-├── docker-compose.yml
-└── config/
-    ├── vimrc                          # Vim configuration
-    ├── gitconfig                      # Git defaults
-    └── zellij/
-        ├── config.kdl                 # Zellij main config
-        ├── themes/
-        │   └── gruvbox.kdl            # Gruvbox dark theme
-        └── layouts/
-            └── dev.kdl                # Default dev layout
-```
-
-## Build & run
+## Quick start
 
 ```bash
-# Build the image (takes a few minutes — Zellij compiles from source)
-docker compose build
+# Install (from source for now)
+cargo install --path cli
 
-# Start the container
-docker compose up -d
-docker compose exec devcontainer zellij --layout dev
+# Create a new project
+mkdir my-project && cd my-project
+dev-box init --name my-project --image python --process product
 
-# Or run directly without compose
-docker build -t devcontainer .
-docker run -it --rm -v $(pwd)/workspace:/workspace devcontainer
+# Build and start
+dev-box build
+dev-box start
 ```
 
-## Zellij key bindings
+## Base image tools
 
-All bindings use **Alt** as the primary modifier to avoid conflicts with
-terminal applications running inside panes.
+All images include:
 
-| Key          | Action                                 |
-|--------------|----------------------------------------|
-| `Alt s`      | Open **Strider** file picker (float)   |
-| `Alt m`      | Open session manager (float)           |
-| `Alt n`      | New pane                               |
-| `Alt d`      | New pane (split down)                  |
-| `Alt r`      | New pane (split right)                 |
-| `Alt x`      | Close focused pane                     |
-| `Alt f`      | Toggle fullscreen                      |
-| `Alt h/j/k/l`| Navigate panes                        |
-| `Alt [/]`    | Previous / next tab                    |
-| `Alt t`      | New tab                                |
-| `Alt w`      | Close tab                              |
-| `Alt 1-5`    | Go to tab N                            |
-| `Alt u`      | Enter scroll mode                      |
-| `Alt /`      | Search scrollback                      |
-| `Ctrl q`     | Quit Zellij                            |
+| Tool | Purpose |
+|------|---------|
+| zellij | Terminal multiplexer (Alt-key bindings) |
+| vim | Editor with programming config |
+| git + lazygit | Version control |
+| gh | GitHub CLI |
+| claude | Claude Code CLI |
+| sox + pulseaudio | Audio support (Claude voice) |
+| curl, jq, less | Utilities |
 
-### Strider (filepicker)
+## Image flavors
 
-Press `Alt s` to open Strider as a floating pane. Navigate with arrow keys,
-`Enter` opens a file or directory. Press `Escape` or `Ctrl c` to close.
+| Image | Adds |
+|-------|------|
+| `base` | Core tools only |
+| `python` | Python 3.13 + uv + MkDocs Material |
+| `latex` | TeX Live (LuaLaTeX, 100+ packages) |
+| `rust` | Rust toolchain (stable + clippy + rustfmt) |
+| `python-latex` | Python + TeX Live |
+| `rust-latex` | Rust + TeX Live |
 
-## Default layout tabs
+## Work process flavors
 
-- **dev** — Strider sidebar | editor (vim) top-right | terminal bottom-right
-- **git** — Full-pane lazygit
-- **shell** — Clean bash terminal
+| Flavor | Files | Use case |
+|--------|-------|----------|
+| `minimal` | CLAUDE.md only | Scripts, experiments |
+| `managed` | + DECISIONS, BACKLOG, STANDUPS | Ongoing projects |
+| `research` | + PROGRESS, research/, analysis/ | Learning, documentation |
+| `product` | + PROJECTS, PRD, work-instructions/ | Full product development |
 
-## Vim quick reference
+## dev-box.toml
 
-| Key           | Action                        |
-|---------------|-------------------------------|
-| `<Space>w`    | Save                          |
-| `<Space>q`    | Quit                          |
-| `<Space>e`    | Open netrw file explorer      |
-| `<Space>n/p`  | Next / previous buffer        |
-| `Ctrl-h/j/k/l`| Navigate splits              |
-| `<Space>/`    | Clear search highlight        |
+```toml
+[dev-box]
+version = "0.1.0"
+image = "python"
+process = "product"
 
-## Customisation
+[container]
+name = "my-project"
+hostname = "my-project"
 
-- **Timezone**: change `TZ=Europe/Berlin` in `Dockerfile` and `docker-compose.yml`
-- **Default user**: add a `RUN useradd ...` block and switch to that user
-- **Additional tools**: add packages to the `apt-get install` line in Stage 2
-- **Language runtimes**: extend the `runtime` stage with your language-specific
-  installer (pyenv, nvm, sdkman, etc.)
+[audio]
+enabled = true
+```
+
+All devcontainer files (Dockerfile, docker-compose.yml, devcontainer.json)
+are generated from this config via `dev-box generate`.
+
+## CLI commands
+
+```
+dev-box init       # Create new project
+dev-box generate   # Re-generate devcontainer files
+dev-box build      # Build container image
+dev-box start      # Start + attach via zellij
+dev-box stop       # Stop container
+dev-box attach     # Reattach to running container
+dev-box status     # Show container state
+dev-box doctor     # Validate context structure
+dev-box update     # Check for updates
+```
+
+## Documentation
+
+Full documentation: [projectious-work.github.io/dev-box](https://projectious-work.github.io/dev-box/)
+
+- [Installation](docs/getting-started/installation.md)
+- [New project guide](docs/getting-started/new-project.md)
+- [Existing project migration](docs/getting-started/existing-project.md)
+- [CLI reference](docs/cli/commands.md)
+- [Configuration reference](docs/cli/configuration.md)
+
+## Development
+
+This project is developed inside its own dev-container. The `.devcontainer/`
+directory is hand-maintained (not generated) since this is the project that
+builds the published images.
+
+```bash
+# Build CLI
+cd cli && cargo build
+
+# Run tests
+cargo test
+
+# Build docs (requires mkdocs-material)
+mkdocs serve
+```
+
+## License
+
+MIT
