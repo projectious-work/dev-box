@@ -6,7 +6,7 @@
 
 ```toml
 [dev-box]
-version = "0.1.0"                    # Project version (semver)
+version = "0.3.0"                    # Project version (semver)
 image = "python"                      # Image flavor
 process = "product"                   # Work process flavor
 
@@ -165,7 +165,7 @@ This is created by `dev-box init` and compared against `context.schema_version` 
 
 ```toml
 [dev-box]
-version = "0.1.0"
+version = "0.3.0"
 image = "python"
 process = "product"
 
@@ -188,7 +188,7 @@ enabled = false
 
 ```toml
 [dev-box]
-version = "0.1.0"
+version = "0.3.0"
 image = "rust"
 process = "managed"
 
@@ -209,7 +209,7 @@ enabled = false
 
 ```toml
 [dev-box]
-version = "0.1.0"
+version = "0.3.0"
 image = "latex"
 process = "research"
 
@@ -229,7 +229,7 @@ enabled = false
 
 ```toml
 [dev-box]
-version = "0.1.0"
+version = "0.3.0"
 image = "python-latex"
 process = "research"
 

@@ -57,6 +57,12 @@ dev-box init --image rust --process minimal
 | 0 | Success |
 | 1 | `dev-box.toml` already exists, or invalid option value |
 
+### Interactive Mode
+
+When `--name`, `--image`, or `--process` flags are omitted and the terminal is interactive, `dev-box init` prompts for each missing value. This lets you explore the available options without memorizing flag values.
+
+In non-interactive environments (scripts, CI pipelines), omitted flags silently use defaults: the current directory name for `--name`, `base` for `--image`, and `product` for `--process`.
+
 !!! warning "Will not overwrite"
     If `dev-box.toml` already exists, `init` exits with an error. Delete the file first or edit it directly.
 
@@ -309,7 +315,7 @@ Output:
 
 ```
 ==> Running diagnostics...
- ✓ Config version: 0.1.0
+ ✓ Config version: 0.3.0
  ✓ Image: python
  ✓ Process: product
  ✓ Container name: my-app
@@ -325,6 +331,57 @@ Output:
 |------|---------|
 | 0 | All checks passed |
 | 1 | Config error or critical issue detected |
+
+---
+
+## dev-box completions
+
+Generate shell completion scripts for bash, zsh, fish, powershell, or elvish.
+
+### Usage
+
+```bash
+dev-box completions <SHELL>
+```
+
+Where `<SHELL>` is one of: `bash`, `zsh`, `fish`, `powershell`, `elvish`.
+
+### Examples
+
+```bash
+dev-box completions bash
+dev-box completions zsh
+dev-box completions fish
+```
+
+### Setup
+
+Add to your shell profile for persistent completions:
+
+**Bash** (`~/.bashrc`):
+
+```bash
+eval "$(dev-box completions bash)"
+```
+
+**Zsh** (`~/.zshrc`):
+
+```bash
+eval "$(dev-box completions zsh)"
+```
+
+**Fish** (`~/.config/fish/config.fish`):
+
+```bash
+dev-box completions fish | source
+```
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | Success |
+| 1 | Unknown shell name |
 
 ---
 
@@ -358,8 +415,7 @@ dev-box update --check
 dev-box update
 ```
 
-!!! note "Not yet implemented"
-    The update mechanism is planned but not yet functional. Currently reports the installed version and exits.
+`dev-box update --check` queries GHCR for the latest image tag and GitHub Releases for the latest CLI version, comparing against current versions. Without `--check`, it displays manual update instructions.
 
 ### Exit Codes
 

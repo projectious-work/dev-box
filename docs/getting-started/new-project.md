@@ -53,7 +53,7 @@ Open `dev-box.toml` and adjust as needed:
 
 ```toml
 [dev-box]
-version = "0.1.0"
+version = "0.3.0"
 image = "python"
 process = "product"
 

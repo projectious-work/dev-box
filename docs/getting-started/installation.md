@@ -44,11 +44,11 @@ curl -fsSL https://raw.githubusercontent.com/projectious-work/dev-box/main/scrip
 This downloads the correct pre-built binary for your platform (Linux or macOS, x86_64 or ARM64) and installs it to `~/.local/bin/`.
 
 !!! tip "Manual download"
-    If you prefer to download manually from the [releases page](https://github.com/projectious-work/dev-box/releases), each tarball (e.g., `dev-box-v0.2.0-aarch64-apple-darwin.tar.gz`) contains a single binary named `dev-box-v0.2.0-aarch64-apple-darwin`. After extracting, rename it to `dev-box` and move it to a directory in your `PATH`:
+    If you prefer to download manually from the [releases page](https://github.com/projectious-work/dev-box/releases), each tarball (e.g., `dev-box-v0.3.0-aarch64-apple-darwin.tar.gz`) contains a single binary named `dev-box-v0.3.0-aarch64-apple-darwin`. After extracting, rename it to `dev-box` and move it to a directory in your `PATH`:
 
     ```bash
-    tar xzf dev-box-v0.2.0-aarch64-apple-darwin.tar.gz
-    mv dev-box-v0.2.0-aarch64-apple-darwin ~/.local/bin/dev-box
+    tar xzf dev-box-v0.3.0-aarch64-apple-darwin.tar.gz
+    mv dev-box-v0.3.0-aarch64-apple-darwin ~/.local/bin/dev-box
     chmod +x ~/.local/bin/dev-box
     ```
 
@@ -89,7 +89,7 @@ dev-box --version
 Expected output:
 
 ```
-dev-box 0.2.0
+dev-box 0.3.0
 ```
 
 To see all available commands:
@@ -98,9 +98,37 @@ To see all available commands:
 dev-box --help
 ```
 
-## Shell Completions (planned)
+## Shell Completions
 
-Shell completion support is planned for a future release. It will cover bash, zsh, and fish.
+dev-box can generate shell completion scripts for bash, zsh, fish, powershell, and elvish.
+
+```bash
+dev-box completions bash
+dev-box completions zsh
+dev-box completions fish
+```
+
+### Setup
+
+Add to your shell profile for persistent completions:
+
+**Bash** (`~/.bashrc`):
+
+```bash
+eval "$(dev-box completions bash)"
+```
+
+**Zsh** (`~/.zshrc`):
+
+```bash
+eval "$(dev-box completions zsh)"
+```
+
+**Fish** (`~/.config/fish/config.fish`):
+
+```bash
+dev-box completions fish | source
+```
 
 ## Next Steps
 

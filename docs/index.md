@@ -94,7 +94,7 @@ After `dev-box start`, you are inside a Zellij session with three tabs:
 
 ## Project Status
 
-dev-box is at version 0.1.0. The core workflow (init, generate, build, start, stop, attach, status, doctor) is functional. Update checking and automated migrations are planned.
+dev-box is at version 0.3.0. The core workflow (init, generate, build, start, stop, attach, status, doctor) is functional, along with shell completions (`dev-box completions bash/zsh/fish`), interactive init prompts, and registry-based version checking via `dev-box update --check`.
 
 ## Next Steps
 
