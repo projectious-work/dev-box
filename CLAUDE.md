@@ -439,11 +439,30 @@ published base image (to avoid circular dependencies).
 
 GitHub Actions are avoided due to cost. All builds and deploys are local.
 
-### CLI Releases
+### Release Workflow
 
-1. Build binaries locally (or via `scripts/build-macos.sh <version>`)
-2. Create GitHub release: `gh release create v<X.Y.Z> dist/*.tar.gz --notes-file dist/RELEASE-NOTES.md`
-3. v0.1.0 ships binaries for: aarch64-apple-darwin, x86_64-apple-darwin, aarch64-unknown-linux-gnu
+When asked to release, Claude must:
+
+1. **Build both Linux binaries** inside the dev-container:
+   - `aarch64-unknown-linux-gnu` (native, via `./scripts/maintain.sh release <version>`)
+   - `x86_64-unknown-linux-gnu` (cross-compiled, via `cargo build --release --target x86_64-unknown-linux-gnu`)
+   - Package and upload both to the GitHub release.
+
+2. **Show the user commands to run on the host macOS machine** for the
+   remaining steps. These must include:
+   - Building macOS binaries (`./scripts/build-macos.sh <version>`)
+   - Uploading macOS binaries (`gh release upload v<version> dist/*.tar.gz`)
+   - Building and pushing container images (`./scripts/maintain.sh push-images <version>`)
+   - **Tagging images** with the new version (if images were previously built
+     under a different tag or need retagging):
+     ```bash
+     # Tag existing images with new version (run for each flavor)
+     for flavor in base python latex typst rust python-latex python-typst rust-latex; do
+       podman tag ghcr.io/projectious-work/dev-box:${flavor}-latest \
+                  ghcr.io/projectious-work/dev-box:${flavor}-v<version>
+     done
+     ```
+   - Deploying documentation (`./scripts/maintain.sh docs-deploy`)
 
 ### Documentation
 
