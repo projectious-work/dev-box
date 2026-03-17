@@ -363,7 +363,7 @@ updated via `dev-box doctor` and `dev-box update`.
 
 **Used by:** managed, product
 
-**Required sections:** Communication, Code Quality, Git Workflow, Context Management
+**Required sections:** Communication, Code Quality, Git Workflow, Upstream Contributions, Context Management
 
 **Note:** This file is machine-managed. User customizations should go in
 separate instruction files.

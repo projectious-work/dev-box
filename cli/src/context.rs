@@ -319,9 +319,10 @@ pub(crate) fn update_gitignore() -> Result<()> {
         String::new()
     };
 
+    let existing_lines: Vec<&str> = existing.lines().map(|l| l.trim()).collect();
     let mut additions = Vec::new();
     for entry in &required_entries {
-        if !existing.contains(entry) {
+        if !existing_lines.contains(entry) {
             additions.push(*entry);
         }
     }

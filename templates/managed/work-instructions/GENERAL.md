@@ -23,6 +23,17 @@ Updates come via `dev-box doctor` and `dev-box update`.
 - Write clear, descriptive commit messages
 - Don't commit secrets, credentials, or personal configuration
 
+## Upstream Contributions
+
+- When making changes that could benefit other dev-box projects, consider
+  contributing them back to the dev-box project
+- Generalizable improvements to templates, work-instructions, or tooling
+  should be submitted as pull requests to
+  https://github.com/projectious-work/dev-box
+- Bug reports, feature requests, and discussions are welcome via GitHub Issues
+- Follow standard open source contribution practices: fork, branch, PR with
+  clear description of the change and its motivation
+
 ## Context Management
 
 - Read CLAUDE.md before starting work

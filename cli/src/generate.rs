@@ -128,7 +128,10 @@ fn generate_docker_compose(config: &DevBoxConfig, dir: &Path) -> Result<bool> {
 
     let env_lines: Vec<String> = env
         .iter()
-        .map(|(k, v)| format!("      {}: \"{}\"", k, v))
+        .map(|(k, v)| {
+            let escaped = v.replace('\\', "\\\\").replace('"', "\\\"");
+            format!("      {}: \"{}\"", k, escaped)
+        })
         .collect();
 
     // Build ports

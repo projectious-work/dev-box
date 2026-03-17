@@ -209,6 +209,31 @@ impl Default for AudioSection {
     }
 }
 
+/// Check that a string is a safe container/hostname identifier.
+/// Must start with alphanumeric and contain only [a-zA-Z0-9._-].
+fn is_safe_identifier(s: &str) -> bool {
+    let mut chars = s.chars();
+    match chars.next() {
+        Some(c) if c.is_ascii_alphanumeric() => {}
+        _ => return false,
+    }
+    chars.all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '_' || c == '-')
+}
+
+/// Check that a string is a valid Debian package name.
+/// Must start with alphanumeric and contain only [a-zA-Z0-9.+\-].
+fn is_safe_package_name(s: &str) -> bool {
+    if s.is_empty() {
+        return false;
+    }
+    let mut chars = s.chars();
+    match chars.next() {
+        Some(c) if c.is_ascii_alphanumeric() => {}
+        _ => return false,
+    }
+    chars.all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '+' || c == '-')
+}
+
 /// Root config structure mapping dev-box.toml.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DevBoxConfig {
@@ -252,8 +277,9 @@ impl DevBoxConfig {
         }
     }
 
-    /// Validate the config values.
-    fn validate(&self) -> Result<()> {
+    /// Validate the config values. Called internally by `load`, but also
+    /// available for validating programmatically-constructed configs.
+    pub fn validate(&self) -> Result<()> {
         // Validate version is valid semver
         semver::Version::parse(&self.dev_box.version).with_context(|| {
             format!(
@@ -270,9 +296,34 @@ impl DevBoxConfig {
             )
         })?;
 
-        // Validate container name is non-empty
+        // Validate container name is non-empty and safe
         if self.container.name.is_empty() {
             bail!("container.name must not be empty");
+        }
+        if !is_safe_identifier(&self.container.name) {
+            bail!(
+                "container.name '{}' contains invalid characters. \
+                 Must start with alphanumeric and contain only [a-zA-Z0-9._-]",
+                self.container.name
+            );
+        }
+        if !self.container.hostname.is_empty() && !is_safe_identifier(&self.container.hostname) {
+            bail!(
+                "container.hostname '{}' contains invalid characters. \
+                 Must start with alphanumeric and contain only [a-zA-Z0-9._-]",
+                self.container.hostname
+            );
+        }
+
+        // Validate extra_packages contain only safe package names
+        for pkg in &self.container.extra_packages {
+            if !is_safe_package_name(pkg) {
+                bail!(
+                    "extra_packages entry '{}' contains invalid characters. \
+                     Must match Debian package naming: [a-zA-Z0-9][a-zA-Z0-9.+\\-]+",
+                    pkg
+                );
+            }
         }
 
         Ok(())

@@ -175,7 +175,7 @@ pub fn cmd_init(
 
     let config = DevBoxConfig {
         dev_box: DevBoxSection {
-            version: "0.1.0".to_string(),
+            version: env!("CARGO_PKG_VERSION").to_string(),
             image: image_flavor,
             process: process_flavor,
         },
@@ -190,6 +190,8 @@ pub fn cmd_init(
         context: ContextSection::default(),
         audio: AudioSection::default(),
     };
+
+    config.validate()?;
 
     let toml_str = toml::to_string_pretty(&config)
         .map_err(|e| anyhow::anyhow!("Failed to serialize config: {}", e))?;
