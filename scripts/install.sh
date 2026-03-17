@@ -75,7 +75,7 @@ resolve_version() {
   latest=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" \
     | grep '"tag_name"' \
     | head -1 \
-    | sed -E 's/.*"tag_name":\s*"v?([^"]+)".*/\1/')
+    | sed -E 's/.*"tag_name":[ ]*"v?([^"]+)".*/\1/')
 
   if [[ -z "${latest}" ]]; then
     die "Could not determine latest version. Set VERSION=x.y.z to install a specific version."
