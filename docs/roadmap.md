@@ -2,7 +2,7 @@
 
 This page outlines planned features and improvements for dev-box.
 
-## Current — v0.3.0
+## Current — v0.3.1
 
 The current release includes:
 
@@ -21,31 +21,29 @@ The current release includes:
 
 ## Recently Completed
 
-### Shell Completions (v0.3.0)
+### Shell Completions (v0.3.1)
 
 `dev-box completions <shell>` generates completion scripts for all major shells.
 
-### Interactive Init (v0.3.0)
+### Interactive Init (v0.3.1)
 
 `dev-box init` prompts for name, image, and process when flags are omitted in interactive terminals.
 
-### Registry-Based Update Checking (v0.3.0)
+### Registry-Based Update Checking (v0.3.1)
 
 `dev-box update --check` queries GHCR for the latest image tag and GitHub Releases for the latest CLI version.
 
-### Template Engine Migration (v0.3.0)
+### Template Engine Migration (v0.3.1)
 
 Replaced string formatting in `generate.rs` with minijinja templates for better maintainability and extensibility.
+
+### postCreateCommand and vscode_extensions (v0.3.1)
+
+`post_create_command` and `vscode_extensions` fields in `[container]` config, generated into devcontainer.json.
 
 ### Dockerfile.local (v0.2.3)
 
 Project-specific Dockerfile layers appended to the generated Dockerfile, with `AS dev-box` stage alias for multi-stage builds.
-
-## In Progress
-
-### postCreateCommand and vscode_extensions Support
-
-Support for `postCreateCommand` in `dev-box.toml` to handle setup steps that run after container creation (e.g., installing project-specific tools, setting git identity). VS Code extension lists configurable per image flavor.
 
 ## Planned
 
@@ -57,10 +55,6 @@ MkDocs 2.0 introduces breaking changes. Evaluate Zensical and other alternatives
 
 When upgrading between schema versions, `dev-box doctor` will generate migration artifacts. A future version may automate safe migrations (additive changes) while prompting for manual review on breaking changes.
 
-### Post-Create Script Support
-
-Support for `postCreateCommand` in `dev-box.toml` to handle setup steps that run after container creation (e.g., installing project-specific tools, setting git identity).
-
 ### Additional Image Flavors
 
 Potential new flavors based on demand:
@@ -68,10 +62,6 @@ Potential new flavors based on demand:
 - **node** — Node.js LTS via NodeSource
 - **go** — Go toolchain
 - **python-rust** — Python + Rust combined
-
-### Linux x86_64 Binary
-
-Add `x86_64-unknown-linux-gnu` target to CI builds and release artifacts.
 
 ### Plugin System
 
