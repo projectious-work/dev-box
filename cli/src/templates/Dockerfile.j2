@@ -1,0 +1,19 @@
+{{ header }}FROM {{ registry }}:{{ image }}-v{{ version }} AS dev-box
+{% if extra_packages %}
+
+# Extra packages from dev-box.toml
+RUN apt-get update && apt-get install -y --no-install-recommends \
+{% for pkg in extra_packages %}
+{% if not loop.last %}
+    {{ pkg }} \
+{% else %}
+    {{ pkg }}
+{% endif %}
+{% endfor %}
+    && rm -rf /var/lib/apt/lists/*
+{% endif %}
+{% if local_content %}
+
+# Project-specific layers (from Dockerfile.local)
+{{ local_content }}
+{% endif %}

@@ -9,7 +9,7 @@ mod runtime;
 mod seed;
 mod update;
 
-use clap::Parser;
+use clap::{CommandFactory, Parser};
 use tracing_subscriber::EnvFilter;
 
 fn main() {
@@ -47,6 +47,12 @@ fn dispatch(cli: cli::Cli) -> anyhow::Result<()> {
         cli::Commands::Attach => container::cmd_attach(config_path),
         cli::Commands::Status => container::cmd_status(config_path),
         cli::Commands::Doctor => doctor::cmd_doctor(config_path),
+        cli::Commands::Completions { shell } => {
+            let mut cmd = cli::Cli::command();
+            let bin_name = cmd.get_name().to_string();
+            clap_complete::generate(shell, &mut cmd, bin_name, &mut std::io::stdout());
+            Ok(())
+        }
         cli::Commands::Update { check } => update::cmd_update(config_path, check),
     }
 }
