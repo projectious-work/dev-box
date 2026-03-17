@@ -320,6 +320,38 @@ fn init_generated_toml_is_parseable() {
 }
 
 #[test]
+fn completions_bash_exits_zero() {
+    let output = run(&["completions", "bash"]);
+    assert!(
+        output.status.success(),
+        "dev-box completions bash should exit 0"
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        stdout.contains("dev-box"),
+        "bash completions should contain dev-box"
+    );
+}
+
+#[test]
+fn completions_zsh_exits_zero() {
+    let output = run(&["completions", "zsh"]);
+    assert!(
+        output.status.success(),
+        "dev-box completions zsh should exit 0"
+    );
+}
+
+#[test]
+fn completions_invalid_shell_exits_nonzero() {
+    let output = run(&["completions", "tcsh"]);
+    assert!(
+        !output.status.success(),
+        "dev-box completions tcsh should fail"
+    );
+}
+
+#[test]
 fn doctor_without_config_reports_errors() {
     let dir = tempfile::tempdir().unwrap();
     let output = run_in_dir(dir.path(), &["doctor"]);

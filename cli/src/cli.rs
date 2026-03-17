@@ -51,6 +51,12 @@ pub enum Commands {
     Status,
     /// Validate context structure and produce migration artifacts
     Doctor,
+    /// Generate shell completion script
+    Completions {
+        /// Shell to generate completions for (bash, zsh, fish, powershell, elvish)
+        #[arg(value_enum)]
+        shell: clap_complete::Shell,
+    },
     /// Check for or apply version updates
     Update {
         /// Only check, don't apply

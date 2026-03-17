@@ -1,0 +1,35 @@
+{{ header }}services:
+  {{ name }}:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: {{ name }}
+    hostname: {{ hostname }}
+    stdin_open: true
+    tty: true
+    working_dir: /workspace
+    volumes:
+      - ${WORKSPACE_DIR:-{{ workspace_dir }}}:/workspace
+      - {{ host_root }}/.ssh:/root/.ssh:ro
+      - {{ host_root }}/.vim:/root/.vim
+      - {{ host_root }}/.config/zellij:/root/.config/zellij
+      - {{ host_root }}/.config/git:/root/.config/git
+      - {{ host_root }}/.claude:/root/.claude
+{% if audio_enabled %}
+      - {{ host_root }}/.asoundrc:/root/.asoundrc:ro
+{% endif %}
+{% for vol in extra_volumes %}
+      - {{ vol.source }}:{{ vol.target }}{% if vol.read_only %}:ro{% endif %}
+
+{% endfor %}
+    environment:
+{% for key in env_keys %}
+      {{ key }}: "{{ env_vals[key] }}"
+{% endfor %}
+{% if ports %}
+    ports:
+{% for port in ports %}
+      - "{{ port }}"
+{% endfor %}
+{% endif %}
+    command: sleep infinity
