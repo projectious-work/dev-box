@@ -2,6 +2,14 @@
 
 All notable changes to dev-box are documented here.
 
+## v0.3.2 — 2026-03-17
+
+### Fixed
+- Python image: added `unzip` to system packages (fixes #2) — required by Reflex, Bun, and other installers
+
+### Changed
+- Comprehensive docs review: updated all version references, documented `post_create_command` and `vscode_extensions` in configuration reference, fixed stale claims, corrected roadmap version attributions
+
 ## v0.3.1 — 2026-03-17
 
 ### Added
