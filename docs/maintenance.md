@@ -24,6 +24,12 @@ All maintenance tasks are driven by `scripts/maintain.sh`:
 
 A full release covers three artifacts: CLI binaries, container images, and documentation.
 
+!!! tip "Always start with `maintain.sh release`"
+    The `release` command is the single entry point. It runs tests, builds
+    artifacts, creates the git tag, and generates release notes and a step-by-step
+    prompt (`dist/RELEASE-PROMPT.md`) for the remaining manual steps.
+    Don't skip it and assemble releases by hand — you'll miss release notes.
+
 ### 1. Prepare the release
 
 ```bash
@@ -70,6 +76,12 @@ gh release create v0.3.0 \
   --notes-file dist/RELEASE-NOTES.md \
   dist/dev-box-v0.3.0-*.tar.gz
 ```
+
+!!! warning "Always use `--notes-file`, never `--generate-notes`"
+    The `release` command generates `dist/RELEASE-NOTES.md` with commit history,
+    image tags, and binary listings. Always use `--notes-file dist/RELEASE-NOTES.md`
+    when creating the GitHub release. The `--generate-notes` flag only produces
+    a bare diff link with no useful content.
 
 ### 4. Push container images to GHCR
 

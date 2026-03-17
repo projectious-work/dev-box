@@ -51,10 +51,11 @@ fn generate_dockerfile(config: &DevBoxConfig, dir: &Path) -> Result<bool> {
 
     let mut content = format!(
         "{header}\
-FROM {registry}/{image}:latest\n",
+FROM {registry}:{image}-v{version}\n",
         header = header,
         registry = crate::config::IMAGE_REGISTRY,
         image = image,
+        version = config.dev_box.version,
     );
 
     if !config.container.extra_packages.is_empty() {
@@ -298,10 +299,11 @@ mod tests {
         let content = fs::read_to_string(dir.path().join("Dockerfile")).unwrap();
         assert!(
             content.contains(&format!(
-                "FROM {}/python:latest",
-                crate::config::IMAGE_REGISTRY
+                "FROM {}:python-v{}",
+                crate::config::IMAGE_REGISTRY,
+                config.dev_box.version
             )),
-            "Dockerfile should reference python image"
+            "Dockerfile should reference python image with correct tag format"
         );
     }
 

@@ -78,3 +78,10 @@ See [CLAUDE.md](https://github.com/projectious-work/dev-box/blob/main/CLAUDE.md)
 ## Reporting Issues
 
 File issues at [github.com/projectious-work/dev-box/issues](https://github.com/projectious-work/dev-box/issues).
+
+When filing an issue, please:
+
+- Use a descriptive title
+- Label it: `bug` for broken behavior, `enhancement` for feature requests, `documentation` for doc gaps
+- Include steps to reproduce (for bugs) or a use case description (for enhancements)
+- Mention the dev-box version (`dev-box --version`) and container image flavor if relevant

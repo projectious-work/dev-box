@@ -271,7 +271,7 @@ cmd_docs_deploy() {
   current_branch=$(git rev-parse --abbrev-ref HEAD)
   commit_sha=$(git rev-parse --short HEAD)
   commit_msg="docs: deploy from ${current_branch}@${commit_sha} ($(date -u +%Y-%m-%dT%H:%M:%SZ))"
-  repo_slug=$(echo "${remote_url}" | sed -E 's|.*[:/]([^/]+/[^/]+?)(\.git)?$|\1|')
+  repo_slug=$(echo "${remote_url}" | sed -E 's|.*[:/]([^/]+/[^/]+)(\.git)?$|\1|' | sed 's/\.git$//')
 
   info "Remote: ${remote_url}"
   info "Source: ${current_branch}@${commit_sha}"
@@ -428,7 +428,7 @@ cmd_release() {
   local remote_url
   remote_url=$(git remote get-url origin 2>/dev/null || echo "origin")
   local repo_slug
-  repo_slug=$(echo "${remote_url}" | sed -E 's|.*[:/]([^/]+/[^/]+?)(\.git)?$|\1|')
+  repo_slug=$(echo "${remote_url}" | sed -E 's|.*[:/]([^/]+/[^/]+)(\.git)?$|\1|' | sed 's/\.git$//')
 
   {
     echo "# Release Prompt for dev-box ${tag}"
