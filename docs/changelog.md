@@ -2,6 +2,12 @@
 
 All notable changes to dev-box are documented here.
 
+## v0.3.4 — 2026-03-18
+
+### Fixed
+- Base image: added `libasound2-plugins` (ALSA PulseAudio backend) and `libsox-fmt-pulse` (sox PulseAudio output) — without these, audio config existed but silently failed
+- Container runtime autodiscovery: `maintain.sh` now checks `docker info` / `podman info` instead of just PATH presence (fixes OrbStack compatibility)
+
 ## v0.3.3 — 2026-03-18
 
 ### Added
