@@ -443,6 +443,41 @@ GitHub Actions are avoided due to cost. All builds and deploys are local.
 
 When asked to release version X.Y.Z, follow ALL steps in order.
 
+#### Phase 0 — Dependency version check (Claude does this FIRST)
+
+Before every release, check ALL upstream dependencies for updates.
+This cannot be automated reliably — each source has a different API.
+Claude must check each one and report findings to the user before
+proceeding with the release.
+
+**Base image:**
+
+| Dependency | Current | How to check |
+|-----------|---------|-------------|
+| `debian:trixie-slim` | trixie (Debian 13) | `gh api https://registry.hub.docker.com/v2/repositories/library/debian/tags?name=trixie-slim` or Docker Hub — check if trixie is still the right target (stable vs testing) |
+
+**Pinned tool versions (in `images/` Dockerfiles and `.devcontainer/Dockerfile`):**
+
+| Tool | Current | Pin location | How to check |
+|------|---------|-------------|-------------|
+| Zellij | 0.43.1 | `ARG ZELLIJ_VERSION` in base + .devcontainer | `gh api repos/zellij-org/zellij/releases/latest --jq .tag_name` |
+| Typst | 0.13.1 | `ARG TYPST_VERSION` in typst + python-typst | `gh api repos/typst/typst/releases/latest --jq .tag_name` |
+| TeX Live | 2025/tlnet-final | `ARG CTAN_MIRROR` in latex + python-latex + rust-latex | Check CTAN for new yearly release: `https://ftp.math.utah.edu/pub/tex/historic/systems/texlive/` |
+| Rust toolchain | stable (unpinned) | rustup in rust + .devcontainer | `curl -s https://static.rust-lang.org/dist/channel-rust-stable.toml \| grep -m1 'version ='` — note: we use `stable` intentionally, just verify it works |
+| uv | latest (unpinned) | `COPY --from=ghcr.io/astral-sh/uv:latest` in python + .devcontainer | `gh api repos/astral-sh/uv/releases/latest --jq .tag_name` — pinning considered but `:latest` is intentional for now |
+| Claude CLI | unpinned | `curl claude.ai/install.sh` in base + .devcontainer | No version check possible — installed via pipe-to-bash, always gets latest |
+| lazygit | unpinned (apt) | apt in base + .devcontainer | `gh api repos/jesseduffield/lazygit/releases/latest --jq .tag_name` — installed via apt, version depends on Debian repo |
+| gh CLI | unpinned (apt) | apt in base + .devcontainer | Installed via apt, version depends on Debian repo |
+| MkDocs | <2 constraint | `uv tool install 'mkdocs<2'` in python + .devcontainer | Check if mkdocs 2.0 situation has changed: `pip index versions mkdocs` |
+
+**What to do with findings:**
+- If a pinned version has an update: propose the bump, note breaking changes,
+  update the `ARG` in all affected Dockerfiles
+- If Debian stable has shifted: evaluate whether to follow
+- If an unpinned tool has a major version bump: note it, test in a build
+- Report all findings to the user before proceeding with the release
+- Record any version bumps in the changelog
+
 #### Phase 1 — Prep (inside dev-container, Claude does this)
 
 1. **Version bump** — update ALL version references:
