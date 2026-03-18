@@ -16,7 +16,7 @@
       - {{ host_root }}/.config/git:/root/.config/git
       - {{ host_root }}/.claude:/root/.claude
 {% if audio_enabled %}
-      - {{ host_root }}/.asoundrc:/root/.asoundrc:ro
+      - {{ host_root }}/.asoundrc:/root/.asoundrc
 {% endif %}
 {% for vol in extra_volumes %}
       - {{ vol.source }}:{{ vol.target }}{% if vol.read_only %}:ro{% endif %}

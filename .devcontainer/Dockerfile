@@ -119,6 +119,9 @@ COPY config/zellij/layouts/dev.kdl     /root/.config/zellij/layouts/dev.kdl
 RUN mkdir -p /root/.config/git
 COPY config/gitconfig /root/.config/git/config
 
+# Audio — PulseAudio config for Claude Code voice support
+COPY config/asoundrc /root/.asoundrc
+
 # Install code assistants
 ENV PATH="/root/.cargo/bin:/root/.local/bin:${PATH}"
 RUN curl -fsSL https://claude.ai/install.sh | bash

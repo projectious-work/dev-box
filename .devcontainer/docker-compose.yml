@@ -45,7 +45,14 @@ services:
         source: ${HOST_ROOT:-../.root}/.claude
         target: /root/.claude
 
+      # Audio: PulseAudio config for Claude Code voice
+      - type: bind
+        source: ${HOST_ROOT:-../.root}/.asoundrc
+        target: /root/.asoundrc
+
     environment:
+      - PULSE_SERVER=tcp:host.docker.internal:4714
+      - AUDIODRIVER=pulseaudio
       - TZ=Europe/Berlin
       - LANG=en_US.UTF-8
       - COLORTERM=truecolor
