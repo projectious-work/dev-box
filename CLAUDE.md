@@ -3,6 +3,30 @@
 This document captures the key decisions, architecture, and implementation
 details of the `dev-box` project for continuity in Claude Code sessions.
 
+## Quick Reference — Read only what you need
+
+| Section | When to read |
+|---------|-------------|
+| [Project Vision](#project-vision) | First time working on this repo |
+| [Critical Architectural Distinction](#critical-architectural-distinction) | **Always** — `.devcontainer/` vs `images/` confusion causes wrong changes |
+| [Repository Layout](#repository-layout-target) | Finding files, understanding structure |
+| [dev-box.toml Specification](#dev-boxtoml-specification) | Changing config parsing, generation, or init |
+| [Published Images](#published-images) | Editing Dockerfiles in `images/`, release prep |
+| [Rust CLI — `dev-box`](#rust-cli--dev-box) | Working on CLI code in `cli/src/` |
+| [Work Process Flavors](#work-process-flavors) | Changing templates, init, or context scaffolding |
+| [Context Schema & Doctor](#context-schema--doctor-system) | Changing doctor, migration, or schema validation |
+| [This Project's Dev Container](#this-projects-dev-container) | Changing `.devcontainer/` for THIS repo |
+| [Existing Decisions](#existing-decisions-preserved) | Before changing config patterns, vim, zellij, git, or container runtime |
+| [Deployment & Release Process](#deployment--release-process) | **Every release** — full checklist with Phase 0 dependency check |
+| [Known Issues and Gotchas](#known-issues-and-gotchas) | Debugging, OrbStack, audio, OAuth |
+| [Implementation Plan](#implementation-plan) | Understanding what was built and when |
+| [Agent Strategy](#agent-strategy) | Planning parallel agent work |
+| [Reference: Learned Patterns](#reference-learned-patterns-from-derived-projects) | Understanding why design choices were made |
+
+**Key facts:** Rust CLI (`cli/`), 8 published container images (`images/`),
+4 work process flavors (`templates/`), MkDocs docs (`docs/`).
+No GitHub Actions — all builds and deploys are local.
+
 ---
 
 ## Project Vision
