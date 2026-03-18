@@ -515,10 +515,12 @@ proceeding with the release.
 
 3. **Commit and push version bump**:
    ```bash
-   git add cli/Cargo.toml docs/
+   cargo generate-lockfile --manifest-path cli/Cargo.toml
+   git add cli/Cargo.toml cli/Cargo.lock docs/
    git commit -m "chore: bump version to vX.Y.Z, update docs"
    git push origin main
    ```
+   Include `Cargo.lock` — it updates when the version in `Cargo.toml` changes.
    Push before tagging so the tag points to a commit already on remote.
 
 4. **Run `./scripts/maintain.sh release X.Y.Z`** — this:
