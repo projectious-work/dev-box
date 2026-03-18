@@ -58,12 +58,14 @@ warn()  { echo "${yellow}${bold}  !${reset} $*"; }
 die()   { echo "${red}${bold}ERR${reset} $*" >&2; exit 1; }
 
 # ── Resolve container runtime ────────────────────────────────────────────────
-if command -v podman &>/dev/null; then
-  COMPOSE_BIN="podman compose"
-  RUNTIME_BIN="podman"
-elif command -v docker &>/dev/null; then
+# Check which runtime is actually functional, not just installed on PATH.
+# Podman may exist as a compatibility shim (e.g., OrbStack) but not be running.
+if command -v docker &>/dev/null && docker info &>/dev/null 2>&1; then
   COMPOSE_BIN="docker compose"
   RUNTIME_BIN="docker"
+elif command -v podman &>/dev/null && podman info &>/dev/null 2>&1; then
+  COMPOSE_BIN="podman compose"
+  RUNTIME_BIN="podman"
 else
   # Not fatal — some commands (test, docs) don't need a runtime
   COMPOSE_BIN=""
