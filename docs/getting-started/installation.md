@@ -44,11 +44,11 @@ curl -fsSL https://raw.githubusercontent.com/projectious-work/dev-box/main/scrip
 This downloads the correct pre-built binary for your platform (Linux or macOS, x86_64 or ARM64) and installs it to `~/.local/bin/`.
 
 !!! tip "Manual download"
-    If you prefer to download manually from the [releases page](https://github.com/projectious-work/dev-box/releases), each tarball (e.g., `dev-box-v0.3.2-aarch64-apple-darwin.tar.gz`) contains a single binary named `dev-box-v0.3.2-aarch64-apple-darwin`. After extracting, rename it to `dev-box` and move it to a directory in your `PATH`:
+    If you prefer to download manually from the [releases page](https://github.com/projectious-work/dev-box/releases), each tarball (e.g., `dev-box-v0.3.3-aarch64-apple-darwin.tar.gz`) contains a single binary named `dev-box-v0.3.3-aarch64-apple-darwin`. After extracting, rename it to `dev-box` and move it to a directory in your `PATH`:
 
     ```bash
-    tar xzf dev-box-v0.3.2-aarch64-apple-darwin.tar.gz
-    mv dev-box-v0.3.2-aarch64-apple-darwin ~/.local/bin/dev-box
+    tar xzf dev-box-v0.3.3-aarch64-apple-darwin.tar.gz
+    mv dev-box-v0.3.3-aarch64-apple-darwin ~/.local/bin/dev-box
     chmod +x ~/.local/bin/dev-box
     ```
 
@@ -89,7 +89,7 @@ dev-box --version
 Expected output:
 
 ```
-dev-box 0.3.2
+dev-box 0.3.3
 ```
 
 To see all available commands:

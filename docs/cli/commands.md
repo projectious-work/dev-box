@@ -315,7 +315,7 @@ Output:
 
 ```
 ==> Running diagnostics...
- ✓ Config version: 0.3.2
+ ✓ Config version: 0.3.3
  ✓ Image: python
  ✓ Process: product
  ✓ Container name: my-app

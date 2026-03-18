@@ -110,10 +110,7 @@ pub fn cmd_audio_check(port: Option<u16>) -> Result<()> {
     // Summary
     println!();
     if t.fail == 0 && t.warn == 0 {
-        output::ok(&format!(
-            "Audio ready ({} checks passed)",
-            t.pass
-        ));
+        output::ok(&format!("Audio ready ({} checks passed)", t.pass));
     } else if t.fail == 0 {
         output::warn(&format!(
             "{} passed, {} warnings — audio should work, review warnings above",
@@ -159,9 +156,7 @@ pub fn cmd_audio_setup(port: Option<u16>) -> Result<()> {
 
     // 2. Configure TCP module persistence
     let pa_conf = user_pa_config_path();
-    let tcp_line = format!(
-        "load-module module-native-protocol-tcp port={port} auth-anonymous=1"
-    );
+    let tcp_line = format!("load-module module-native-protocol-tcp port={port} auth-anonymous=1");
 
     if let Ok(content) = std::fs::read_to_string(&pa_conf) {
         if content.contains(&format!("port={port}"))
@@ -263,9 +258,7 @@ fn check_tcp_module(t: &mut Tally, port: u16) -> bool {
         for line in modules.lines() {
             if line.contains("module-native-protocol-tcp") {
                 if line.contains(&format!("port={port}")) {
-                    t.pass(&format!(
-                        "module-native-protocol-tcp loaded on port {port}"
-                    ));
+                    t.pass(&format!("module-native-protocol-tcp loaded on port {port}"));
                 } else {
                     t.warn("module-native-protocol-tcp loaded but possibly on a different port");
                     output::info(&format!("  {line}"));
@@ -297,8 +290,7 @@ fn check_tcp_persistence(t: &mut Tally, port: u16, os: &str) {
 
     if let Ok(content) = std::fs::read_to_string(&pa_conf) {
         let has_tcp = content.lines().any(|line| {
-            !line.trim_start().starts_with('#')
-                && line.contains("module-native-protocol-tcp")
+            !line.trim_start().starts_with('#') && line.contains("module-native-protocol-tcp")
         });
 
         if has_tcp {
@@ -388,9 +380,7 @@ fn check_connectivity(t: &mut Tally, port: u16) {
             t.pass(&format!("pactl connects to tcp:127.0.0.1:{port}"));
         }
         _ => {
-            t.warn(&format!(
-                "pactl cannot connect to tcp:127.0.0.1:{port}"
-            ));
+            t.warn(&format!("pactl cannot connect to tcp:127.0.0.1:{port}"));
             output::info("  Check auth settings (auth-anonymous=1 or auth-ip-acl)");
         }
     }
@@ -491,10 +481,7 @@ fn setup_launchd_plist(port: u16) -> Result<()> {
         .status()?;
 
     if status.success() {
-        output::ok(&format!(
-            "Launch agent created: {}",
-            plist_path.display()
-        ));
+        output::ok(&format!("Launch agent created: {}", plist_path.display()));
         output::ok("PulseAudio will auto-start on login and restart if it crashes");
     } else {
         output::warn("Failed to load launch agent — load manually:");

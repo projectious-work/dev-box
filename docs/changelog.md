@@ -2,6 +2,21 @@
 
 All notable changes to dev-box are documented here.
 
+## v0.3.3 — 2026-03-18
+
+### Added
+- `dev-box audio check` — host-side PulseAudio diagnostics (installation, daemon, TCP module, persistence, port, launchd, connectivity)
+- `dev-box audio setup` — automated PulseAudio setup on macOS (brew install, TCP config, launchd agent with KeepAlive); Linux manual instructions
+- OrbStack compatibility: documented virtiofs permission workaround and Claude Code OAuth issue (upstream: anthropics/claude-code#14528)
+
+### Fixed
+- ALSA config syntax: standardized `.asoundrc` to `pcm.!default { type pulse }` (fixes parse errors, refs #3)
+- Removed `:ro` from `.asoundrc` volume mount in generated compose files (fixes #3)
+- Added audio support to this project's devcontainer (`.asoundrc`, `PULSE_SERVER`, `AUDIODRIVER`)
+
+### Changed
+- Rewrote release workflow in CLAUDE.md with complete 10-step checklist
+
 ## v0.3.2 — 2026-03-17
 
 ### Fixed
