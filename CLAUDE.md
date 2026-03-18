@@ -441,28 +441,99 @@ GitHub Actions are avoided due to cost. All builds and deploys are local.
 
 ### Release Workflow
 
-When asked to release, Claude must:
+When asked to release version X.Y.Z, follow ALL steps in order.
 
-1. **Build both Linux binaries** inside the dev-container:
-   - `aarch64-unknown-linux-gnu` (native, via `./scripts/maintain.sh release <version>`)
-   - `x86_64-unknown-linux-gnu` (cross-compiled, via `cargo build --release --target x86_64-unknown-linux-gnu`)
-   - Package and upload both to the GitHub release.
+#### Phase 1 — Prep (inside dev-container, Claude does this)
 
-2. **Show the user commands to run on the host macOS machine** for the
-   remaining steps. These must include:
-   - Building macOS binaries (`./scripts/build-macos.sh <version>`)
-   - Uploading macOS binaries (`gh release upload v<version> dist/*.tar.gz`)
-   - Building and pushing container images (`./scripts/maintain.sh push-images <version>`)
-   - **Tagging images** with the new version (if images were previously built
-     under a different tag or need retagging):
-     ```bash
-     # Tag existing images with new version (run for each flavor)
-     for flavor in base python latex typst rust python-latex python-typst rust-latex; do
-       podman tag ghcr.io/projectious-work/dev-box:${flavor}-latest \
-                  ghcr.io/projectious-work/dev-box:${flavor}-v<version>
-     done
-     ```
-   - Deploying documentation (`./scripts/maintain.sh docs-deploy`)
+1. **Version bump** — update ALL version references:
+   - `cli/Cargo.toml` → `version = "X.Y.Z"`
+   - `docs/changelog.md` → add new version section at top
+   - `docs/cli/configuration.md` → update version in example configs
+   - Any other docs referencing the old version number
+
+2. **Update documentation** — review and update all MkDocs pages for
+   accuracy with the new release. New features need docs.
+
+3. **Commit version bump** — single commit: `chore: bump version to vX.Y.Z, update docs`
+
+4. **Run `./scripts/maintain.sh release X.Y.Z`** — this:
+   - Runs fmt check, clippy, and all tests (fails if dirty tree)
+   - Builds the native aarch64-unknown-linux-gnu binary
+   - Builds all 8 container images (tagged `-vX.Y.Z` and `-latest`)
+   - Creates git tag `vX.Y.Z`
+   - Generates `dist/RELEASE-NOTES.md` (commit log + image table)
+   - Generates `dist/RELEASE-PROMPT.md`
+
+5. **Cross-compile x86_64 Linux binary**:
+   ```bash
+   cd cli
+   CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc \
+     cargo build --release --target x86_64-unknown-linux-gnu
+   cp target/x86_64-unknown-linux-gnu/release/dev-box ../dist/dev-box-vX.Y.Z-x86_64-unknown-linux-gnu
+   cd ../dist
+   tar -czf dev-box-vX.Y.Z-x86_64-unknown-linux-gnu.tar.gz dev-box-vX.Y.Z-x86_64-unknown-linux-gnu
+   rm dev-box-vX.Y.Z-x86_64-unknown-linux-gnu
+   ```
+
+6. **Push tag and commits**:
+   ```bash
+   git push origin main
+   git push origin vX.Y.Z
+   ```
+
+7. **Create GitHub release** (uploads both Linux binaries):
+   ```bash
+   gh release create vX.Y.Z \
+     --repo projectious-work/dev-box \
+     --title "dev-box vX.Y.Z" \
+     --notes-file dist/RELEASE-NOTES.md \
+     dist/dev-box-vX.Y.Z-*.tar.gz
+   ```
+   **Note:** Always use `--notes-file`, never `--generate-notes` (produces empty).
+
+8. **Deploy documentation**:
+   ```bash
+   ./scripts/maintain.sh docs-deploy
+   ```
+
+#### Phase 2 — Host commands (user runs on macOS)
+
+After Phase 1, Claude must print these commands for the user to run on
+the macOS host. The user copy-pastes and runs them.
+
+```bash
+# ── Step 1: Build macOS binaries (arm64 + x86_64) ─────────────────────
+cd /path/to/dev-box
+./scripts/build-macos.sh X.Y.Z
+
+# ── Step 2: Upload macOS binaries to the GitHub release ───────────────
+gh release upload vX.Y.Z dist/dev-box-vX.Y.Z-*-apple-darwin.tar.gz
+
+# ── Step 3: Build and push container images to GHCR ──────────────────
+# (auto-tags *-latest → *-vX.Y.Z, auto-logins via gh auth)
+./scripts/maintain.sh push-images X.Y.Z
+```
+
+**Prerequisites for host commands:**
+- Rust toolchain on macOS (`rustup` with both apple-darwin targets)
+- `gh` CLI authenticated with `write:packages` scope:
+  `gh auth refresh --scopes write:packages,read:packages`
+- Docker/OrbStack running (for push-images)
+
+#### Release Checklist Summary
+
+| Step | Where | Command/Action |
+|------|-------|----------------|
+| Version bump | container | Edit Cargo.toml + docs |
+| Commit | container | `git commit` |
+| Build + tag | container | `./scripts/maintain.sh release X.Y.Z` |
+| Cross-compile x86 | container | `cargo build --release --target x86_64-unknown-linux-gnu` |
+| Push | container | `git push origin main && git push origin vX.Y.Z` |
+| GitHub release | container | `gh release create vX.Y.Z ...` |
+| Deploy docs | container | `./scripts/maintain.sh docs-deploy` |
+| macOS binaries | host | `./scripts/build-macos.sh X.Y.Z` |
+| Upload macOS | host | `gh release upload vX.Y.Z dist/*-apple-darwin.tar.gz` |
+| Push images | host | `./scripts/maintain.sh push-images X.Y.Z` |
 
 ### Documentation
 
