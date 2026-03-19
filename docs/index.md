@@ -96,7 +96,7 @@ After `dev-box start`, you are inside a Zellij session with three tabs:
 
 ## Project Status
 
-dev-box is at version 0.3.4. The core workflow (init, generate, build, start, stop, attach, status, doctor) is functional, along with shell completions (`dev-box completions bash/zsh/fish`), interactive init prompts, registry-based version checking via `dev-box update --check`, `post_create_command`/`vscode_extensions` support in devcontainer.json, and host-side audio diagnostics via `dev-box audio check/setup`. Recent additions include AI provider configuration (`[ai]` section), non-root user support (`container.user`), renamed `.dev-box-home/` for persistent config (with `.root/` backward compatibility), and language-specific `.gitignore` blocks generated per image flavor.
+dev-box is at version 0.3.5. The core workflow (init, generate, build, start, stop, attach, status, doctor) is functional, along with shell completions (`dev-box completions bash/zsh/fish`), interactive init prompts, registry-based version checking via `dev-box update --check`, `post_create_command`/`vscode_extensions` support in devcontainer.json, and host-side audio diagnostics via `dev-box audio check/setup`. Recent additions include AI provider configuration (`[ai]` section), non-root user support (`container.user`), renamed `.dev-box-home/` for persistent config (with `.root/` backward compatibility), and language-specific `.gitignore` blocks generated per image flavor.
 
 ## Next Steps
 

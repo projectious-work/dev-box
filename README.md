@@ -76,7 +76,7 @@ All images include:
 
 ```toml
 [dev-box]
-version = "0.3.4"
+version = "0.3.5"
 image = "python"
 process = "product"
 
