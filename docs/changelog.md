@@ -2,6 +2,13 @@
 
 All notable changes to dev-box are documented here.
 
+## v0.3.6 — 2026-03-19
+
+### Fixed
+- Runtime detection: prefer docker over podman, and verify daemon is responsive (`docker info` / `podman info`) before selecting — fixes OrbStack compatibility where podman is on PATH but not running (fixes #5 regression)
+- Better error messages when runtime is on PATH but daemon is not responding
+- Bumped Typst 0.13.1 → 0.14.2
+
 ## v0.3.5 — 2026-03-19
 
 ### Added

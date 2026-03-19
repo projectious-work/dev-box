@@ -27,24 +27,44 @@ pub struct Runtime {
 }
 
 impl Runtime {
-    /// Detect available container runtime (podman preferred over docker).
+    /// Detect available container runtime.
+    ///
+    /// Checks both presence on PATH and whether the daemon is actually
+    /// responsive (`docker info` / `podman info`). Prefers docker over
+    /// podman because OrbStack (common on macOS) provides docker and
+    /// podman may be installed but not running.
     pub fn detect() -> Result<Self> {
-        // Check podman first
-        if command_exists("podman") {
-            return Ok(Runtime {
-                compose_bin: vec!["podman".to_string(), "compose".to_string()],
-                runtime_bin: "podman".to_string(),
-            });
-        }
-
-        if command_exists("docker") {
+        // Prefer docker — OrbStack and Docker Desktop both provide it
+        if runtime_is_responsive("docker") {
             return Ok(Runtime {
                 compose_bin: vec!["docker".to_string(), "compose".to_string()],
                 runtime_bin: "docker".to_string(),
             });
         }
 
-        bail!("Neither podman nor docker found. Please install one of them.")
+        // Fall back to podman if docker isn't responsive
+        if runtime_is_responsive("podman") {
+            return Ok(Runtime {
+                compose_bin: vec!["podman".to_string(), "compose".to_string()],
+                runtime_bin: "podman".to_string(),
+            });
+        }
+
+        // Neither is responsive — give a helpful error
+        let docker_present = command_exists("docker");
+        let podman_present = command_exists("podman");
+
+        match (docker_present, podman_present) {
+            (true, _) => bail!(
+                "docker found on PATH but not responding. \
+                 Is Docker Desktop or OrbStack running?"
+            ),
+            (_, true) => bail!(
+                "podman found on PATH but not responding. \
+                 Try: podman machine start"
+            ),
+            _ => bail!("Neither podman nor docker found. Please install one of them."),
+        }
     }
 
     /// Get the container state by inspecting it directly.
@@ -180,6 +200,23 @@ pub(crate) fn command_exists(cmd: &str) -> bool {
         .unwrap_or(false)
 }
 
+/// Check if a container runtime is on PATH AND responsive.
+/// Runs `<runtime> info` with a short timeout to verify the daemon is up.
+fn runtime_is_responsive(cmd: &str) -> bool {
+    if !command_exists(cmd) {
+        return false;
+    }
+
+    // `docker info` / `podman info` exits 0 if the daemon is reachable
+    Command::new(cmd)
+        .arg("info")
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .status()
+        .map(|s| s.success())
+        .unwrap_or(false)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -230,20 +267,19 @@ mod tests {
     #[test]
     fn container_status_for_nonexistent_container() {
         // This test requires docker or podman to be available
-        // If neither is available, we skip
-        if !command_exists("docker") && !command_exists("podman") {
-            return;
-        }
-        let rt = if command_exists("podman") {
+        let rt = if runtime_is_responsive("docker") {
+            Runtime {
+                compose_bin: vec!["docker".to_string(), "compose".to_string()],
+                runtime_bin: "docker".to_string(),
+            }
+        } else if runtime_is_responsive("podman") {
             Runtime {
                 compose_bin: vec!["podman".to_string(), "compose".to_string()],
                 runtime_bin: "podman".to_string(),
             }
         } else {
-            Runtime {
-                compose_bin: vec!["docker".to_string(), "compose".to_string()],
-                runtime_bin: "docker".to_string(),
-            }
+            // No responsive runtime — skip
+            return;
         };
         let state = rt.container_status("nonexistent_container_xyz123").unwrap();
         assert_eq!(state, ContainerState::Missing);
