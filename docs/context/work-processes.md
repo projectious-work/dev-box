@@ -12,7 +12,7 @@ dev-box provides four work process flavors that determine which context files ar
 | Backlog management | No | Yes | No | Yes |
 | Progress tracking | No | Via standups | Dedicated | Via standups |
 | Work instructions | No | Yes | No | Yes |
-| Research artifacts | No | No | Yes | No |
+| Research artifacts | No | No | Yes | Yes |
 | Product planning | No | No | No | Yes |
 
 ## minimal
@@ -119,10 +119,13 @@ For learning, documentation, and academic projects where progress tracking and r
 ```
 my-project/
 ├── CLAUDE.md
+├── experiments/
+│   └── README.md
 └── context/
     ├── PROGRESS.md
     ├── OWNER.md
     ├── research/
+    │   └── _template.md
     └── analysis/
 ```
 
@@ -150,15 +153,29 @@ my-project/
 - Key insight: think of ownership as a compile-time garbage collector
 ```
 
-**research/** -- Directory for research notes, source summaries, literature reviews:
+**research/** -- Directory for research notes, source summaries, literature reviews. Use `_template.md` as a starting point for new research notes:
 
 ```
 research/
+├── _template.md              # Research note template (date, status, findings)
 ├── paper-notes/
 │   ├── smith-2024-distributed-systems.md
 │   └── jones-2025-consensus-protocols.md
 └── topic-summaries/
     └── raft-vs-paxos.md
+```
+
+**experiments/** -- Top-level directory for hands-on prototypes, benchmarks, and technical evaluations. Each experiment lives in its own subdirectory:
+
+```
+experiments/
+├── README.md                 # Comparison table and run instructions
+├── approach-a/
+│   ├── README.md
+│   └── ...
+└── approach-b/
+    ├── README.md
+    └── ...
 ```
 
 **analysis/** -- Directory for analysis artifacts, data exploration notes, methodology documents:
@@ -181,6 +198,8 @@ The most comprehensive flavor. Everything from `managed` plus product planning t
 ```
 my-project/
 ├── CLAUDE.md
+├── experiments/
+│   └── README.md
 └── context/
     ├── DECISIONS.md
     ├── BACKLOG.md
@@ -193,7 +212,9 @@ my-project/
     │   ├── DEVELOPMENT.md
     │   └── TEAM.md
     ├── project-notes/
-    └── ideas/
+    ├── ideas/
+    └── research/
+        └── _template.md
 ```
 
 ### When to Use

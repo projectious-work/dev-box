@@ -33,3 +33,5 @@ The `context/` directory contains structured project management files:
 - `context/work-instructions/TEAM.md` — Team collaboration rules
 - `context/project-notes/` — Deep research on specific topics
 - `context/ideas/` — Future direction research
+- `context/research/` — Research notes and source material (see `_template.md` for format)
+- `experiments/` — Hands-on prototypes, benchmarks, and technical evaluations (see `experiments/README.md`)

@@ -24,5 +24,6 @@ The `context/` directory contains structured project files:
 
 - `context/OWNER.md` — Profile of the project owner (shared across projects)
 - `context/PROGRESS.md` — Tracks completion across chapters/sections
-- `context/research/` — Research notes and source material
+- `context/research/` — Research notes and source material (see `_template.md` for format)
 - `context/analysis/` — Structural analysis and design documents
+- `experiments/` — Hands-on prototypes, benchmarks, and technical evaluations (see `experiments/README.md`)

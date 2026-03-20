@@ -18,6 +18,8 @@ const MANAGED_GENERAL: &str = include_str!("../../templates/managed/work-instruc
 // --- Research templates ---
 const RESEARCH_CLAUDE_MD: &str = include_str!("../../templates/research/CLAUDE.md.template");
 const RESEARCH_PROGRESS: &str = include_str!("../../templates/research/PROGRESS.md");
+const RESEARCH_NOTE_TEMPLATE: &str = include_str!("../../templates/research/research-note.md");
+const EXPERIMENTS_README: &str = include_str!("../../templates/research/experiments-README.md");
 
 // --- Product templates ---
 const PRODUCT_CLAUDE_MD: &str = include_str!("../../templates/product/CLAUDE.md.template");
@@ -174,10 +176,22 @@ fn scaffold_research(project_name: &str) -> Result<()> {
     write_if_missing(&context.join("PROGRESS.md"), RESEARCH_PROGRESS)?;
     output::ok("Created context/PROGRESS.md");
 
+    // Research note template
+    write_if_missing(
+        &context.join("research").join("_template.md"),
+        RESEARCH_NOTE_TEMPLATE,
+    )?;
+    output::ok("Created context/research/_template.md");
+
     // .gitkeep for empty dirs
-    write_if_missing(&context.join("research").join(".gitkeep"), "")?;
     write_if_missing(&context.join("analysis").join(".gitkeep"), "")?;
-    output::ok("Created context/research/ and context/analysis/");
+    output::ok("Created context/analysis/");
+
+    // Experiments directory
+    let experiments = Path::new("experiments");
+    fs::create_dir_all(experiments).context("Failed to create experiments/")?;
+    write_if_missing(&experiments.join("README.md"), EXPERIMENTS_README)?;
+    output::ok("Created experiments/README.md");
 
     // OWNER.md (local copy)
     setup_owner_md(context)?;
@@ -238,6 +252,21 @@ fn scaffold_product(project_name: &str) -> Result<()> {
     write_if_missing(&context.join("ideas").join(".gitkeep"), "")?;
     output::ok("Created context/project-notes/ and context/ideas/");
 
+    // Research subfolder with template
+    fs::create_dir_all(context.join("research"))
+        .context("Failed to create context/research")?;
+    write_if_missing(
+        &context.join("research").join("_template.md"),
+        RESEARCH_NOTE_TEMPLATE,
+    )?;
+    output::ok("Created context/research/_template.md");
+
+    // Experiments directory
+    let experiments = Path::new("experiments");
+    fs::create_dir_all(experiments).context("Failed to create experiments/")?;
+    write_if_missing(&experiments.join("README.md"), EXPERIMENTS_README)?;
+    output::ok("Created experiments/README.md");
+
     // OWNER.md (local copy)
     setup_owner_md(context)?;
 
@@ -275,8 +304,9 @@ pub fn expected_context_files(process: &ProcessFlavor) -> Vec<&'static str> {
             "CLAUDE.md",
             "context/OWNER.md",
             "context/PROGRESS.md",
-            "context/research/.gitkeep",
+            "context/research/_template.md",
             "context/analysis/.gitkeep",
+            "experiments/README.md",
         ],
         ProcessFlavor::Product => vec![
             "CLAUDE.md",
@@ -291,6 +321,8 @@ pub fn expected_context_files(process: &ProcessFlavor) -> Vec<&'static str> {
             "context/work-instructions/TEAM.md",
             "context/project-notes/.gitkeep",
             "context/ideas/.gitkeep",
+            "context/research/_template.md",
+            "experiments/README.md",
         ],
     }
 }
@@ -621,9 +653,10 @@ mod tests {
             scaffold_context(&config).unwrap();
             assert!(Path::new("CLAUDE.md").exists());
             assert!(Path::new("context/PROGRESS.md").exists());
-            assert!(Path::new("context/research/.gitkeep").exists());
+            assert!(Path::new("context/research/_template.md").exists());
             assert!(Path::new("context/analysis/.gitkeep").exists());
             assert!(Path::new("context/OWNER.md").exists());
+            assert!(Path::new("experiments/README.md").exists());
         });
     }
 
@@ -645,6 +678,8 @@ mod tests {
             assert!(Path::new("context/work-instructions/TEAM.md").exists());
             assert!(Path::new("context/project-notes/.gitkeep").exists());
             assert!(Path::new("context/ideas/.gitkeep").exists());
+            assert!(Path::new("context/research/_template.md").exists());
+            assert!(Path::new("experiments/README.md").exists());
             assert!(Path::new("context/OWNER.md").exists());
         });
     }
