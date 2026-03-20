@@ -56,7 +56,9 @@ fn dispatch(cli: cli::Cli) -> anyhow::Result<()> {
             clap_complete::generate(shell, &mut cmd, bin_name, &mut std::io::stdout());
             Ok(())
         }
-        cli::Commands::Update { check } => update::cmd_update(config_path, check),
+        cli::Commands::Update { check, dry_run } => {
+            update::cmd_update(config_path, check, dry_run)
+        }
         cli::Commands::Audio { action } => match action {
             cli::AudioAction::Check { port } => audio::cmd_audio_check(port),
             cli::AudioAction::Setup { port } => audio::cmd_audio_setup(port),

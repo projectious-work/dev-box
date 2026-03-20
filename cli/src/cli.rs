@@ -108,10 +108,16 @@ pub enum Commands {
     ///
     /// Checks the latest CLI version on GitHub and the latest image
     /// version on GHCR for your configured image flavor.
+    ///
+    /// Without flags: upgrades image version in dev-box.toml and regenerates
+    /// container files. Use --check for a dry check, --dry-run to preview changes.
     Update {
-        /// Only check, don't apply
+        /// Only check versions, don't apply any changes
         #[arg(long)]
         check: bool,
+        /// Preview what would change without writing files
+        #[arg(long)]
+        dry_run: bool,
     },
     /// Host-side audio diagnostics and setup for PulseAudio
     ///
