@@ -117,9 +117,10 @@ pub enum Commands {
     /// Stop and remove the container
     ///
     /// Unlike `stop`, this removes the container entirely (like
-    /// `docker compose down`). Use before switching to VS Code or
-    /// when you want a clean slate.
-    Down,
+    /// `docker rm`). Use before switching to VS Code or when you
+    /// want a clean slate.
+    #[command(alias = "rm")]
+    Remove,
     /// Attach to running container
     ///
     /// Available layouts: dev (default), focus, assist.

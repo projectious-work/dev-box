@@ -49,7 +49,7 @@ fn dispatch(cli: cli::Cli) -> anyhow::Result<()> {
         cli::Commands::Build { no_cache } => container::cmd_build(config_path, no_cache),
         cli::Commands::Start { layout } => container::cmd_start(config_path, &layout.to_string()),
         cli::Commands::Stop => container::cmd_stop(config_path),
-        cli::Commands::Down => container::cmd_down(config_path),
+        cli::Commands::Remove => container::cmd_remove(config_path),
         cli::Commands::Attach { layout } => container::cmd_attach(config_path, &layout.to_string()),
         cli::Commands::Status => container::cmd_status(config_path),
         cli::Commands::Doctor => doctor::cmd_doctor(config_path),

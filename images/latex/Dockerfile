@@ -84,9 +84,15 @@ RUN tlmgr install --no-execute-actions \
     todonotes changes datetime2 tracklang \
     was collection-fontsrecommended \
     selnolig emoji \
+    # Additional packages (fixes #13)
+    ninecolors transparent spath3 nicematrix lipsum \
     && mktexlsr \
     && updmap-sys \
     && fmtutil-sys --all
+
+# Register TeX Live OpenType fonts with fontconfig (fixes #13)
+RUN ln -sf /usr/local/texlive/texmf-dist/fonts/opentype /usr/share/fonts/opentype-texlive \
+    && fc-cache -f
 
 # =============================================================================
 # Stage 2: Runtime — base image + TeX Live tree

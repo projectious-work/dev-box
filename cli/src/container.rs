@@ -164,8 +164,8 @@ pub fn cmd_stop(config_path: &Option<String>) -> Result<()> {
     Ok(())
 }
 
-/// Down command: stop and remove the container.
-pub fn cmd_down(config_path: &Option<String>) -> Result<()> {
+/// Remove command: stop and remove the container.
+pub fn cmd_remove(config_path: &Option<String>) -> Result<()> {
     let config = DevBoxConfig::from_cli_option(config_path)?;
     let runtime = Runtime::detect()?;
     let name = &config.container.name;
