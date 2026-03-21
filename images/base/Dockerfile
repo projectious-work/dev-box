@@ -106,8 +106,8 @@ RUN mkdir -p /root/.config/zellij/themes /root/.config/zellij/layouts
 COPY config/zellij/config.kdl          /root/.config/zellij/config.kdl
 COPY config/zellij/themes/gruvbox.kdl  /root/.config/zellij/themes/gruvbox.kdl
 COPY config/zellij/layouts/dev.kdl     /root/.config/zellij/layouts/dev.kdl
-COPY config/zellij/layouts/assist.kdl  /root/.config/zellij/layouts/assist.kdl
 COPY config/zellij/layouts/focus.kdl   /root/.config/zellij/layouts/focus.kdl
+COPY config/zellij/layouts/cowork.kdl  /root/.config/zellij/layouts/cowork.kdl
 
 # Yazi
 RUN mkdir -p /root/.config/yazi
