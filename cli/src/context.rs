@@ -273,17 +273,29 @@ fn scaffold_product(project_name: &str) -> Result<()> {
     Ok(())
 }
 
-/// Create OWNER.md as a local file in the project's context/ directory.
+/// Create OWNER.md in context/shared/ directory.
+/// Falls back to context/OWNER.md check for backward compatibility.
 fn setup_owner_md(context: &Path) -> Result<()> {
-    let owner_path = context.join("OWNER.md");
-    if owner_path.exists() || owner_path.symlink_metadata().is_ok() {
-        tracing::debug!("OWNER.md already exists, skipping");
+    // Backward compat: if context/OWNER.md exists, don't create shared/ version
+    let legacy_path = context.join("OWNER.md");
+    if legacy_path.exists() {
+        tracing::debug!("context/OWNER.md already exists (legacy location), skipping");
+        return Ok(());
+    }
+
+    let shared_dir = context.join("shared");
+    fs::create_dir_all(&shared_dir)
+        .with_context(|| format!("Failed to create {}", shared_dir.display()))?;
+
+    let owner_path = shared_dir.join("OWNER.md");
+    if owner_path.exists() {
+        tracing::debug!("context/shared/OWNER.md already exists, skipping");
         return Ok(());
     }
 
     fs::write(&owner_path, OWNER_CONTENT)
         .with_context(|| format!("Failed to write {}", owner_path.display()))?;
-    output::ok("Created context/OWNER.md");
+    output::ok("Created context/shared/OWNER.md");
 
     Ok(())
 }
@@ -294,7 +306,7 @@ pub fn expected_context_files(process: &ProcessFlavor) -> Vec<&'static str> {
         ProcessFlavor::Minimal => vec!["CLAUDE.md"],
         ProcessFlavor::Managed => vec![
             "CLAUDE.md",
-            "context/OWNER.md",
+            "context/shared/OWNER.md",
             "context/DECISIONS.md",
             "context/BACKLOG.md",
             "context/STANDUPS.md",
@@ -302,7 +314,7 @@ pub fn expected_context_files(process: &ProcessFlavor) -> Vec<&'static str> {
         ],
         ProcessFlavor::Research => vec![
             "CLAUDE.md",
-            "context/OWNER.md",
+            "context/shared/OWNER.md",
             "context/PROGRESS.md",
             "context/research/_template.md",
             "context/analysis/.gitkeep",
@@ -310,7 +322,7 @@ pub fn expected_context_files(process: &ProcessFlavor) -> Vec<&'static str> {
         ],
         ProcessFlavor::Product => vec![
             "CLAUDE.md",
-            "context/OWNER.md",
+            "context/shared/OWNER.md",
             "context/DECISIONS.md",
             "context/BACKLOG.md",
             "context/STANDUPS.md",
@@ -378,7 +390,8 @@ pub(crate) fn update_gitignore(image: &ImageFlavor) -> Result<()> {
     content.push_str(".root/\n");
     content.push_str(".dev-box-version\n");
     content.push_str(".dev-box/\n");
-    content.push_str(".dev-box-backup/\n\n");
+    content.push_str(".dev-box-backup/\n");
+    content.push_str(".dev-box-env/\n\n");
 
     // OS generated
     content.push_str(
@@ -479,6 +492,7 @@ fn ensure_devbox_entries(gitignore_path: &Path) -> Result<()> {
         ".dev-box-home/",
         ".dev-box-version",
         ".dev-box-backup/",
+        ".dev-box-env/",
     ];
 
     let existing = fs::read_to_string(gitignore_path).context("Failed to read .gitignore")?;
@@ -643,7 +657,7 @@ mod tests {
             assert!(Path::new("context/BACKLOG.md").exists());
             assert!(Path::new("context/STANDUPS.md").exists());
             assert!(Path::new("context/work-instructions/GENERAL.md").exists());
-            assert!(Path::new("context/OWNER.md").exists());
+            assert!(Path::new("context/shared/OWNER.md").exists());
         });
     }
 
@@ -657,7 +671,7 @@ mod tests {
             assert!(Path::new("context/PROGRESS.md").exists());
             assert!(Path::new("context/research/_template.md").exists());
             assert!(Path::new("context/analysis/.gitkeep").exists());
-            assert!(Path::new("context/OWNER.md").exists());
+            assert!(Path::new("context/shared/OWNER.md").exists());
             assert!(Path::new("experiments/README.md").exists());
         });
     }
@@ -682,7 +696,7 @@ mod tests {
             assert!(Path::new("context/ideas/.gitkeep").exists());
             assert!(Path::new("context/research/_template.md").exists());
             assert!(Path::new("experiments/README.md").exists());
-            assert!(Path::new("context/OWNER.md").exists());
+            assert!(Path::new("context/shared/OWNER.md").exists());
         });
     }
 
@@ -763,7 +777,7 @@ mod tests {
         in_temp_dir(|| {
             let config = test_config(ProcessFlavor::Managed, ImageFlavor::Base);
             scaffold_context(&config).unwrap();
-            let content = fs::read_to_string("context/OWNER.md").unwrap();
+            let content = fs::read_to_string("context/shared/OWNER.md").unwrap();
             assert!(content.contains("Domain expertise"));
             assert!(content.contains("Timezone"));
             assert!(content.contains("Communication language"));
