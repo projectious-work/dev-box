@@ -268,7 +268,7 @@ const DEFAULT_ZELLIJ_COWORK_LAYOUT: &str = r#"layout {
     tab name="cowork" focus=true {
         pane split_direction="vertical" {
             pane size="50%" split_direction="horizontal" {
-                pane size="40%" name="files" {
+                pane size="40%" name="files" focus=true {
                     command "yazi"
                     cwd "/workspace"
                 }
@@ -277,7 +277,7 @@ const DEFAULT_ZELLIJ_COWORK_LAYOUT: &str = r#"layout {
                     cwd "/workspace"
                 }
             }
-            pane size="50%" name="claude" focus=true {
+            pane size="50%" name="claude" {
                 command "claude"
                 cwd "/workspace"
             }
@@ -313,7 +313,7 @@ max_height = 900
 
 [opener]
 edit = [
-    { run = '${EDITOR:-vim} "$@"', desc = "Edit", block = true },
+    { run = '${EDITOR:-vim} "$@"', desc = "Edit in-place", block = true },
 ]
 
 [open]

@@ -17,9 +17,9 @@ max_height = 900
 image_delay = 100
 
 [opener]
-# Open in vim (suspends yazi, returns on :q)
+# Default: open in vim in-place (suspends yazi, returns on :q)
 edit = [
-    { run = '${EDITOR:-vim} "$@"', desc = "Edit", block = true },
+    { run = '${EDITOR:-vim} "$@"', desc = "Edit in-place", block = true },
 ]
 
 [open]
