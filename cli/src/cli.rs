@@ -153,6 +153,15 @@ pub enum Commands {
         #[arg(long)]
         dry_run: bool,
     },
+    /// Manage named environments for switching between configurations
+    ///
+    /// Environments save dev-box.toml, CLAUDE.md, and context/ (excluding
+    /// context/shared/) to .dev-box-env/<name>/. Switch between them to
+    /// use different images, processes, and context within one project.
+    Env {
+        #[command(subcommand)]
+        action: EnvAction,
+    },
     /// Back up dev-box files to a timestamped directory
     ///
     /// Copies dev-box.toml, .devcontainer/, .dev-box-home/, context/,
@@ -214,4 +223,39 @@ pub enum AudioAction {
         #[arg(long, default_value = "4714")]
         port: Option<u16>,
     },
+}
+
+#[derive(Subcommand)]
+pub enum EnvAction {
+    /// Save current project state as a named environment
+    ///
+    /// Copies dev-box.toml, CLAUDE.md, and context/ (excluding context/shared/)
+    /// to .dev-box-env/<name>/.
+    Create {
+        /// Environment name (alphanumeric, hyphens, underscores)
+        name: String,
+    },
+    /// Switch to a different environment
+    ///
+    /// Saves the current environment, restores the target, and regenerates
+    /// .devcontainer/ files. Stops any running container first.
+    Switch {
+        /// Environment to switch to
+        name: String,
+        /// Skip confirmation prompt
+        #[arg(long)]
+        yes: bool,
+    },
+    /// List available environments
+    List,
+    /// Delete a saved environment
+    Delete {
+        /// Environment to delete
+        name: String,
+        /// Skip confirmation prompt
+        #[arg(long)]
+        yes: bool,
+    },
+    /// Show current environment info
+    Status,
 }

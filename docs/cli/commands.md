@@ -434,6 +434,97 @@ dev-box completions fish | source
 
 ---
 
+## dev-box env
+
+Manage named environments for switching between configurations within a single project.
+
+Environments save `dev-box.toml`, `CLAUDE.md`, and `context/` (excluding `context/shared/`) to `.dev-box-env/<name>/`. Files in `context/shared/` are shared across all environments.
+
+### Subcommands
+
+#### dev-box env create
+
+Save the current project state as a named environment.
+
+```bash
+dev-box env create <name>
+```
+
+Creates a snapshot of `dev-box.toml`, `CLAUDE.md`, and `context/` (excluding `context/shared/`) in `.dev-box-env/<name>/`.
+
+#### dev-box env switch
+
+Switch to a different environment.
+
+```bash
+dev-box env switch <name> [--yes]
+```
+
+1. Stops any running container
+2. Saves the current environment
+3. Restores the target environment
+4. Regenerates `.devcontainer/` files
+
+Requires confirmation (type `switch`). Use `--yes` to skip.
+
+#### dev-box env list
+
+List available environments and show which is current.
+
+```bash
+dev-box env list
+```
+
+#### dev-box env delete
+
+Delete a saved environment.
+
+```bash
+dev-box env delete <name> [--yes]
+```
+
+Requires confirmation (type the environment name). Use `--yes` to skip.
+
+#### dev-box env status
+
+Show current environment name and config summary.
+
+```bash
+dev-box env status
+```
+
+### Examples
+
+```bash
+# Create two environments from different configurations
+dev-box env create research
+# ... edit dev-box.toml to change image/process ...
+dev-box env create product
+
+# Switch between them
+dev-box env switch research
+dev-box env switch product
+
+# List environments
+dev-box env list
+
+# Delete an environment
+dev-box env delete research --yes
+```
+
+### Shared Files
+
+Files in `context/shared/` are **not** copied during environment switches — they stay in place and are shared across all environments. By default, `OWNER.md` is placed in `context/shared/`. Move any file there to share it across environments.
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | Success |
+| 1 | Environment not found, name invalid, or config error |
+
+---
+
 ## dev-box backup
 
 Back up dev-box files to a timestamped directory.

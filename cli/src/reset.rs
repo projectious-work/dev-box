@@ -112,7 +112,7 @@ fn backup_subdir_name(version: &str) -> String {
 }
 
 /// Copy a file or directory recursively to the backup location.
-fn copy_item(src: &Path, dst: &Path) -> Result<()> {
+pub fn copy_item(src: &Path, dst: &Path) -> Result<()> {
     if src.is_dir() {
         copy_dir_recursive(src, dst)?;
     } else {
@@ -127,7 +127,7 @@ fn copy_item(src: &Path, dst: &Path) -> Result<()> {
 }
 
 /// Recursively copy a directory.
-fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<()> {
+pub fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<()> {
     fs::create_dir_all(dst)
         .with_context(|| format!("Failed to create directory: {}", dst.display()))?;
     for entry in fs::read_dir(src)
@@ -152,7 +152,7 @@ fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<()> {
 }
 
 /// Delete a file or directory.
-fn delete_item(path: &Path) -> Result<()> {
+pub fn delete_item(path: &Path) -> Result<()> {
     if path.is_dir() {
         fs::remove_dir_all(path)
             .with_context(|| format!("Failed to remove directory: {}", path.display()))?;
@@ -164,7 +164,7 @@ fn delete_item(path: &Path) -> Result<()> {
 }
 
 /// Stop the container if it's running.
-fn ensure_container_stopped(config: &DevBoxConfig) -> Result<()> {
+pub fn ensure_container_stopped(config: &DevBoxConfig) -> Result<()> {
     let runtime = match Runtime::detect() {
         Ok(r) => r,
         Err(_) => return Ok(()), // No runtime available, nothing to stop
@@ -181,7 +181,7 @@ fn ensure_container_stopped(config: &DevBoxConfig) -> Result<()> {
 }
 
 /// Confirm a dangerous action interactively.
-fn confirm(prompt: &str, confirm_word: &str) -> Result<bool> {
+pub fn confirm(prompt: &str, confirm_word: &str) -> Result<bool> {
     if !std::io::IsTerminal::is_terminal(&std::io::stdin()) {
         bail!("Cannot confirm in non-interactive mode. Use --yes to skip confirmation.");
     }

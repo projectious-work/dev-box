@@ -4,6 +4,7 @@ mod config;
 mod container;
 mod context;
 mod doctor;
+mod env;
 mod generate;
 mod output;
 mod reset;
@@ -60,6 +61,13 @@ fn dispatch(cli: cli::Cli) -> anyhow::Result<()> {
         cli::Commands::Update { check, dry_run } => {
             update::cmd_update(config_path, check, dry_run)
         }
+        cli::Commands::Env { action } => match action {
+            cli::EnvAction::Create { name } => env::cmd_env_create(config_path, &name),
+            cli::EnvAction::Switch { name, yes } => env::cmd_env_switch(config_path, &name, yes),
+            cli::EnvAction::List => env::cmd_env_list(),
+            cli::EnvAction::Delete { name, yes } => env::cmd_env_delete(&name, yes),
+            cli::EnvAction::Status => env::cmd_env_status(config_path),
+        },
         cli::Commands::Backup {
             output_dir,
             dry_run,
