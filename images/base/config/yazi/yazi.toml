@@ -4,7 +4,7 @@
 # =============================================================================
 
 [manager]
-ratio = [0, 1, 0]           # no parent, no preview — maximize file list in narrow sidebar
+ratio = [1, 4, 0]           # small parent column, full file list, no preview
 sort_by = "natural"
 sort_sensitive = false
 sort_dir_first = true
