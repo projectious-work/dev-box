@@ -313,10 +313,7 @@ max_height = 900
 
 [opener]
 edit = [
-    { run = 'open-in-editor "$1"', desc = "Open in editor pane", block = false },
-]
-edit-here = [
-    { run = '${EDITOR:-vim} "$@"', desc = "Edit in-place", block = true },
+    { run = '${EDITOR:-vim} "$@"', desc = "Edit", block = true },
 ]
 
 [open]
