@@ -331,7 +331,7 @@ const DEFAULT_ZELLIJ_FOCUS_LAYOUT: &str = r#"layout {
 
 /// Default yazi config.
 const DEFAULT_YAZI_CONFIG: &str = r#"[manager]
-ratio = [1, 3, 4]
+ratio = [0, 1, 0]
 sort_by = "natural"
 sort_sensitive = false
 sort_dir_first = true
