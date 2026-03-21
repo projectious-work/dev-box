@@ -185,11 +185,11 @@ const DEFAULT_ZELLIJ_LAYOUT: &str = r#"layout {
     }
     tab name="dev" focus=true {
         pane split_direction="vertical" {
-            pane size="40%" name="files" {
+            pane size="40%" name="files" focus=true {
                 command "yazi"
                 cwd "/workspace"
             }
-            pane size="60%" name="editor" focus=true {
+            pane size="60%" name="editor" {
                 command "vim-loop"
                 cwd "/workspace"
             }
