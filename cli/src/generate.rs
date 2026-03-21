@@ -213,7 +213,8 @@ fn generate_devcontainer_json(config: &DevBoxConfig, dir: &Path) -> Result<bool>
 
     // Build VS Code settings — start with base, add flavor-specific
     let mut settings = serde_json::json!({
-        "terminal.integrated.defaultProfile.linux": "zellij",
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "terminal.integrated.fontFamily": "'FiraCode Nerd Font', 'Hack Nerd Font', 'JetBrainsMono Nerd Font', monospace",
         "terminal.integrated.profiles.linux": {
             "bash": {
                 "path": "/bin/bash"
