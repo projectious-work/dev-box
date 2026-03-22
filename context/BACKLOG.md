@@ -3,58 +3,47 @@
 Prioritized work items. GitHub issues referenced where they exist.
 Source of truth — GitHub issues are for external visibility.
 
-## Completed (v0.5.0)
+## Completed
 
-- [x] **dev-box sync** — Reconcile config changes (re-seed, regenerate). Theme switching without manual file deletion (#25)
-- [x] **Shell enhancement tools** — ripgrep, fd, bat, eza, zoxide, fzf, delta in base image + shell aliases
-- [x] **Starship prompt** — Install in base image, themed presets, 10 preset choices (#28)
-- [x] **Keyboard shortcuts cheatsheet** — Docs page for Zellij, Yazi, Vim, lazygit (#16)
-- [x] **generate deprecated in favor of sync** — `dev-box generate` replaced by `dev-box sync` (#25)
+- [x] **dev-box sync** — Theme switching without manual file deletion (#25)
+- [x] **Shell enhancement tools** — ripgrep, fd, bat, eza, zoxide, fzf, delta + aliases
+- [x] **Starship prompt** — Installed in base image (#28)
+- [x] **Keyboard shortcuts cheatsheet** — Docs page (#16)
+- [x] **generate deprecated** — Replaced by sync (#25)
+- [x] **AI provider flexibility** — Claude/Aider/Gemini, dynamic layouts, optional (#19)
+- [x] **Process templates** — release, code-review, feature-dev, bug-fix (#29)
+- [x] **SKILL.md support** — 3 example skills scaffolded (#30)
+- [x] **Addon packages** — infrastructure, kubernetes, cloud-aws/gcp/azure (#18)
+- [x] **Security audit command** — dev-box audit: cargo audit, pip-audit, trivy (#24)
+- [x] **Zensical migration** — Config + maintain.sh support (#26)
+- [x] **Dockerfile optimization** — Pinned versions, fontconfig fix, COPY consolidation (#27)
+- [x] **Version in docs header** — site_name includes version (#12)
 
-## Next Up (v0.5.x / v0.6.0)
+## Next Up
 
-- [ ] **Zensical migration** — Migrate docs from MkDocs before EOL Nov 2026 (#26)
-- [ ] **Dockerfile optimization** — Cache mounts, layer reduction, version pinning (#27)
 - [ ] **Theming screenshots** — Gallery for all 6 themes in docs (#14)
+- [ ] **Starship prompt presets** — Configurable presets in dev-box.toml (#17)
+- [ ] **Additional image flavors** — node, go, python-rust
+- [ ] **Curated skill library** — Expand to 50-100 vetted skills (#30)
 
-## Planned — v0.6.0 (Flexibility)
-
-- [ ] **AI provider flexibility** — Optional/selectable: Claude, Aider, Gemini, Codex, Goose. Stacked panes. No pane if none (#19)
-- [ ] **Addon packages** — infrastructure (OpenTofu, Ansible, Packer), kubernetes (kubectl, Helm, k9s), cloud-aws/gcp/azure (#18)
-- [ ] **Process templates** — Standard process docs (release, code-review, feature-dev, bug-fix) in context/processes/ (#29)
-- [ ] **SKILL.md support** — Skill directory, vetted skill library (50-100 curated skills), skill install command (DEC-011, #30)
-- [ ] **Additional image flavors** — node, go, python-rust, python-node
-
-## Planned — v0.7.0+ (Architecture)
+## Planned — Architecture
 
 - [ ] **Plugin / extension system** — Hooks, template overrides, community features (#20)
 - [ ] **Zellij plugin integration** — zjstatus, custom dev-box status plugin (#21)
-- [ ] **Automated context migration** — Safe auto-migration + AI-assisted prompts for breaking changes
+- [ ] **Automated context migration** — Safe auto-migration + AI-assisted prompts
 - [ ] **Multi-service support** — Additional docker-compose services, dev-box ps/logs
-- [ ] **Remote development** — Run environments on remote hosts
+- [ ] **Remote development** — Environments on remote hosts
 
-## v1.0.0 Requirements (see context/project-notes/v1-readiness.md)
+## Quality & Security
 
-- [ ] **Versioning policy** — Document what's breaking vs non-breaking
-- [ ] **API stability** — Commit to backward compat for dev-box.toml schema and CLI
-- [ ] **Preview mode** — `--preview` flag for experimental features
-- [ ] **Security scanning** — cargo audit, Trivy, SBOM generation (#24)
+- [ ] **Code review for simplification** — Dedup, test helpers, dead code (#22)
 - [ ] **Security review** — Input validation, container security, supply chain (#23)
-- [ ] **Code review** — Simplification, dedup, test coverage (#22)
-- [ ] **Complete documentation** — All features, migration guide, architecture overview
+- [ ] **TeX Live builder deduplication** — 3 Dockerfiles share identical 90-line stage
+- [ ] **Binary checksum verification** — Downloaded binaries in base Dockerfile
 - [ ] **Image signing** — sigstore/cosign for published images
-- [ ] **Real-world validation** — Multiple derived projects battle-tested
 
-## Documentation
+## Ideas
 
-- [x] **Version display in docs header** — Done (#12)
-- [ ] **VS Code settings conflict detection** — Migration instructions check .vscode/settings.json
-- [ ] **Bash prompt themes docs** — Screenshots of Starship presets (#17)
-
-## Ideas / Investigation
-
-- [ ] LaTeX addon package groups (music, chemistry, linguistics) vs documenting additions
-- [ ] Agent orchestration tools — too volatile, revisit in 6-12 months
-- [ ] Python package manager choice — uv is correct default, keep as-is
-- [ ] AIUC-1 compliance alignment (relevant for kaits, awareness for dev-box)
-- [ ] ClawHub / external skill marketplaces — user responsibility, not dev-box managed
+- [ ] LaTeX addon package groups (music, chemistry, linguistics)
+- [ ] Agent orchestration tools — too volatile, revisit later
+- [ ] AIUC-1 compliance alignment (awareness for dev-box)
