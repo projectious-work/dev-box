@@ -130,6 +130,7 @@ RUN mkdir -p /root/.config/yazi
 COPY config/yazi/yazi.toml             /root/.config/yazi/yazi.toml
 COPY config/yazi/keymap.toml           /root/.config/yazi/keymap.toml
 COPY config/yazi/theme.toml            /root/.config/yazi/theme.toml
+COPY config/yazi/themes/               /root/.config/yazi/themes/
 
 # Helper scripts
 COPY config/bin/open-in-editor.sh      /usr/local/bin/open-in-editor
