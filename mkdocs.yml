@@ -59,6 +59,8 @@ nav:
   - CLI Reference:
     - Commands: cli/commands.md
     - Configuration: cli/configuration.md
+  - Themes:
+    - themes.md
   - Contributing:
     - contributing.md
   - Maintenance:

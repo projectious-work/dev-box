@@ -35,6 +35,9 @@ schema_version = "1.0.0"             # Context schema version (semver)
 [ai]
 providers = ["claude"]                # AI providers to configure
 
+[appearance]
+theme = "gruvbox-dark"               # Color theme for all tools
+
 [audio]
 enabled = true                        # Enable audio bridging
 pulse_server = "tcp:host.docker.internal:4714"  # PulseAudio server address
@@ -93,6 +96,14 @@ AI provider configuration.
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `providers` | Array of strings | No | `["claude"]` | AI providers to configure (e.g., `"claude"`, `"gemini"`) |
+
+### [appearance]
+
+Color theme configuration. See [Themes](../themes.md) for details and previews.
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `theme` | String | No | `"gruvbox-dark"` | Color theme: `gruvbox-dark`, `catppuccin-mocha`, `catppuccin-latte`, `dracula`, `tokyo-night`, `nord` |
 
 ### [audio]
 
