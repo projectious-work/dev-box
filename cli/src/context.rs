@@ -76,6 +76,18 @@ const SKILL_DOCKERFILE_REVIEW: &str =
 const SKILL_GIT_WORKFLOW: &str = include_str!("../../templates/skills/git-workflow/SKILL.md");
 const SKILL_CI_CD_SETUP: &str = include_str!("../../templates/skills/ci-cd-setup/SKILL.md");
 
+// Design & visual skills
+const SKILL_EXCALIDRAW: &str = include_str!("../../templates/skills/excalidraw/SKILL.md");
+const SKILL_FRONTEND_DESIGN: &str =
+    include_str!("../../templates/skills/frontend-design/SKILL.md");
+const SKILL_INFOGRAPHICS: &str = include_str!("../../templates/skills/infographics/SKILL.md");
+const SKILL_LOGO_DESIGN: &str = include_str!("../../templates/skills/logo-design/SKILL.md");
+const SKILL_TAILWIND: &str = include_str!("../../templates/skills/tailwind/SKILL.md");
+
+// Architecture skills
+const SKILL_SOFTWARE_ARCHITECTURE: &str =
+    include_str!("../../templates/skills/software-architecture/SKILL.md");
+
 // Security skills
 const SKILL_DEPENDENCY_AUDIT: &str =
     include_str!("../../templates/skills/dependency-audit/SKILL.md");
@@ -382,6 +394,14 @@ fn scaffold_skills() -> Result<()> {
         ("dockerfile-review", SKILL_DOCKERFILE_REVIEW),
         ("git-workflow", SKILL_GIT_WORKFLOW),
         ("ci-cd-setup", SKILL_CI_CD_SETUP),
+        // Design & visual skills
+        ("excalidraw", SKILL_EXCALIDRAW),
+        ("frontend-design", SKILL_FRONTEND_DESIGN),
+        ("infographics", SKILL_INFOGRAPHICS),
+        ("logo-design", SKILL_LOGO_DESIGN),
+        ("tailwind", SKILL_TAILWIND),
+        // Architecture skills
+        ("software-architecture", SKILL_SOFTWARE_ARCHITECTURE),
         // Security skills
         ("dependency-audit", SKILL_DEPENDENCY_AUDIT),
         ("secret-management", SKILL_SECRET_MANAGEMENT),

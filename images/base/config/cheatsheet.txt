@@ -31,7 +31,7 @@
 ║  LAYOUTS                            TABS                                  ║
 ║  ───────────────────────────        ──────────────────────────────        ║
 ║  dev-box start --layout dev         Ctrl+b 1  dev  (files+editor+term)   ║
-║  dev-box start --layout assist      Ctrl+b 2  git  (lazygit)             ║
+║  dev-box start --layout cowork      Ctrl+b 2  git  (lazygit)             ║
 ║  dev-box start --layout focus       Ctrl+b 3  shell (extra terminal)     ║
 ║                                     Ctrl+b 4  help (this cheatsheet)     ║
 ║                                                                           ║

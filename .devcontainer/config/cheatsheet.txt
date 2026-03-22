@@ -28,7 +28,7 @@
 ║  LAYOUTS (start with)                 :q!        Quit without saving      ║
 ║  ───────────────────────────          Ctrl+h/j/k/l  Navigate splits       ║
 ║  zellij --layout dev                                                       ║
-║  zellij --layout assist              TABS                                  ║
+║  zellij --layout cowork              TABS                                  ║
 ║  zellij --layout focus               ──────────────────────────────        ║
 ║                                       Alt+1  dev  (files+editor+term)      ║
 ║                                       Alt+2  git  (lazygit)                ║

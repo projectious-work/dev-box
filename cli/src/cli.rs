@@ -121,7 +121,7 @@ pub enum Commands {
     ///
     /// Available layouts: dev (default), focus, cowork.
     Start {
-        /// Zellij layout to use (dev, focus, assist)
+        /// Zellij layout to use (dev, focus, cowork)
         #[arg(long, value_enum, default_value = "dev")]
         layout: Layout,
     },
@@ -138,7 +138,7 @@ pub enum Commands {
     ///
     /// Available layouts: dev (default), focus, cowork.
     Attach {
-        /// Zellij layout to use (dev, focus, assist)
+        /// Zellij layout to use (dev, focus, cowork)
         #[arg(long, value_enum, default_value = "dev")]
         layout: Layout,
     },
