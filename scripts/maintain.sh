@@ -261,7 +261,7 @@ cmd_docs_serve() {
   cd "${PROJECT_ROOT}"
   if command -v zensical &>/dev/null; then
     info "Serving docs with Zensical at http://localhost:8000 ..."
-    zensical serve -a 0.0.0.0:8000
+    zensical serve -f zensical.toml -a 0.0.0.0:8000
   elif command -v mkdocs &>/dev/null; then
     info "Serving docs with MkDocs at http://localhost:8000 ..."
     mkdocs serve -a 0.0.0.0:8000
@@ -297,7 +297,11 @@ cmd_docs_deploy() {
 
   cd "${PROJECT_ROOT}"
   info "Building docs with ${docs_cmd}..."
-  ${docs_cmd} build --strict --clean
+  if [[ "${docs_cmd}" == "zensical" ]]; then
+    ${docs_cmd} build -f zensical.toml -c
+  else
+    ${docs_cmd} build --strict --clean
+  fi
   ok "Site built in site/"
 
   if [[ "${dry_run}" == "true" ]]; then
