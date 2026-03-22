@@ -438,7 +438,7 @@ pub fn seed_root_dir(config: &DevBoxConfig) -> Result<()> {
         DEFAULT_ZELLIJ_COWORK_LAYOUT,
     )?;
 
-    // Yazi config
+    // Yazi config + theme
     seed_file(
         &root.join(".config").join("yazi").join("yazi.toml"),
         DEFAULT_YAZI_CONFIG,
@@ -446,6 +446,10 @@ pub fn seed_root_dir(config: &DevBoxConfig) -> Result<()> {
     seed_file(
         &root.join(".config").join("yazi").join("keymap.toml"),
         DEFAULT_YAZI_KEYMAP,
+    )?;
+    seed_file(
+        &root.join(".config").join("yazi").join("theme.toml"),
+        crate::themes::yazi_theme(theme),
     )?;
 
     // Cheatsheet
