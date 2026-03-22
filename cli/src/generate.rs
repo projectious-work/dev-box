@@ -211,6 +211,12 @@ fn generate_devcontainer_json(config: &DevBoxConfig, dir: &Path) -> Result<bool>
     if image.contains_typst() {
         extensions.push("myriad-dreamin.tinymist".to_string());
     }
+    if image.contains_node() {
+        extensions.push("dbaeumer.vscode-eslint".to_string());
+    }
+    if image.contains_go() {
+        extensions.push("golang.go".to_string());
+    }
 
     // Append user-specified VS Code extensions
     for ext in &config.container.vscode_extensions {

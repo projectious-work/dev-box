@@ -584,6 +584,21 @@ pub(crate) fn update_gitignore(image: &ImageFlavor) -> Result<()> {
         content.push_str("Cargo.lock\n\n");
     }
 
+    if image.contains_node() {
+        content.push_str(
+            "# ── Node.js ──────────────────────────────────────────────────────────────────\n",
+        );
+        content.push_str("node_modules/\n");
+        content.push_str(".next/\n");
+        content.push_str("dist/\n");
+        content.push_str(".env.local\n");
+        content.push_str(".env.*.local\n");
+        content.push_str(".nuxt/\n");
+        content.push_str(".output/\n");
+        content.push_str(".cache/\n");
+        content.push_str("coverage/\n\n");
+    }
+
     fs::write(gitignore_path, content).context("Failed to write .gitignore")?;
     output::ok("Created .gitignore with dev-box and language-specific entries");
 

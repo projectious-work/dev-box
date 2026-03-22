@@ -26,6 +26,8 @@ const IMAGE_FLAVOR_ITEMS: &[&str] = &[
     "latex",
     "typst",
     "rust",
+    "node",
+    "go",
     "python-latex",
     "python-typst",
     "rust-latex",
@@ -237,7 +239,7 @@ fn serialize_config_with_comments(config: &DevBoxConfig) -> String {
     out.push_str("[dev-box]\n");
     out.push_str(&format!("version = \"{}\"\n", config.dev_box.version));
     out.push_str(&format!(
-        "# Container image flavor. Options: base, python, latex, typst, rust,\n\
+        "# Container image flavor. Options: base, python, latex, typst, rust, node, go,\n\
          # python-latex, python-typst, rust-latex\n\
          image = \"{}\"\n",
         config.dev_box.image
