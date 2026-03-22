@@ -74,6 +74,10 @@ Starship prompt with theme presets matching the color theme. From minimal to ful
 
 ## Planned — Medium Term
 
+### Skills + Processes Architecture (DEC-011, #29, #30)
+
+Separate WHAT (process declarations in `context/`) from HOW (skills in SKILL.md format). Process templates for release, code-review, feature-dev, bug-fix. Curated skill library (50-100 vetted skills), `dev-box skill install` command. See `context/project-notes/architecture-skills-processes.md`.
+
 ### Plugin / Extension System (#20)
 
 Extensibility architecture for dev-box:
@@ -102,10 +106,6 @@ New flavors based on demand:
 When upgrading between schema versions, automate safe migrations (additive changes) while generating AI-assisted migration prompts for breaking changes.
 
 ## Planned — Long Term
-
-### Documentation System Migration
-
-Evaluate alternatives to MkDocs (Zensical, mdBook, etc.) or pin to stable MkDocs version before 2.0 breaking changes.
 
 ### Multi-Service Support
 

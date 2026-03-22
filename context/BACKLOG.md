@@ -3,13 +3,17 @@
 Prioritized work items. GitHub issues referenced where they exist.
 Source of truth — GitHub issues are for external visibility.
 
-## Next Up (v0.5.0)
+## Completed (v0.5.0)
 
-- [ ] **dev-box sync** — Reconcile config changes (re-seed, regenerate). Theme switching without manual file deletion (#25)
-- [ ] **Shell enhancement tools** — ripgrep, fd, bat, eza, zoxide, fzf, delta in base image + shell aliases
-- [ ] **Starship prompt** — Install in base image, themed presets, 10 preset choices (#28)
+- [x] **dev-box sync** — Reconcile config changes (re-seed, regenerate). Theme switching without manual file deletion (#25)
+- [x] **Shell enhancement tools** — ripgrep, fd, bat, eza, zoxide, fzf, delta in base image + shell aliases
+- [x] **Starship prompt** — Install in base image, themed presets, 10 preset choices (#28)
+- [x] **Keyboard shortcuts cheatsheet** — Docs page for Zellij, Yazi, Vim, lazygit (#16)
+- [x] **generate deprecated in favor of sync** — `dev-box generate` replaced by `dev-box sync` (#25)
+
+## Next Up (v0.5.x / v0.6.0)
+
 - [ ] **Zensical migration** — Migrate docs from MkDocs before EOL Nov 2026 (#26)
-- [ ] **Keyboard shortcuts cheatsheet** — Docs page for Zellij, Yazi, Vim, lazygit (#16)
 - [ ] **Dockerfile optimization** — Cache mounts, layer reduction, version pinning (#27)
 - [ ] **Theming screenshots** — Gallery for all 6 themes in docs (#14)
 
@@ -18,7 +22,7 @@ Source of truth — GitHub issues are for external visibility.
 - [ ] **AI provider flexibility** — Optional/selectable: Claude, Aider, Gemini, Codex, Goose. Stacked panes. No pane if none (#19)
 - [ ] **Addon packages** — infrastructure (OpenTofu, Ansible, Packer), kubernetes (kubectl, Helm, k9s), cloud-aws/gcp/azure (#18)
 - [ ] **Process templates** — Standard process docs (release, code-review, feature-dev, bug-fix) in context/processes/ (#29)
-- [ ] **SKILL.md support** — Skill directory, vetted skill library (50-100 curated skills), skill install command (#30)
+- [ ] **SKILL.md support** — Skill directory, vetted skill library (50-100 curated skills), skill install command (DEC-011, #30)
 - [ ] **Additional image flavors** — node, go, python-rust, python-node
 
 ## Planned — v0.7.0+ (Architecture)
