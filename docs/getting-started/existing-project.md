@@ -18,7 +18,7 @@ If you prefer to write it by hand:
 
 ```toml
 [dev-box]
-version = "0.7.0"
+version = "0.8.0"
 image = "python"
 process = "managed"
 
@@ -94,7 +94,7 @@ Example output:
 
 ```
 ==> Running diagnostics...
- ✓ Config version: 0.7.0
+ ✓ Config version: 0.8.0
  ✓ Image: python
  ✓ Process: managed
  ✓ Container name: my-existing-project

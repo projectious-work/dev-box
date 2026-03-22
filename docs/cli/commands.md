@@ -418,7 +418,7 @@ Output:
 
 ```
 ==> Running diagnostics...
- ✓ Config version: 0.7.0
+ ✓ Config version: 0.8.0
  ✓ Image: python
  ✓ Process: product
  ✓ Container name: my-app
@@ -610,7 +610,7 @@ Copies all dev-box managed files to a timestamped subdirectory:
 - `CLAUDE.md`
 - `.gitignore`
 
-The backup directory is named `dev-box-<version>-backup-<date>-<time>` (e.g., `dev-box-0.7.0-backup-2026-03-22-1430`).
+The backup directory is named `dev-box-<version>-backup-<date>-<time>` (e.g., `dev-box-0.8.0-backup-2026-03-22-1430`).
 
 ### Examples
 

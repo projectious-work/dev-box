@@ -33,7 +33,7 @@ A full release covers three artifacts: CLI binaries, container images, and docum
 ### 1. Prepare the release
 
 ```bash
-./scripts/maintain.sh release 0.7.0
+./scripts/maintain.sh release 0.8.0
 ```
 
 This runs tests, builds the CLI binary for the current platform, builds all 10 container images (if a runtime is available), creates a git tag, and generates `dist/RELEASE-NOTES.md` and `dist/RELEASE-PROMPT.md`.
@@ -57,24 +57,24 @@ binaries must be built on their respective machines (or via cross-compilation):
 For macOS builds there's a helper script:
 
 ```bash
-./scripts/build-macos.sh 0.7.0
+./scripts/build-macos.sh 0.8.0
 ```
 
 Attach additional binaries to the release after creation:
 
 ```bash
-gh release upload v0.7.0 dist/dev-box-v0.7.0-x86_64-apple-darwin.tar.gz
+gh release upload v0.8.0 dist/dev-box-v0.8.0-x86_64-apple-darwin.tar.gz
 ```
 
 ### 3. Push the tag and create the GitHub release
 
 ```bash
-git push origin v0.7.0
+git push origin v0.8.0
 
-gh release create v0.7.0 \
-  --title "dev-box v0.7.0" \
+gh release create v0.8.0 \
+  --title "dev-box v0.8.0" \
   --notes-file dist/RELEASE-NOTES.md \
-  dist/dev-box-v0.7.0-*.tar.gz
+  dist/dev-box-v0.8.0-*.tar.gz
 ```
 
 !!! warning "Always use `--notes-file`, never `--generate-notes`"
@@ -97,10 +97,10 @@ The token needs the `write:packages` scope. Create one at
 Then push all 10 images:
 
 ```bash
-./scripts/maintain.sh push-images 0.7.0
+./scripts/maintain.sh push-images 0.8.0
 ```
 
-This pushes both versioned tags (`python-v0.7.0`) and `latest` tags (`python-latest`)
+This pushes both versioned tags (`python-v0.8.0`) and `latest` tags (`python-latest`)
 for each flavor.
 
 !!! note "Build order matters"
@@ -124,7 +124,7 @@ After a release, verify:
 
 - [ ] `curl -fsSL .../install.sh | bash` installs the new version
 - [ ] `dev-box --version` shows the correct version
-- [ ] `podman pull ghcr.io/projectious-work/dev-box:base-v0.7.0` succeeds
+- [ ] `podman pull ghcr.io/projectious-work/dev-box:base-v0.8.0` succeeds
 - [ ] Documentation site reflects changes
 
 ## Container Images
@@ -153,7 +153,7 @@ Build all locally:
 Build a single image manually:
 
 ```bash
-podman build -t ghcr.io/projectious-work/dev-box:python-v0.7.0 images/python/
+podman build -t ghcr.io/projectious-work/dev-box:python-v0.8.0 images/python/
 ```
 
 ## Documentation
