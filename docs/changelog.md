@@ -2,6 +2,29 @@
 
 All notable changes to dev-box are documented here.
 
+## v0.8.0 — 2026-03-22
+
+### Added
+- **Curated skill library** (#30) — 83 skills across 14 categories with 57 reference files:
+  - Process (9), Development (11), Language (7), Infrastructure (10), Architecture (4)
+  - Design & Visual (7), Data & Analytics (5), AI & ML (6), API & Integration (4)
+  - Security (5), Observability (4), Database (4), Performance (4), Framework & SEO (5)
+- **Skills Library documentation** — new top-level nav section with 15 category pages
+  - Each skill documented with triggers, tools, references, capabilities, and examples
+- **Reference file scaffolding** — `scaffold_skills()` now deploys `references/*.md` alongside SKILL.md
+- **Search enhancements** — `search.suggest`, `search.highlight`, `search.share` in Zensical
+- **Starship prompt presets** (#17) — 6 configurable presets with theme-aware colors
+- **Node.js and Go image flavors** — 10 total image flavors
+
+### Fixed
+- **Vim colorscheme E185** — granular `.vim/vimrc` + `.vim/undo` mounts instead of whole `.vim/` directory, preserving image-baked colorschemes
+- **assist→cowork cleanup** — removed all stale `assist.kdl` references from Dockerfile, maintain.sh, cheatsheets, and CLI help
+- **Code review cleanup** (#22) — reduced duplication, shared test helpers, removed dead code
+
+### Removed
+- `mkdocs.yml` — fully migrated to `zensical.toml`
+- Old single-page `docs/skills.md` — replaced by Skills Library section
+
 ## v0.7.0 — 2026-03-22
 
 ### Added
