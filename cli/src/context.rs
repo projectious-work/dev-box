@@ -47,6 +47,41 @@ const SKILL_DECISIONS_ADR: &str = include_str!("../../templates/skills/decisions
 const SKILL_STANDUP_CONTEXT: &str =
     include_str!("../../templates/skills/standup-context/SKILL.md");
 
+// Development skills
+const SKILL_CODE_REVIEW: &str = include_str!("../../templates/skills/code-review/SKILL.md");
+const SKILL_TESTING_STRATEGY: &str =
+    include_str!("../../templates/skills/testing-strategy/SKILL.md");
+const SKILL_REFACTORING: &str = include_str!("../../templates/skills/refactoring/SKILL.md");
+const SKILL_DOCUMENTATION: &str = include_str!("../../templates/skills/documentation/SKILL.md");
+const SKILL_DEBUGGING: &str = include_str!("../../templates/skills/debugging/SKILL.md");
+
+// Process skills
+const SKILL_RELEASE_SEMVER: &str = include_str!("../../templates/skills/release-semver/SKILL.md");
+const SKILL_INCIDENT_RESPONSE: &str =
+    include_str!("../../templates/skills/incident-response/SKILL.md");
+const SKILL_RETROSPECTIVE: &str = include_str!("../../templates/skills/retrospective/SKILL.md");
+
+// Language-specific skills
+const SKILL_PYTHON_BEST_PRACTICES: &str =
+    include_str!("../../templates/skills/python-best-practices/SKILL.md");
+const SKILL_RUST_CONVENTIONS: &str =
+    include_str!("../../templates/skills/rust-conventions/SKILL.md");
+const SKILL_LATEX_AUTHORING: &str = include_str!("../../templates/skills/latex-authoring/SKILL.md");
+const SKILL_TYPESCRIPT_PATTERNS: &str =
+    include_str!("../../templates/skills/typescript-patterns/SKILL.md");
+
+// Infrastructure skills
+const SKILL_DOCKERFILE_REVIEW: &str =
+    include_str!("../../templates/skills/dockerfile-review/SKILL.md");
+const SKILL_GIT_WORKFLOW: &str = include_str!("../../templates/skills/git-workflow/SKILL.md");
+const SKILL_CI_CD_SETUP: &str = include_str!("../../templates/skills/ci-cd-setup/SKILL.md");
+
+// Security skills
+const SKILL_DEPENDENCY_AUDIT: &str =
+    include_str!("../../templates/skills/dependency-audit/SKILL.md");
+const SKILL_SECRET_MANAGEMENT: &str =
+    include_str!("../../templates/skills/secret-management/SKILL.md");
+
 /// Default OWNER.md content — created locally in each project's context/ directory.
 const OWNER_CONTENT: &str = r#"# Owner Profile
 
