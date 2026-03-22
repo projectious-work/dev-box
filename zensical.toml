@@ -22,8 +22,24 @@ nav = [
   { "Context System" = [
     { Overview = "context/overview.md" },
     { "Work Processes" = "context/work-processes.md" },
-    { Skills = "skills.md" },
     { Migration = "context/migration.md" },
+  ] },
+  { "Skills Library" = [
+    { Overview = "skills/index.md" },
+    { Process = "skills/process.md" },
+    { Development = "skills/development.md" },
+    { Language = "skills/language.md" },
+    { Infrastructure = "skills/infrastructure.md" },
+    { Architecture = "skills/architecture.md" },
+    { "Design & Visual" = "skills/design.md" },
+    { "Data & Analytics" = "skills/data.md" },
+    { "AI & ML" = "skills/ai-ml.md" },
+    { "API & Integration" = "skills/api.md" },
+    { Security = "skills/security.md" },
+    { Observability = "skills/observability.md" },
+    { Database = "skills/database.md" },
+    { Performance = "skills/performance.md" },
+    { "Framework & SEO" = "skills/framework.md" },
   ] },
   { "CLI Reference" = [
     { Commands = "cli/commands.md" },
@@ -53,7 +69,9 @@ features = [
   "navigation.instant",
   "navigation.instant.prefetch",
   "toc.follow",
+  "search.suggest",
   "search.highlight",
+  "search.share",
 ]
 
 [[project.theme.palette]]
