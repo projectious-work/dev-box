@@ -13,7 +13,7 @@ Source of truth — GitHub issues are for external visibility.
 - [x] **AI provider flexibility** — Claude/Aider/Gemini, dynamic layouts, optional (#19)
 - [x] **Process templates** — release, code-review, feature-dev, bug-fix (#29)
 - [x] **SKILL.md support** — 3 example skills scaffolded (#30)
-- [x] **Addon packages** — infrastructure, kubernetes, cloud-aws/gcp/azure (#18)
+- [x] **Addon packages** — infrastructure, kubernetes, cloud-aws/gcp/azure, 6 docs addons (#18)
 - [x] **Security audit command** — dev-box audit: cargo audit, pip-audit, trivy (#24)
 - [x] **Zensical migration** — Config + maintain.sh support (#26)
 - [x] **Dockerfile optimization** — Pinned versions, fontconfig fix, COPY consolidation (#27)
