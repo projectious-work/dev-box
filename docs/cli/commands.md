@@ -28,11 +28,12 @@ dev-box init [OPTIONS]
 | Option | Default | Description |
 |--------|---------|-------------|
 | `--name <NAME>` | Current directory name | Project and container name |
-| `--image <FLAVOR>` | `base` | Image flavor: `base`, `python`, `latex`, `typst`, `rust`, `python-latex`, `python-typst`, `rust-latex` |
+| `--image <FLAVOR>` | `base` | Image flavor: `base`, `python`, `latex`, `typst`, `rust`, `node`, `go`, `python-latex`, `python-typst`, `rust-latex` |
 | `--process <FLAVOR>` | `product` | Work process flavor: `minimal`, `managed`, `research`, `product` |
 | `--ai <PROVIDER>` | `claude` | AI provider(s) to configure: `claude`, `aider`, `gemini` (can be specified multiple times) |
 | `--theme <THEME>` | `gruvbox-dark` | Color theme: `gruvbox-dark`, `catppuccin-mocha`, `catppuccin-latte`, `dracula`, `tokyo-night`, `nord` |
 | `--user <USER>` | `root` | Container user |
+| `--addons <BUNDLE>` | -- | Addon bundles to install (can be specified multiple times): `infrastructure`, `kubernetes`, `cloud-aws`, `cloud-gcp`, `cloud-azure`, `docs-mkdocs`, `docs-zensical`, `docs-docusaurus`, `docs-starlight`, `docs-mdbook`, `docs-hugo` |
 
 ### What It Does
 
@@ -65,6 +66,9 @@ dev-box init --ai claude --ai aider --ai gemini
 
 # Choose a color theme
 dev-box init --name my-app --image python --theme catppuccin-mocha
+
+# Include addon bundles
+dev-box init --name my-app --image python --addons infrastructure --addons kubernetes
 ```
 
 ### Exit Codes
@@ -155,7 +159,7 @@ dev-box build [OPTIONS]
 ### What It Does
 
 1. Loads and validates `dev-box.toml`
-2. Runs `generate` to ensure devcontainer files are current
+2. Runs `sync` to ensure devcontainer files are current
 3. Runs `docker compose build` (or `podman compose build`)
 
 ### Examples
@@ -263,6 +267,42 @@ dev-box stop
 | Code | Meaning |
 |------|---------|
 | 0 | Container stopped, or was already stopped/missing |
+| 1 | Config error or runtime not found |
+
+---
+
+## dev-box remove
+
+Stop and remove the container entirely.
+
+### Usage
+
+```bash
+dev-box remove
+```
+
+### What It Does
+
+Unlike `stop`, this removes the container entirely (like `docker rm`). Use before switching to VS Code or when you want a clean slate. The container is stopped first if running, then removed.
+
+All data in `.dev-box-home/` and the workspace is preserved -- only the container itself is deleted.
+
+### Aliases
+
+`dev-box rm` is a shorthand alias for `dev-box remove`.
+
+### Examples
+
+```bash
+dev-box remove
+dev-box rm
+```
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | Container removed, or was already missing |
 | 1 | Config error or runtime not found |
 
 ---
@@ -378,7 +418,7 @@ Output:
 
 ```
 ==> Running diagnostics...
- ✓ Config version: 0.3.7
+ ✓ Config version: 0.7.0
  ✓ Image: python
  ✓ Process: product
  ✓ Container name: my-app
@@ -570,7 +610,7 @@ Copies all dev-box managed files to a timestamped subdirectory:
 - `CLAUDE.md`
 - `.gitignore`
 
-The backup directory is named `dev-box-<version>-backup-<date>-<time>` (e.g., `dev-box-0.3.8-backup-2026-03-21-1430`).
+The backup directory is named `dev-box-<version>-backup-<date>-<time>` (e.g., `dev-box-0.7.0-backup-2026-03-22-1430`).
 
 ### Examples
 

@@ -15,7 +15,7 @@ name = "my-app"                       # Container name
 hostname = "my-app"                   # Container hostname
 user = "root"                         # Container user
 ports = ["8000:8000", "5432:5432"]    # Port mappings (host:container)
-extra_packages = ["ripgrep", "fzf"]   # Additional apt packages
+extra_packages = ["postgresql-client"] # Additional apt packages
 environment = { MY_VAR = "value" }    # Environment variables
 post_create_command = "npm install"   # Command to run after container creation
 vscode_extensions = [                 # VS Code extensions to install
@@ -35,6 +35,9 @@ schema_version = "1.0.0"             # Context schema version (semver)
 [ai]
 providers = ["claude", "aider", "gemini"]  # AI providers to configure
 
+[addons]
+bundles = ["infrastructure", "kubernetes"] # Addon tool bundles
+
 [appearance]
 theme = "gruvbox-dark"               # Color theme for all tools
 
@@ -52,7 +55,7 @@ Top-level project metadata.
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `version` | String (semver) | Yes | -- | Project version |
-| `image` | String | Yes | -- | Image flavor: `base`, `python`, `latex`, `typst`, `rust`, `python-latex`, `python-typst`, `rust-latex` |
+| `image` | String | Yes | -- | Image flavor: `base`, `python`, `latex`, `typst`, `rust`, `node`, `go`, `python-latex`, `python-typst`, `rust-latex` |
 | `process` | String | Yes | -- | Work process: `minimal`, `managed`, `research`, `product` |
 
 ### [container]
@@ -99,8 +102,34 @@ AI provider configuration.
 
 ### [addons]
 
-!!! note "Coming soon"
-    The `[addons]` section is planned for a future release. It will allow declaring addon packages (e.g., infrastructure tools, Kubernetes utilities, cloud CLIs) directly in `dev-box.toml`.
+Addon bundles for installing additional tool sets into the container. Addons generate install layers in the generated Dockerfile.
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `bundles` | Array of strings | No | `[]` | Addon bundles to install |
+
+Available bundles (11 total):
+
+| Bundle | What it installs |
+|--------|-----------------|
+| `infrastructure` | OpenTofu, Ansible, Packer |
+| `kubernetes` | kubectl, Helm, k9s, Kustomize |
+| `cloud-aws` | AWS CLI v2 |
+| `cloud-gcp` | Google Cloud CLI |
+| `cloud-azure` | Azure CLI |
+| `docs-mkdocs` | MkDocs + Material theme |
+| `docs-zensical` | Zensical (Material for MkDocs successor) |
+| `docs-docusaurus` | Docusaurus (React-based docs) |
+| `docs-starlight` | Starlight (Astro-based docs) |
+| `docs-mdbook` | mdBook (Rust book generator) |
+| `docs-hugo` | Hugo (fast static site generator) |
+
+Example:
+
+```toml
+[addons]
+bundles = ["infrastructure", "kubernetes", "cloud-aws"]
+```
 
 ### [appearance]
 
@@ -154,6 +183,8 @@ When a field is omitted from `dev-box.toml`, these defaults apply:
 | `container.vscode_extensions` | `[]` |
 | `context.schema_version` | `"1.0.0"` |
 | `ai.providers` | `["claude"]` |
+| `addons.bundles` | `[]` |
+| `appearance.theme` | `"gruvbox-dark"` |
 | `audio.enabled` | `false` |
 | `audio.pulse_server` | `"tcp:host.docker.internal:4714"` |
 
@@ -205,7 +236,7 @@ This is created by `dev-box init` and compared against `context.schema_version` 
 
 ```toml
 [dev-box]
-version = "0.3.7"
+version = "0.7.0"
 image = "python"
 process = "product"
 
@@ -230,7 +261,7 @@ enabled = false
 
 ```toml
 [dev-box]
-version = "0.3.7"
+version = "0.7.0"
 image = "rust"
 process = "managed"
 
@@ -253,7 +284,7 @@ enabled = false
 
 ```toml
 [dev-box]
-version = "0.3.7"
+version = "0.7.0"
 image = "latex"
 process = "research"
 
@@ -275,7 +306,7 @@ enabled = false
 
 ```toml
 [dev-box]
-version = "0.3.7"
+version = "0.7.0"
 image = "python-latex"
 process = "research"
 

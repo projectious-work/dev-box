@@ -1,6 +1,6 @@
 # Image Flavors
 
-dev-box provides eight container image flavors. All build on top of the [base image](base-image.md).
+dev-box provides ten container image flavors. All build on top of the [base image](base-image.md).
 
 ## Overview
 
@@ -11,6 +11,8 @@ dev-box provides eight container image flavors. All build on top of the [base im
 | `latex` | base | TeX Live (basic scheme + packages) | Academic papers, technical documents |
 | `typst` | base | Typst | Modern typesetting, technical documents |
 | `rust` | base | Rust toolchain (stable), clippy, rustfmt | Rust projects |
+| `node` | base | Node.js LTS | JavaScript/TypeScript projects |
+| `go` | base | Go toolchain | Go projects |
 | `python-latex` | python | Python + TeX Live | Data science with LaTeX reports |
 | `python-typst` | python | Python + Typst | Data science with Typst reports |
 | `rust-latex` | rust | Rust + TeX Live | Rust projects with LaTeX documentation |
@@ -117,6 +119,51 @@ image = "rust"
 - Use `rustup` to add components or switch toolchains
 - `cargo` is available on PATH immediately
 
+## node
+
+Adds Node.js LTS for JavaScript and TypeScript development.
+
+**What it includes:**
+
+- Node.js LTS (via NodeSource)
+- npm
+
+**Who it is for:** JavaScript and TypeScript application development, frontend projects, full-stack web development.
+
+**Select it with:**
+
+```toml
+[dev-box]
+image = "node"
+```
+
+**Usage notes:**
+
+- Use `npm` or `npx` for package management
+- For Yarn or pnpm, install via `extra_packages` or `post_create_command`
+
+## go
+
+Adds the Go toolchain for Go development.
+
+**What it includes:**
+
+- Go toolchain (official binary distribution)
+
+**Who it is for:** Go application and service development.
+
+**Select it with:**
+
+```toml
+[dev-box]
+image = "go"
+```
+
+**Usage notes:**
+
+- `go`, `gofmt`, and standard Go tools are available on PATH
+- Module caching is handled by Go's built-in module system
+
 ## typst
 
 Adds [Typst](https://typst.app/), a modern typesetting system that is simpler and faster than LaTeX.
@@ -193,7 +240,7 @@ Any image can be extended with additional apt packages via `dev-box.toml`:
 
 ```toml
 [container]
-extra_packages = ["ripgrep", "fd-find", "universal-ctags", "fzf"]
+extra_packages = ["universal-ctags", "graphviz", "postgresql-client"]
 ```
 
 These packages are installed during `dev-box build` via the generated Dockerfile. They persist across container restarts but are reinstalled on image rebuild.
@@ -210,6 +257,8 @@ These packages are installed during `dev-box build` via the generated Dockerfile
 | `latex` | ~600 MB |
 | `typst` | ~310 MB |
 | `rust` | ~800 MB |
+| `node` | ~400 MB |
+| `go` | ~600 MB |
 | `python-latex` | ~750 MB |
 | `python-typst` | ~460 MB |
 | `rust-latex` | ~1.1 GB |

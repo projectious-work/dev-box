@@ -5,6 +5,7 @@ All notable changes to dev-box are documented here.
 ## v0.7.0 — 2026-03-22
 
 ### Added
+- **Node and Go image flavors** — `node` (Node.js LTS) and `go` (Go toolchain) images, bringing total to 10 flavors
 - **Addon packages system** (#18) — selectable tool bundles in dev-box.toml:
   - `infrastructure` (OpenTofu, Ansible, Packer)
   - `kubernetes` (kubectl, Helm, k9s, Kustomize)
@@ -284,7 +285,7 @@ All notable changes to dev-box are documented here.
 
 ### Added
 - Initial release
-- 8 container image flavors (base, python, latex, typst, rust, python-latex, python-typst, rust-latex)
+- 8 container image flavors (base, python, latex, typst, rust, python-latex, python-typst, rust-latex) (node, go added in v0.7.0)
 - 4 work process flavors (minimal, managed, research, product)
 - CLI commands: init, generate, build, start, stop, attach, status, doctor, update
 - Context schema v1.0.0 with migration artifact generation

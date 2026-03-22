@@ -115,7 +115,7 @@ pub enum Commands {
     /// Seeds .dev-box-home/ if needed, generates devcontainer files,
     /// creates/starts the container, then attaches via zellij.
     ///
-    /// Available layouts: dev (default), focus, assist.
+    /// Available layouts: dev (default), focus, cowork.
     Start {
         /// Zellij layout to use (dev, focus, assist)
         #[arg(long, value_enum, default_value = "dev")]
@@ -132,7 +132,7 @@ pub enum Commands {
     Remove,
     /// Attach to running container
     ///
-    /// Available layouts: dev (default), focus, assist.
+    /// Available layouts: dev (default), focus, cowork.
     Attach {
         /// Zellij layout to use (dev, focus, assist)
         #[arg(long, value_enum, default_value = "dev")]

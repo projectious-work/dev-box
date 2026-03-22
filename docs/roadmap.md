@@ -7,8 +7,8 @@ This page outlines planned features and improvements for dev-box.
 The current release includes:
 
 - Rust CLI with 16 commands (init, sync, build, start, stop, remove, attach, status, doctor, completions, update, env, backup, reset, audit, audio)
-- 8 container image flavors (base, python, latex, typst, rust, python-latex, python-typst, rust-latex)
-- `dev-box.toml` configuration system with 6 sections
+- 10 container image flavors (base, python, latex, typst, rust, node, go, python-latex, python-typst, rust-latex)
+- `dev-box.toml` configuration system with 7 sections (dev-box, container, context, ai, addons, appearance, audio)
 - 4 work process flavors (minimal, managed, research, product)
 - Context scaffolding with `context/shared/` for cross-environment files
 - Named environment management (`dev-box env create/switch/list/delete/status`)
@@ -17,7 +17,7 @@ The current release includes:
 - Three IDE layouts: dev, focus, cowork (Ctrl+b leader keybindings)
 - AI provider flexibility: Claude, Aider, Gemini — optional, stackable, dynamic layouts
 - Process templates (release, code-review, feature-dev, bug-fix) with SKILL.md support
-- Addon packages: infrastructure, kubernetes, cloud-aws/gcp/azure
+- Addon bundles (11 total): infrastructure, kubernetes, cloud-aws/gcp/azure, docs-mkdocs/zensical/docusaurus/starlight/mdbook/hugo
 - `dev-box audit` — security scanning (cargo audit, pip-audit, trivy)
 - Shell tools: ripgrep, fd, bat, eza, zoxide, fzf, delta, starship + aliases
 - Yazi file manager with vim-loop (Enter/e to open files)
@@ -37,8 +37,6 @@ Configurable prompt presets in `dev-box.toml`, themed to match the selected colo
 
 ### Additional Image Flavors
 
-- **node** — Node.js LTS
-- **go** — Go toolchain
 - **python-rust** — Python + Rust combined
 
 ### Curated Skill Library (#30)

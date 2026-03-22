@@ -88,21 +88,16 @@ To switch themes in an existing project:
    theme = "tokyo-night"
    ```
 
-2. Delete the old config files so they get re-seeded:
-   ```bash
-   rm .dev-box-home/.vim/vimrc
-   rm .dev-box-home/.config/zellij/config.kdl
-   rm .dev-box-home/.config/zellij/themes/*.kdl
-   rm .dev-box-home/.config/lazygit/config.yml
-   rm .dev-box-home/.config/yazi/theme.toml
-   ```
-
-3. Regenerate:
+2. Run sync to apply the change:
    ```bash
    dev-box sync
+   ```
+
+3. Rebuild and restart:
+   ```bash
    dev-box build --no-cache
    dev-box start
    ```
 
-!!! note "Theme files are never overwritten"
-    The seed system creates config files only if they don't exist. To change themes, you must delete the old files first. This protects your customizations from being lost on regeneration.
+!!! note "Theme files are force-updated by sync"
+    `dev-box sync` automatically overwrites theme-dependent config files (vimrc, zellij config, zellij themes, lazygit config, yazi theme) to match the selected theme. You do not need to manually delete them before switching.

@@ -16,7 +16,7 @@ The `init` command accepts three options:
 | Option | Default | Description |
 |--------|---------|-------------|
 | `--name` | Current directory name | Container and hostname |
-| `--image` | `base` | Image flavor (`base`, `python`, `latex`, `typst`, `rust`, `python-latex`, `python-typst`, `rust-latex`) |
+| `--image` | `base` | Image flavor (`base`, `python`, `latex`, `typst`, `rust`, `node`, `go`, `python-latex`, `python-typst`, `rust-latex`) |
 | `--process` | `product` | Work process flavor (`minimal`, `managed`, `research`, `product`) |
 
 ## What Gets Created
@@ -56,7 +56,7 @@ Open `dev-box.toml` and adjust as needed:
 
 ```toml
 [dev-box]
-version = "0.3.7"
+version = "0.7.0"
 image = "python"
 process = "product"
 
@@ -64,7 +64,7 @@ process = "product"
 name = "my-app"
 hostname = "my-app"
 ports = ["8000:8000"]
-extra_packages = ["ripgrep", "fd-find"]
+extra_packages = ["postgresql-client"]
 environment = { PYTHONDONTWRITEBYTECODE = "1" }
 
 [context]

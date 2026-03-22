@@ -22,7 +22,7 @@ dev-box provides three integrated pillars:
 
 ### 1. Published Container Images
 
-Eight pre-built images based on Debian Trixie Slim, each with a complete development environment:
+Ten pre-built images based on Debian Trixie Slim, each with a complete development environment:
 
 | Image | What it adds |
 |-------|-------------|
@@ -31,6 +31,8 @@ Eight pre-built images based on Debian Trixie Slim, each with a complete develop
 | `latex` | TeX Live with common packages |
 | `typst` | Typst (modern typesetting) |
 | `rust` | Rust toolchain via rustup |
+| `node` | Node.js LTS |
+| `go` | Go toolchain |
 | `python-latex` | Python + TeX Live combined |
 | `python-typst` | Python + Typst combined |
 | `rust-latex` | Rust + TeX Live combined |
@@ -94,7 +96,7 @@ Two additional layouts are available: **focus** (one tool per tab, fullscreen) a
 
 ## Project Status
 
-dev-box is at version 0.7.0. The core workflow (init, sync, build, start, stop, attach, status, doctor) is functional, along with shell completions (`dev-box completions bash/zsh/fish`), interactive init prompts, registry-based update with upgrade (`dev-box update`), `post_create_command`/`vscode_extensions` support in devcontainer.json, and host-side audio diagnostics via `dev-box audio check/setup`. Recent additions include Yazi file manager with three IDE layouts (dev, focus, cowork), AI provider flexibility with support for multiple providers (Claude, Aider, Gemini) via the `[ai]` section, process templates for standard workflows (release, code review, feature development, bug fix), SKILL.md support for executable AI agent instructions following the [open standard](https://agentskills.io/specification), modern shell tools (ripgrep, fd, bat, eza, zoxide, fzf, delta, starship) in the base image, non-root user support (`container.user`), renamed `.dev-box-home/` for persistent config (with `.root/` backward compatibility), and language-specific `.gitignore` blocks generated per image flavor.
+dev-box is at version 0.7.0 with 16 CLI commands, 10 container image flavors, and 11 addon bundles. The core workflow (init, sync, build, start, stop, remove, attach, status, doctor) is functional, along with shell completions, interactive init prompts, registry-based update with upgrade (`dev-box update`), named environments (`dev-box env`), backup/reset lifecycle management, and host-side audio diagnostics via `dev-box audio check/setup`. The project includes Yazi file manager with three IDE layouts (dev, focus, cowork), AI provider flexibility with support for multiple providers (Claude, Aider, Gemini) via the `[ai]` section, addon bundles for infrastructure, cloud, and documentation tools via the `[addons]` section, process templates for standard workflows (release, code review, feature development, bug fix), SKILL.md support for executable AI agent instructions following the [open standard](https://agentskills.io/specification), modern shell tools (ripgrep, fd, bat, eza, zoxide, fzf, delta, starship) in the base image, six color themes across all tools, security scanning (`dev-box audit`), non-root user support (`container.user`), and language-specific `.gitignore` blocks generated per image flavor.
 
 ## Next Steps
 

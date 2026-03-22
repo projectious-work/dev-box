@@ -51,7 +51,7 @@ dev-box provides four process flavors that scale from simple to comprehensive:
 |--------|-------|----------|
 | `minimal` | CLAUDE.md only | Scripts, experiments, small utilities |
 | `managed` | DECISIONS, BACKLOG, STANDUPS, work-instructions | Ongoing projects with decisions to track |
-| `research` | PROGRESS, research/, analysis/ | Learning, documentation, academic work |
+| `research` | PROGRESS, research/, experiments/, analysis/ | Learning, documentation, academic work |
 | `product` | Everything from managed + PROJECTS, PRD, project-notes, ideas | Full product development |
 
 See [Work Processes](work-processes.md) for detailed documentation of each flavor.
