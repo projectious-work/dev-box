@@ -21,7 +21,6 @@ use tracing_subscriber::EnvFilter;
 fn main() {
     let cli = cli::Cli::parse();
 
-    // Initialize tracing
     let filter = EnvFilter::try_new(&cli.log_level).unwrap_or_else(|_| EnvFilter::new("info"));
 
     tracing_subscriber::fmt()
@@ -49,7 +48,18 @@ fn dispatch(cli: cli::Cli) -> anyhow::Result<()> {
             user,
             theme,
             addons,
-        } => container::cmd_init(config_path, name, image, process, ai, user, theme, addons),
+        } => container::cmd_init(
+            config_path,
+            container::InitParams {
+                name,
+                image,
+                process,
+                ai,
+                user,
+                theme,
+                addons,
+            },
+        ),
         cli::Commands::Sync => container::cmd_sync(config_path),
         cli::Commands::Build { no_cache } => container::cmd_build(config_path, no_cache),
         cli::Commands::Start { layout } => container::cmd_start(config_path, &layout.to_string()),

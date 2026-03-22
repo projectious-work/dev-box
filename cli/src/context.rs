@@ -449,6 +449,24 @@ pub(crate) fn write_if_missing(path: &Path, content: &str) -> Result<()> {
     Ok(())
 }
 
+/// Write content to a file only if it differs from the current content.
+/// Creates parent directories if needed. Returns true if the file was written.
+pub(crate) fn write_if_changed(path: &Path, content: &str) -> Result<bool> {
+    if path.exists() {
+        let existing = fs::read_to_string(path)
+            .with_context(|| format!("Failed to read {}", path.display()))?;
+        if existing == content {
+            return Ok(false);
+        }
+    }
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)
+            .with_context(|| format!("Failed to create directory: {}", parent.display()))?;
+    }
+    fs::write(path, content).with_context(|| format!("Failed to write {}", path.display()))?;
+    Ok(true)
+}
+
 /// Generate a .gitignore with dev-box entries, project-specific section,
 /// and language-specific blocks based on the image flavor.
 pub(crate) fn update_gitignore(image: &ImageFlavor) -> Result<()> {
@@ -896,28 +914,6 @@ mod tests {
     }
 
     fn test_config(process: ProcessFlavor, image: ImageFlavor) -> DevBoxConfig {
-        DevBoxConfig {
-            dev_box: crate::config::DevBoxSection {
-                version: "0.1.0".to_string(),
-                image,
-                process,
-            },
-            container: crate::config::ContainerSection {
-                name: "test-proj".to_string(),
-                hostname: "test-proj".to_string(),
-                user: "root".to_string(),
-                ports: vec![],
-                extra_packages: vec![],
-                extra_volumes: vec![],
-                environment: std::collections::HashMap::new(),
-                post_create_command: None,
-                vscode_extensions: vec![],
-            },
-            context: crate::config::ContextSection::default(),
-            ai: crate::config::AiSection::default(),
-            addons: crate::config::AddonsSection::default(),
-            appearance: crate::config::AppearanceSection::default(),
-            audio: crate::config::AudioSection::default(),
-        }
+        crate::config::test_config(image, process)
     }
 }

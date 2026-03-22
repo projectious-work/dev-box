@@ -106,18 +106,6 @@ pub fn zellij_theme(theme: &Theme) -> &'static str {
     }
 }
 
-/// Returns the Zellij theme name to use in config.kdl.
-pub fn zellij_theme_name(theme: &Theme) -> &'static str {
-    match theme {
-        Theme::GruvboxDark => "gruvbox-dark",
-        Theme::CatppuccinMocha => "catppuccin-mocha",
-        Theme::CatppuccinLatte => "catppuccin-latte",
-        Theme::Dracula => "dracula",
-        Theme::TokyoNight => "tokyo-night",
-        Theme::Nord => "nord",
-    }
-}
-
 /// Returns the Vim colorscheme name for the given theme.
 /// These are single-file .vim colorschemes bundled in the image.
 pub fn vim_colorscheme(theme: &Theme) -> &'static str {

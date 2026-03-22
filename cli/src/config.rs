@@ -497,6 +497,35 @@ impl DevBoxConfig {
     }
 }
 
+/// Create a `DevBoxConfig` for testing with sensible defaults.
+/// Only available in test builds to reduce boilerplate across test modules.
+#[cfg(test)]
+pub fn test_config(image: ImageFlavor, process: ProcessFlavor) -> DevBoxConfig {
+    DevBoxConfig {
+        dev_box: DevBoxSection {
+            version: "0.1.0".to_string(),
+            image,
+            process,
+        },
+        container: ContainerSection {
+            name: "test-proj".to_string(),
+            hostname: "test-proj".to_string(),
+            user: "root".to_string(),
+            ports: vec![],
+            extra_packages: vec![],
+            extra_volumes: vec![],
+            environment: std::collections::HashMap::new(),
+            post_create_command: None,
+            vscode_extensions: vec![],
+        },
+        context: ContextSection::default(),
+        ai: AiSection::default(),
+        addons: AddonsSection::default(),
+        appearance: AppearanceSection::default(),
+        audio: AudioSection::default(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

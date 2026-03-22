@@ -166,26 +166,22 @@ fn ai_pane_kdl(providers: &[crate::config::AiProvider]) -> String {
         return String::new();
     }
 
-    let mut panes = Vec::new();
-    for provider in providers {
-        let cmd = match provider {
-            crate::config::AiProvider::Claude => "claude",
-            crate::config::AiProvider::Aider => "aider",
-            crate::config::AiProvider::Gemini => "gemini",
-        };
-        panes.push(format!(
-            "        pane name=\"{cmd}\" {{\n\
-             \x20           command \"{cmd}\"\n\
-             \x20           cwd \"/workspace\"\n\
-             \x20       }}"
-        ));
-    }
+    let panes: Vec<String> = providers
+        .iter()
+        .map(|p| {
+            let cmd = p.to_string();
+            format!(
+                "        pane name=\"{cmd}\" {{\n\
+                 \x20           command \"{cmd}\"\n\
+                 \x20           cwd \"/workspace\"\n\
+                 \x20       }}"
+            )
+        })
+        .collect();
 
     if panes.len() == 1 {
-        // Single provider — just one pane
         panes[0].clone()
     } else {
-        // Multiple providers — use stacked panes
         format!(
             "        pane stacked=true {{\n{}\n        }}",
             panes.join("\n")
@@ -193,29 +189,26 @@ fn ai_pane_kdl(providers: &[crate::config::AiProvider]) -> String {
     }
 }
 
-/// Generate AI tab(s) for layouts that use separate tabs per tool.
 fn ai_tabs_kdl(providers: &[crate::config::AiProvider]) -> String {
     if providers.is_empty() {
         return String::new();
     }
 
-    let mut tabs = Vec::new();
-    for provider in providers {
-        let cmd = match provider {
-            crate::config::AiProvider::Claude => "claude",
-            crate::config::AiProvider::Aider => "aider",
-            crate::config::AiProvider::Gemini => "gemini",
-        };
-        tabs.push(format!(
-            "    tab name=\"{cmd}\" {{\n\
-             \x20       pane name=\"{cmd}\" {{\n\
-             \x20           command \"{cmd}\"\n\
-             \x20           cwd \"/workspace\"\n\
-             \x20       }}\n\
-             \x20   }}"
-        ));
-    }
-    tabs.join("\n")
+    providers
+        .iter()
+        .map(|p| {
+            let cmd = p.to_string();
+            format!(
+                "    tab name=\"{cmd}\" {{\n\
+                 \x20       pane name=\"{cmd}\" {{\n\
+                 \x20           command \"{cmd}\"\n\
+                 \x20           cwd \"/workspace\"\n\
+                 \x20       }}\n\
+                 \x20   }}"
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 /// Generate the zellij dev layout dynamically based on configured AI providers.
@@ -519,14 +512,14 @@ pub fn seed_root_dir(config: &DevBoxConfig) -> Result<()> {
 
     // Zellij config — apply selected theme
     let zellij_config = DEFAULT_ZELLIJ_CONFIG
-        .replace("DEVBOX_THEME", crate::themes::zellij_theme_name(theme));
+        .replace("DEVBOX_THEME", &theme.to_string());
     seed_file(
         &root.join(".config").join("zellij").join("config.kdl"),
         &zellij_config,
     )?;
 
     // Zellij theme file — seed the selected theme
-    let theme_filename = format!("{}.kdl", crate::themes::zellij_theme_name(theme));
+    let theme_filename = format!("{}.kdl", &theme.to_string());
     seed_file(
         &root
             .join(".config")
@@ -613,28 +606,14 @@ pub fn seed_root_dir(config: &DevBoxConfig) -> Result<()> {
     Ok(())
 }
 
-/// Write content to a file only if it doesn't already exist.
-/// Delegates to the shared `write_if_missing` helper in context.rs.
 fn seed_file(path: &Path, content: &str) -> Result<()> {
     crate::context::write_if_missing(path, content)
 }
 
-/// Seed a file, overwriting if it exists. Used by sync to apply config changes.
+/// Write content to a file, overwriting if content differs.
 /// Returns true if the file changed, false if content was already identical.
 pub fn force_seed_file(path: &Path, content: &str) -> Result<bool> {
-    if path.exists() {
-        let existing = fs::read_to_string(path)
-            .with_context(|| format!("Failed to read {}", path.display()))?;
-        if existing == content {
-            return Ok(false);
-        }
-    }
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent)
-            .with_context(|| format!("Failed to create directory: {}", parent.display()))?;
-    }
-    fs::write(path, content).with_context(|| format!("Failed to write {}", path.display()))?;
-    Ok(true)
+    crate::context::write_if_changed(path, content)
 }
 
 /// Force-seed all theme-dependent and AI-provider-dependent config files.
@@ -655,7 +634,7 @@ pub fn sync_theme_files(config: &DevBoxConfig) -> Result<Vec<String>> {
 
     // Zellij config — theme name
     let zellij_config = DEFAULT_ZELLIJ_CONFIG
-        .replace("DEVBOX_THEME", crate::themes::zellij_theme_name(theme));
+        .replace("DEVBOX_THEME", &theme.to_string());
     if force_seed_file(
         &root.join(".config").join("zellij").join("config.kdl"),
         &zellij_config,
@@ -664,7 +643,7 @@ pub fn sync_theme_files(config: &DevBoxConfig) -> Result<Vec<String>> {
     }
 
     // Zellij theme file
-    let theme_filename = format!("{}.kdl", crate::themes::zellij_theme_name(theme));
+    let theme_filename = format!("{}.kdl", &theme.to_string());
     if force_seed_file(
         &root
             .join(".config")
@@ -732,39 +711,19 @@ mod tests {
     use super::*;
     use crate::config::*;
     use serial_test::serial;
-    use std::collections::HashMap;
 
     fn make_config(audio_enabled: bool, root_dir: std::path::PathBuf) -> DevBoxConfig {
-        // We override DEV_BOX_HOST_ROOT to point to our temp root
         unsafe {
             std::env::set_var("DEV_BOX_HOST_ROOT", root_dir.to_str().unwrap());
         }
-        DevBoxConfig {
-            dev_box: DevBoxSection {
-                version: "0.1.0".to_string(),
-                image: ImageFlavor::Base,
-                process: ProcessFlavor::Minimal,
-            },
-            container: ContainerSection {
-                name: "test".to_string(),
-                hostname: "test".to_string(),
-                user: "root".to_string(),
-                ports: vec![],
-                extra_packages: vec![],
-                extra_volumes: vec![],
-                environment: HashMap::new(),
-                post_create_command: None,
-                vscode_extensions: vec![],
-            },
-            context: ContextSection::default(),
-            ai: crate::config::AiSection::default(),
-            addons: crate::config::AddonsSection::default(),
-            appearance: crate::config::AppearanceSection::default(),
-            audio: AudioSection {
-                enabled: audio_enabled,
-                pulse_server: "tcp:localhost:4714".to_string(),
-            },
-        }
+        let mut config = crate::config::test_config(ImageFlavor::Base, ProcessFlavor::Minimal);
+        config.container.name = "test".to_string();
+        config.container.hostname = "test".to_string();
+        config.audio = AudioSection {
+            enabled: audio_enabled,
+            pulse_server: "tcp:localhost:4714".to_string(),
+        };
+        config
     }
 
     #[test]

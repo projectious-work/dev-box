@@ -52,10 +52,7 @@ fn run(cmd: &str, args: &[&str]) -> Option<String> {
 
 /// Check if a command exists on PATH.
 fn has_cmd(cmd: &str) -> bool {
-    Command::new("which")
-        .arg(cmd)
-        .output()
-        .is_ok_and(|o| o.status.success())
+    crate::runtime::command_exists(cmd)
 }
 
 // ── Public entry points ──────────────────────────────────────────────────────

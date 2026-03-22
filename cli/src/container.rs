@@ -1,12 +1,23 @@
 use anyhow::{Result, bail};
 use std::path::PathBuf;
 
-use crate::config::{AiProvider, DevBoxConfig, ImageFlavor, ProcessFlavor};
+use crate::config::{AddonBundle, AiProvider, DevBoxConfig, ImageFlavor, ProcessFlavor, Theme};
 use crate::context;
 use crate::generate;
 use crate::output;
 use crate::runtime::{ContainerState, Runtime};
 use crate::seed;
+
+/// Parameters for the init command, grouping all optional CLI arguments.
+pub struct InitParams {
+    pub name: Option<String>,
+    pub image: Option<ImageFlavor>,
+    pub process: Option<ProcessFlavor>,
+    pub ai: Option<Vec<AiProvider>>,
+    pub user: Option<String>,
+    pub theme: Option<Theme>,
+    pub addons: Option<Vec<AddonBundle>>,
+}
 
 /// Labels for image flavor selection (order matters — matches ImageFlavor variants).
 const IMAGE_FLAVOR_ITEMS: &[&str] = &[
@@ -83,11 +94,6 @@ pub fn resolve_init_values(
     Ok((project_name, image_flavor, process_flavor))
 }
 
-/// Get the compose file path.
-fn compose_file() -> &'static str {
-    crate::config::COMPOSE_FILE
-}
-
 /// Build command: load config, generate files, run compose build.
 pub fn cmd_build(config_path: &Option<String>, no_cache: bool) -> Result<()> {
     let config = DevBoxConfig::from_cli_option(config_path)?;
@@ -96,7 +102,7 @@ pub fn cmd_build(config_path: &Option<String>, no_cache: bool) -> Result<()> {
     generate::generate_all(&config)?;
 
     output::info("Building container image...");
-    runtime.compose_build(compose_file(), no_cache)?;
+    runtime.compose_build(crate::config::COMPOSE_FILE, no_cache)?;
     output::ok("Build complete");
 
     Ok(())
@@ -108,13 +114,9 @@ pub fn cmd_start(config_path: &Option<String>, layout: &str) -> Result<()> {
     let runtime = Runtime::detect()?;
     let name = &config.container.name;
 
-    // Seed .dev-box-home/ directory
     seed::seed_root_dir(&config)?;
-
-    // Generate devcontainer files
     generate::generate_all(&config)?;
 
-    // Check current state
     let state = runtime.container_status(name)?;
     match state {
         ContainerState::Running => {
@@ -127,20 +129,18 @@ pub fn cmd_start(config_path: &Option<String>, layout: &str) -> Result<()> {
                 "Creating and starting"
             };
             output::info(&format!("{} container...", action));
-            runtime.compose_up(compose_file(), name)?;
+            runtime.compose_up(crate::config::COMPOSE_FILE, name)?;
             runtime.wait_for_running(name, 7500)?;
             output::ok("Container started");
         }
     }
 
-    // Attach via zellij
     output::info(&format!("Attaching via zellij (layout: {})...", layout));
     runtime.exec_interactive(name, &["zellij", "--layout", layout])?;
 
     Ok(())
 }
 
-/// Stop command.
 pub fn cmd_stop(config_path: &Option<String>) -> Result<()> {
     let config = DevBoxConfig::from_cli_option(config_path)?;
     let runtime = Runtime::detect()?;
@@ -150,7 +150,7 @@ pub fn cmd_stop(config_path: &Option<String>) -> Result<()> {
     match state {
         ContainerState::Running => {
             output::info("Stopping container...");
-            runtime.compose_stop(compose_file(), name)?;
+            runtime.compose_stop(crate::config::COMPOSE_FILE, name)?;
             output::ok("Container stopped");
         }
         ContainerState::Stopped => {
@@ -164,7 +164,6 @@ pub fn cmd_stop(config_path: &Option<String>) -> Result<()> {
     Ok(())
 }
 
-/// Remove command: stop and remove the container.
 pub fn cmd_remove(config_path: &Option<String>) -> Result<()> {
     let config = DevBoxConfig::from_cli_option(config_path)?;
     let runtime = Runtime::detect()?;
@@ -177,13 +176,12 @@ pub fn cmd_remove(config_path: &Option<String>) -> Result<()> {
     }
 
     output::info("Stopping and removing container...");
-    runtime.compose_down(compose_file())?;
+    runtime.compose_down(crate::config::COMPOSE_FILE)?;
     output::ok(&format!("Container '{}' removed", name));
 
     Ok(())
 }
 
-/// Attach command.
 pub fn cmd_attach(config_path: &Option<String>, layout: &str) -> Result<()> {
     let config = DevBoxConfig::from_cli_option(config_path)?;
     let runtime = Runtime::detect()?;
@@ -203,7 +201,6 @@ pub fn cmd_attach(config_path: &Option<String>, layout: &str) -> Result<()> {
     Ok(())
 }
 
-/// Status command.
 pub fn cmd_status(config_path: &Option<String>) -> Result<()> {
     let config = DevBoxConfig::from_cli_option(config_path)?;
     let runtime = Runtime::detect()?;
@@ -372,17 +369,7 @@ fn serialize_config_with_comments(config: &DevBoxConfig) -> String {
 }
 
 /// Init command: create a dev-box.toml and generate files.
-#[allow(clippy::too_many_arguments)]
-pub fn cmd_init(
-    config_path: &Option<String>,
-    name: Option<String>,
-    image: Option<ImageFlavor>,
-    process: Option<ProcessFlavor>,
-    ai: Option<Vec<AiProvider>>,
-    user: Option<String>,
-    theme: Option<crate::config::Theme>,
-    addons: Option<Vec<crate::config::AddonBundle>>,
-) -> Result<()> {
+pub fn cmd_init(config_path: &Option<String>, params: InitParams) -> Result<()> {
     use crate::config::{
         AddonsSection, AiSection, AppearanceSection, AudioSection, ContainerSection,
         ContextSection, DevBoxConfig, DevBoxSection,
@@ -400,15 +387,14 @@ pub fn cmd_init(
         );
     }
 
-    // Detect whether stdin is a TTY to decide if we can prompt interactively
     let interactive = std::io::IsTerminal::is_terminal(&std::io::stdin());
 
     let (project_name, image_flavor, process_flavor) =
-        resolve_init_values(name, image, process, interactive)?;
+        resolve_init_values(params.name, params.image, params.process, interactive)?;
 
-    let container_user = user.unwrap_or_else(|| "root".to_string());
-    let ai_providers = ai.unwrap_or_else(|| vec![AiProvider::Claude]);
-    let addon_bundles = addons.unwrap_or_default();
+    let container_user = params.user.unwrap_or_else(|| "root".to_string());
+    let ai_providers = params.ai.unwrap_or_else(|| vec![AiProvider::Claude]);
+    let addon_bundles = params.addons.unwrap_or_default();
 
     let config = DevBoxConfig {
         dev_box: DevBoxSection {
@@ -435,7 +421,7 @@ pub fn cmd_init(
             bundles: addon_bundles,
         },
         appearance: AppearanceSection {
-            theme: theme.unwrap_or_default(),
+            theme: params.theme.unwrap_or_default(),
         },
         audio: AudioSection::default(),
     };
@@ -449,13 +435,8 @@ pub fn cmd_init(
 
     output::ok(&format!("Created {}", toml_path.display()));
 
-    // Generate devcontainer files
     generate::generate_all(&config)?;
-
-    // Scaffold context directory based on process flavor
     context::scaffold_context(&config)?;
-
-    // Seed .dev-box-home/ directory with default configs
     seed::seed_root_dir(&config)?;
 
     output::ok("Project initialized. Edit dev-box.toml to customize, then run: dev-box start");
@@ -467,7 +448,6 @@ pub fn cmd_init(
 pub fn cmd_sync(config_path: &Option<String>) -> Result<()> {
     let config = DevBoxConfig::from_cli_option(config_path)?;
 
-    // Force-update theme-dependent files (overwrites when changed)
     output::info("Syncing config files...");
     let updated = seed::sync_theme_files(&config)?;
 
@@ -479,10 +459,7 @@ pub fn cmd_sync(config_path: &Option<String>) -> Result<()> {
         }
     }
 
-    // Seed any missing config files (never overwrites — picks up new defaults)
     seed::seed_root_dir(&config)?;
-
-    // Regenerate .devcontainer/ files
     generate::generate_all(&config)?;
     output::ok("Sync complete");
 
