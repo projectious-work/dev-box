@@ -915,6 +915,7 @@ mod tests {
             },
             context: crate::config::ContextSection::default(),
             ai: crate::config::AiSection::default(),
+            addons: crate::config::AddonsSection::default(),
             appearance: crate::config::AppearanceSection::default(),
             audio: crate::config::AudioSection::default(),
         }

@@ -131,7 +131,10 @@ pub fn cmd_doctor(config_path: &Option<String>) -> Result<()> {
         }
     }
 
-    // 7. Schema version check
+    // 7. Security audit tools
+    crate::audit::doctor_check_audit_tools();
+
+    // 8. Schema version check
     output::info("Schema version check");
     check_schema_version(&config, &mut diag)?;
 

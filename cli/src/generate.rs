@@ -94,6 +94,14 @@ fn generate_dockerfile(config: &DevBoxConfig, dir: &Path) -> Result<bool> {
     // Build list of AI provider strings for Dockerfile template
     let ai_providers: Vec<String> = config.ai.providers.iter().map(|p| p.to_string()).collect();
 
+    // Build addon bundle install commands
+    let addon_commands: Vec<&str> = config
+        .addons
+        .bundles
+        .iter()
+        .map(|b| crate::addons::dockerfile_commands(b))
+        .collect();
+
     let content = tmpl
         .render(context! {
             header => header,
@@ -102,6 +110,7 @@ fn generate_dockerfile(config: &DevBoxConfig, dir: &Path) -> Result<bool> {
             version => config.dev_box.version,
             extra_packages => config.container.extra_packages,
             ai_providers => ai_providers,
+            addon_commands => addon_commands,
             local_content => local_content,
         })
         .context("Failed to render Dockerfile template")?;
@@ -402,6 +411,7 @@ mod tests {
             },
             context: ContextSection::default(),
             ai: crate::config::AiSection::default(),
+            addons: crate::config::AddonsSection::default(),
             appearance: crate::config::AppearanceSection::default(),
             audio: AudioSection {
                 enabled: audio_enabled,

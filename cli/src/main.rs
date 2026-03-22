@@ -1,3 +1,5 @@
+mod addons;
+mod audit;
 mod audio;
 mod cli;
 mod config;
@@ -46,7 +48,8 @@ fn dispatch(cli: cli::Cli) -> anyhow::Result<()> {
             ai,
             user,
             theme,
-        } => container::cmd_init(config_path, name, image, process, ai, user, theme),
+            addons,
+        } => container::cmd_init(config_path, name, image, process, ai, user, theme, addons),
         cli::Commands::Sync => container::cmd_sync(config_path),
         cli::Commands::Build { no_cache } => container::cmd_build(config_path, no_cache),
         cli::Commands::Start { layout } => container::cmd_start(config_path, &layout.to_string()),
@@ -80,6 +83,7 @@ fn dispatch(cli: cli::Cli) -> anyhow::Result<()> {
             dry_run,
             yes,
         } => reset::cmd_reset(config_path, no_backup, dry_run, yes),
+        cli::Commands::Audit => audit::cmd_audit(config_path),
         cli::Commands::Audio { action } => match action {
             cli::AudioAction::Check { port } => audio::cmd_audio_check(port),
             cli::AudioAction::Setup { port } => audio::cmd_audio_setup(port),

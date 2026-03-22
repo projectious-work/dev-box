@@ -251,6 +251,37 @@ impl Default for AudioSection {
     }
 }
 
+/// Addon bundles for installing additional tool sets into the container.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, clap::ValueEnum)]
+#[serde(rename_all = "kebab-case")]
+#[clap(rename_all = "kebab-case")]
+pub enum AddonBundle {
+    Infrastructure, // OpenTofu, Ansible, Packer
+    Kubernetes,     // kubectl, Helm, k9s, Kustomize
+    CloudAws,       // AWS CLI v2
+    CloudGcp,       // Google Cloud CLI
+    CloudAzure,     // Azure CLI
+}
+
+impl std::fmt::Display for AddonBundle {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AddonBundle::Infrastructure => write!(f, "infrastructure"),
+            AddonBundle::Kubernetes => write!(f, "kubernetes"),
+            AddonBundle::CloudAws => write!(f, "cloud-aws"),
+            AddonBundle::CloudGcp => write!(f, "cloud-gcp"),
+            AddonBundle::CloudAzure => write!(f, "cloud-azure"),
+        }
+    }
+}
+
+/// [addons] section — addon bundle configuration.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct AddonsSection {
+    #[serde(default)]
+    pub bundles: Vec<AddonBundle>,
+}
+
 /// Color themes available across all tools (Zellij, Vim, Yazi, lazygit).
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, clap::ValueEnum)]
 #[serde(rename_all = "kebab-case")]
@@ -332,6 +363,8 @@ pub struct DevBoxConfig {
     pub context: ContextSection,
     #[serde(default)]
     pub ai: AiSection,
+    #[serde(default)]
+    pub addons: AddonsSection,
     #[serde(default)]
     pub appearance: AppearanceSection,
     #[serde(default)]
