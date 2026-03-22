@@ -6,78 +6,107 @@ This page outlines planned features and improvements for dev-box.
 
 The current release includes:
 
-- Rust CLI with full container lifecycle (init, generate, build, start, stop, attach, status, doctor, update)
+- Rust CLI with full container lifecycle (init, generate, build, start, stop, remove, attach, status, doctor, update)
 - 8 container image flavors (base, python, latex, typst, rust, python-latex, python-typst, rust-latex)
 - `dev-box.toml` configuration system
 - 4 work process flavors (minimal, managed, research, product)
-- Context scaffolding with OWNER.md sharing
-- Audio support (PulseAudio bridging) with `dev-box audio check/setup`
-- Install script for pre-built binaries
-- Shell completions for bash, zsh, fish, powershell, elvish
-- Interactive init prompts when flags are omitted
-- Registry-based update with upgrade (`dev-box update`, `--check`, `--dry-run`)
-- Minijinja template engine for Dockerfile and docker-compose.yml generation
-- Dockerfile.local support for project-specific build layers
-- AI provider configuration (`[ai]` section with `providers` field)
-- Non-root user support (`container.user` field)
-- Yazi file manager (replaced Strider) with three IDE layouts (dev, focus, cowork)
-- Language-specific `.gitignore` blocks per image flavor
-- `.dev-box-home/` for persistent config (with `.root/` backward compatibility)
-- LaTeX Workshop settings in generated devcontainer.json
-- Research/experiments folder scaffolding for research and product flavors
-- `post_create_command` and `vscode_extensions` in devcontainer.json
+- Context scaffolding with `context/shared/` for cross-environment files
 - Named environment management (`dev-box env create/switch/list/delete/status`)
-- `context/shared/` for cross-environment shared files
+- Color theming across Zellij, Vim, Yazi, and lazygit (6 themes)
+- Three IDE layouts: dev, focus, cowork
+- Yazi file manager with vim-loop integration (Enter/e to open files)
+- Audio support (PulseAudio bridging) with `dev-box audio check/setup`
 - `dev-box backup` and `dev-box reset` commands
+- Shell completions, interactive init, registry-based update/upgrade
+- Dockerfile.local for project-specific build layers
+- AI provider configuration (`[ai]` section)
+- Non-root user support (`container.user`)
 
-## Recently Completed
-
-### Yazi File Manager and IDE Layouts (v0.3.7)
-
-Replaced Strider with Yazi as the default file manager. Three IDE layouts: **dev** (Yazi+Vim side by side, default), **focus** (one tool per tab, fullscreen), **cowork** (Yazi+Vim left, Claude right). LaTeX Workshop extension settings for LaTeX images.
-
-### Update Upgrade Command (v0.3.6)
-
-`dev-box update` now performs actual upgrades: fetches latest image version from GHCR, updates `dev-box.toml`, regenerates container files. Supports `--check` (read-only) and `--dry-run` (preview without writing).
-
-### AI Config, User Support, .dev-box-home (v0.3.5)
-
-`[ai]` config section with `providers` field. `container.user` for non-root containers. Renamed `.root/` to `.dev-box-home/`. Language-specific `.gitignore` blocks. Research/experiments scaffolding for research and product flavors.
-
-### postCreateCommand and vscode_extensions (v0.3.1)
-
-`post_create_command` and `vscode_extensions` fields in `[container]` config, generated into devcontainer.json. Pinned MkDocs dependency to `<2`.
-
-### Shell Completions, Interactive Init, Update Checking, Template Engine (v0.3.0)
-
-`dev-box completions <shell>` for all major shells. Interactive init prompts. Registry-based version checking. Minijinja template engine for file generation.
-
-### Dockerfile.local (v0.2.3)
-
-Project-specific Dockerfile layers appended to the generated Dockerfile, with `AS dev-box` stage alias for multi-stage builds.
-
-## Planned
-
-### Evaluate Zensical as MkDocs Successor
-
-MkDocs 2.0 introduces breaking changes. Evaluate Zensical and other alternatives for documentation generation, or pin to a stable MkDocs version.
-
-### Automated Context Migration
-
-When upgrading between schema versions, `dev-box doctor` will generate migration artifacts. A future version may automate safe migrations (additive changes) while prompting for manual review on breaking changes.
-
-### Additional Image Flavors
-
-Potential new flavors based on demand:
-
-- **node** — Node.js LTS via NodeSource
-- **go** — Go toolchain
-- **python-rust** — Python + Rust combined
+## In Progress
 
 ### Consistent Color Theming (#14)
 
-`[appearance]` section in `dev-box.toml` with a `theme` field that applies consistent colors across Zellij, Vim, Yazi, and lazygit. Bundled theme packs with screenshot gallery in docs. Target themes: gruvbox-dark, catppuccin-mocha, dracula, tokyo-night, nord, and more.
+Infrastructure complete: 6 themes (gruvbox-dark, catppuccin-mocha, catppuccin-latte, dracula, tokyo-night, nord) applied across Zellij, Vim, Yazi, and lazygit. Remaining: screenshot gallery in docs, theme switching without manual file deletion.
 
-### Plugin System
+## Planned — Near Term
 
-Extensibility mechanism for custom commands and image overlays without forking.
+### Shell Enhancement Tools
+
+Install modern CLI tools in the base image: ripgrep, fd, bat, eza, zoxide, fzf, delta, Starship prompt. Shell aliases (`ls→eza`, `cat→bat`). Starship prompt themed to match `[appearance]` setting.
+
+### Keyboard Shortcuts Cheatsheet Page (#16)
+
+Comprehensive, compact reference page in docs covering all keybindings for Zellij (`Ctrl+b` leader), Yazi, Vim, and lazygit.
+
+### AI Provider Flexibility (#19)
+
+Make AI tools fully optional and selectable:
+- Move Claude CLI from base image to generated Dockerfile layer
+- Support: Claude Code, Aider (open-source, multi-model), Gemini CLI, Codex CLI, Goose
+- Multiple providers stacked in one layout pane
+- No AI pane if `providers = []`
+- Open-source model support via Aider + Ollama
+
+### Addon Packages System (#18)
+
+Selectable tool bundles added to generated Dockerfile:
+
+- **infrastructure** — OpenTofu, Ansible, kubectl, Helm, k9s
+- **cloud-aws** — AWS CLI v2, aws-vault, SSM plugin
+- **cloud-gcp** — Google Cloud CLI
+- **cloud-azure** — Azure CLI
+- **shell-tools** — ripgrep, fd, bat, eza, zoxide, fzf, delta, Starship (default ON)
+- **data-science** — Jupyter, pandas, numpy (python images only)
+- **docs** — Pandoc, Quarto
+
+```toml
+[addons]
+bundles = ["shell-tools", "infrastructure"]
+```
+
+### Bash Prompt Themes (#17)
+
+Starship prompt with theme presets matching the color theme. From minimal to full-featured with git status, language versions, kubernetes context, and more.
+
+## Planned — Medium Term
+
+### Plugin / Extension System (#20)
+
+Extensibility architecture for dev-box:
+- Hook system (pre/post lifecycle commands)
+- Custom template overrides (Dockerfile.j2, layouts)
+- Community-distributed features (via git repos)
+- Investigation: shell scripts vs WASM plugins
+
+### Zellij Plugin Integration (#21)
+
+Evaluate existing Zellij WASM plugins:
+- **zjstatus** — configurable status bar with git info, hostname, time
+- **yazelix** — deeper Yazi+editor integration
+- Custom dev-box status plugin showing container state, environment name, theme
+
+### Additional Image Flavors
+
+New flavors based on demand:
+- **node** — Node.js LTS
+- **go** — Go toolchain
+- **python-rust** — Python + Rust combined
+- **python-node** — Python + Node.js (full-stack)
+
+### Automated Context Migration
+
+When upgrading between schema versions, automate safe migrations (additive changes) while generating AI-assisted migration prompts for breaking changes.
+
+## Planned — Long Term
+
+### Documentation System Migration
+
+Evaluate alternatives to MkDocs (Zensical, mdBook, etc.) or pin to stable MkDocs version before 2.0 breaking changes.
+
+### Multi-Service Support
+
+Support for additional services in docker-compose (databases, caches, message queues) configured via `dev-box.toml`. `dev-box ps` / `dev-box logs` commands.
+
+### Remote Development
+
+Support for running dev-box environments on remote hosts (cloud VMs, SSH targets) with local CLI as a thin client.
