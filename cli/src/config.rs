@@ -249,10 +249,11 @@ impl Default for AudioSection {
 }
 
 /// Color themes available across all tools (Zellij, Vim, Yazi, lazygit).
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, clap::ValueEnum)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, clap::ValueEnum)]
 #[serde(rename_all = "kebab-case")]
 #[clap(rename_all = "kebab-case")]
 pub enum Theme {
+    #[default]
     GruvboxDark,
     CatppuccinMocha,
     CatppuccinLatte,
@@ -271,12 +272,6 @@ impl std::fmt::Display for Theme {
             Theme::TokyoNight => write!(f, "tokyo-night"),
             Theme::Nord => write!(f, "nord"),
         }
-    }
-}
-
-impl Default for Theme {
-    fn default() -> Self {
-        Theme::GruvboxDark
     }
 }
 

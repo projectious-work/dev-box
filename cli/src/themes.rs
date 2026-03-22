@@ -139,16 +139,22 @@ pub fn vim_background(theme: &Theme) -> &'static str {
     }
 }
 
-/// Returns the Yazi flavor directory name.
-/// Flavors are bundled in the image at /root/.config/yazi/flavors/<name>.yazi/
-pub fn yazi_flavor(theme: &Theme) -> &'static str {
+/// Returns the Yazi theme.toml content for the given theme.
+/// Gruvbox uses the default theme.toml; others are bundled from images/base/config/yazi/themes/.
+pub fn yazi_theme(theme: &Theme) -> &'static str {
     match theme {
-        Theme::GruvboxDark => "gruvbox-dark",
-        Theme::CatppuccinMocha => "catppuccin-mocha",
-        Theme::CatppuccinLatte => "catppuccin-latte",
-        Theme::Dracula => "dracula",
-        Theme::TokyoNight => "tokyo-night",
-        Theme::Nord => "nord",
+        Theme::GruvboxDark => include_str!("../../images/base/config/yazi/theme.toml"),
+        Theme::CatppuccinMocha => {
+            include_str!("../../images/base/config/yazi/themes/catppuccin-mocha.toml")
+        }
+        Theme::CatppuccinLatte => {
+            include_str!("../../images/base/config/yazi/themes/catppuccin-latte.toml")
+        }
+        Theme::Dracula => include_str!("../../images/base/config/yazi/themes/dracula.toml"),
+        Theme::TokyoNight => {
+            include_str!("../../images/base/config/yazi/themes/tokyo-night.toml")
+        }
+        Theme::Nord => include_str!("../../images/base/config/yazi/themes/nord.toml"),
     }
 }
 
