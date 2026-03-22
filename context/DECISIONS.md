@@ -2,6 +2,18 @@
 
 Inverse chronological. Each decision has a rationale and alternatives considered.
 
+## DEC-011 — Skills + Processes architecture: separate WHAT from HOW (2026-03-22)
+
+**Decision:** Process declarations in context/ define WHAT processes exist ("there shall be backlog management"). Skills (SKILL.md standard) define HOW they're executed. Context stores the resulting artifacts (BACKLOG.md, DECISIONS.md, etc.). Skills come in flavors (e.g., backlog-context vs backlog-github) that users choose.
+
+**Rationale:** Today's process presets bake both "what" and "how" into context template files. This makes them rigid — you can't swap from a context-file backlog to GitHub Issues without restructuring. By separating concerns: process declarations become thin ("there shall be X"), skills become the executable implementation, and artifacts remain in context/. This enables: swappable implementations, testable skills (via SKILL.md eval framework), thinner dev-box scaffolding, and a clear boundary between dev-box (infrastructure + curated skills) and derived projects (tailoring + execution).
+
+**Relationship to SKILL.md standard:** The open standard at agentskills.io/specification provides the skill format. dev-box provides curated, vetted skills. External marketplaces (ClawHub) are user responsibility.
+
+**Implications:** Process presets (minimal/managed/research/product) become skill compositions. dev-box.toml gains a [skills] section mapping processes to skill flavors. dev-box doctor checks consistency between declared processes and installed skills.
+
+**Alternatives:** Keep current monolithic process templates (simpler but rigid). Full framework integration like SAFe/PMBOK (too heavy for dev-box scope — that's kaits territory).
+
 ## DEC-010 — context/shared/ directory for cross-environment files (2026-03-21)
 
 **Decision:** The `context/` directory has a `shared/` subdirectory that is NOT copied during environment switches. Everything else in `context/` is per-environment. Default scaffolding places only `OWNER.md` in `shared/`. Users can move any file into `shared/` to share it across environments.
