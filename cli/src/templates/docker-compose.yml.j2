@@ -17,8 +17,9 @@ services:
       - ${WORKSPACE_DIR:-{{ workspace_dir }}}:/workspace
       # SSH keys (read-only — mount from host)
       - {{ host_root }}/.ssh:{{ container_home }}/.ssh:ro
-      # Vim configuration
-      - {{ host_root }}/.vim:{{ container_home }}/.vim
+      # Vim configuration (vimrc + undo only — colorschemes stay from image)
+      - {{ host_root }}/.vim/vimrc:{{ container_home }}/.vim/vimrc
+      - {{ host_root }}/.vim/undo:{{ container_home }}/.vim/undo
       # Zellij terminal multiplexer config
       - {{ host_root }}/.config/zellij:{{ container_home }}/.config/zellij
       # Yazi file manager config
