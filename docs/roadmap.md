@@ -74,6 +74,10 @@ Potential new flavors based on demand:
 - **go** — Go toolchain
 - **python-rust** — Python + Rust combined
 
+### Consistent Color Theming (#14)
+
+`[appearance]` section in `dev-box.toml` with a `theme` field that applies consistent colors across Zellij, Vim, Yazi, and lazygit. Bundled theme packs with screenshot gallery in docs. Target themes: gruvbox-dark, catppuccin-mocha, dracula, tokyo-night, nord, and more.
+
 ### Plugin System
 
 Extensibility mechanism for custom commands and image overlays without forking.
