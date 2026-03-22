@@ -98,13 +98,29 @@ COPY --from=builder /usr/local/bin/yazi /usr/local/bin/yazi
 # over these paths, the host copy takes full precedence.
 
 # Vim — place vimrc inside ~/.vim/ so the single mount covers config + undo
-RUN mkdir -p /root/.vim/undo
+RUN mkdir -p /root/.vim/undo /root/.vim/colors
+
+# Download Vim colorschemes for all supported themes
+RUN curl -fsSL -o /root/.vim/colors/gruvbox.vim \
+      https://raw.githubusercontent.com/morhetz/gruvbox/master/colors/gruvbox.vim && \
+    curl -fsSL -o /root/.vim/colors/catppuccin_mocha.vim \
+      https://raw.githubusercontent.com/catppuccin/vim/main/colors/catppuccin_mocha.vim && \
+    curl -fsSL -o /root/.vim/colors/catppuccin_latte.vim \
+      https://raw.githubusercontent.com/catppuccin/vim/main/colors/catppuccin_latte.vim && \
+    curl -fsSL -o /root/.vim/colors/tokyonight.vim \
+      https://raw.githubusercontent.com/ghifarit53/tokyonight-vim/master/colors/tokyonight.vim && \
+    curl -fsSL -o /root/.vim/colors/nord.vim \
+      https://raw.githubusercontent.com/nordtheme/vim/main/colors/nord.vim && \
+    mkdir -p /root/.vim/pack/themes/start && \
+    git clone --depth 1 https://github.com/dracula/vim.git \
+      /root/.vim/pack/themes/start/dracula
+
 COPY config/vimrc /root/.vim/vimrc
 
 # Zellij
 RUN mkdir -p /root/.config/zellij/themes /root/.config/zellij/layouts
 COPY config/zellij/config.kdl          /root/.config/zellij/config.kdl
-COPY config/zellij/themes/gruvbox.kdl  /root/.config/zellij/themes/gruvbox.kdl
+COPY config/zellij/themes/             /root/.config/zellij/themes/
 COPY config/zellij/layouts/dev.kdl     /root/.config/zellij/layouts/dev.kdl
 COPY config/zellij/layouts/focus.kdl   /root/.config/zellij/layouts/focus.kdl
 COPY config/zellij/layouts/cowork.kdl  /root/.config/zellij/layouts/cowork.kdl

@@ -38,7 +38,9 @@ let g:netrw_liststyle=3
 let g:netrw_banner=0
 let g:netrw_winsize=25
 
-colorscheme desert
+set background=DEVBOX_VIM_BG
+set termguicolors
+colorscheme DEVBOX_VIM_COLORSCHEME
 syntax on
 filetype plugin indent on
 "#;
@@ -383,14 +385,17 @@ pub fn seed_root_dir(config: &DevBoxConfig) -> Result<()> {
     }
 
     // Seed config files (never overwrite)
-    seed_file(&root.join(".vim").join("vimrc"), DEFAULT_VIMRC)?;
+    let theme = &config.appearance.theme;
+    let vimrc = DEFAULT_VIMRC
+        .replace("DEVBOX_VIM_COLORSCHEME", crate::themes::vim_colorscheme(theme))
+        .replace("DEVBOX_VIM_BG", crate::themes::vim_background(theme));
+    seed_file(&root.join(".vim").join("vimrc"), &vimrc)?;
     seed_file(
         &root.join(".config").join("git").join("config"),
         DEFAULT_GITCONFIG,
     )?;
 
     // Zellij config — apply selected theme
-    let theme = &config.appearance.theme;
     let zellij_config = DEFAULT_ZELLIJ_CONFIG
         .replace("DEVBOX_THEME", crate::themes::zellij_theme_name(theme));
     seed_file(

@@ -224,24 +224,25 @@ pub fn lazygit_theme(theme: &Theme) -> &'static str {
         Theme::Dracula => r#"gui:
   theme:
     activeBorderColor:
-      - '#BD93F9'
+      - '#FF79C6'
       - bold
     inactiveBorderColor:
-      - '#6272A4'
+      - '#BD93F9'
     optionsTextColor:
-      - '#8BE9FD'
+      - '#6272A4'
     selectedLineBgColor:
-      - '#44475A'
+      - '#6272A4'
     cherryPickedCommitBgColor:
-      - '#44475A'
+      - '#8BE9FD'
     cherryPickedCommitFgColor:
-      - '#FF79C6'
+      - '#6272A4'
     unstagedChangesColor:
       - '#FF5555'
     defaultFgColor:
       - '#F8F8F2'
     searchingActiveBorderColor:
-      - '#F1FA8C'
+      - '#8BE9FD'
+      - bold
 "#,
         Theme::TokyoNight => r#"gui:
   theme:
