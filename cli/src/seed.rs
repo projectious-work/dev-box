@@ -575,6 +575,14 @@ pub fn seed_root_dir(config: &DevBoxConfig) -> Result<()> {
         DEFAULT_CHEATSHEET,
     )?;
 
+    // Starship prompt config
+    let prompt = &config.appearance.prompt;
+    let starship_content = crate::themes::starship_config(prompt, theme);
+    seed_file(
+        &root.join(".config").join("starship.toml"),
+        &starship_content,
+    )?;
+
     // lazygit theme config
     seed_file(
         &root
@@ -701,6 +709,16 @@ pub fn sync_theme_files(config: &DevBoxConfig) -> Result<Vec<String>> {
         crate::themes::yazi_theme(theme),
     )? {
         updated.push(".config/yazi/theme.toml".to_string());
+    }
+
+    // Starship prompt
+    let prompt = &config.appearance.prompt;
+    let starship_content = crate::themes::starship_config(prompt, theme);
+    if force_seed_file(
+        &root.join(".config").join("starship.toml"),
+        &starship_content,
+    )? {
+        updated.push(".config/starship.toml".to_string());
     }
 
     Ok(updated)

@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand, ValueEnum};
 
-use crate::config::{AddonBundle, AiProvider, ImageFlavor, ProcessFlavor, Theme};
+use crate::config::{AddonBundle, AiProvider, ImageFlavor, ProcessFlavor, StarshipPreset, Theme};
 
 /// Available Zellij IDE layouts.
 #[derive(Clone, Debug, ValueEnum)]
@@ -92,6 +92,10 @@ pub enum Commands {
         /// Color theme for all tools (default: gruvbox-dark)
         #[arg(long, value_enum)]
         theme: Option<Theme>,
+
+        /// Starship prompt preset (default: default)
+        #[arg(long, value_enum)]
+        prompt: Option<StarshipPreset>,
 
         /// Addon bundles to install (e.g., infrastructure, kubernetes, cloud-aws)
         #[arg(long, value_enum, num_args = 1..)]

@@ -47,6 +47,7 @@ fn dispatch(cli: cli::Cli) -> anyhow::Result<()> {
             ai,
             user,
             theme,
+            prompt,
             addons,
         } => container::cmd_init(
             config_path,
@@ -57,6 +58,7 @@ fn dispatch(cli: cli::Cli) -> anyhow::Result<()> {
                 ai,
                 user,
                 theme,
+                prompt,
                 addons,
             },
         ),

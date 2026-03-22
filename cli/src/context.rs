@@ -352,22 +352,47 @@ fn scaffold_processes(context: &Path) -> Result<()> {
     Ok(())
 }
 
-/// Scaffold the .claude/skills/ directory with example skill templates.
+/// Scaffold the .claude/skills/ directory with curated skill templates.
 fn scaffold_skills() -> Result<()> {
     let skills_dir = Path::new(".claude").join("skills");
     fs::create_dir_all(&skills_dir).context("Failed to create .claude/skills")?;
 
-    let backlog_dir = skills_dir.join("backlog-context");
-    fs::create_dir_all(&backlog_dir).context("Failed to create .claude/skills/backlog-context")?;
-    write_if_missing(&backlog_dir.join("SKILL.md"), SKILL_BACKLOG_CONTEXT)?;
+    // All available skills: (directory_name, content)
+    let skills: &[(&str, &str)] = &[
+        // Core process skills
+        ("backlog-context", SKILL_BACKLOG_CONTEXT),
+        ("decisions-adr", SKILL_DECISIONS_ADR),
+        ("standup-context", SKILL_STANDUP_CONTEXT),
+        // Development skills
+        ("code-review", SKILL_CODE_REVIEW),
+        ("testing-strategy", SKILL_TESTING_STRATEGY),
+        ("refactoring", SKILL_REFACTORING),
+        ("documentation", SKILL_DOCUMENTATION),
+        ("debugging", SKILL_DEBUGGING),
+        // Process skills
+        ("release-semver", SKILL_RELEASE_SEMVER),
+        ("incident-response", SKILL_INCIDENT_RESPONSE),
+        ("retrospective", SKILL_RETROSPECTIVE),
+        // Language-specific skills
+        ("python-best-practices", SKILL_PYTHON_BEST_PRACTICES),
+        ("rust-conventions", SKILL_RUST_CONVENTIONS),
+        ("latex-authoring", SKILL_LATEX_AUTHORING),
+        ("typescript-patterns", SKILL_TYPESCRIPT_PATTERNS),
+        // Infrastructure skills
+        ("dockerfile-review", SKILL_DOCKERFILE_REVIEW),
+        ("git-workflow", SKILL_GIT_WORKFLOW),
+        ("ci-cd-setup", SKILL_CI_CD_SETUP),
+        // Security skills
+        ("dependency-audit", SKILL_DEPENDENCY_AUDIT),
+        ("secret-management", SKILL_SECRET_MANAGEMENT),
+    ];
 
-    let decisions_dir = skills_dir.join("decisions-adr");
-    fs::create_dir_all(&decisions_dir).context("Failed to create .claude/skills/decisions-adr")?;
-    write_if_missing(&decisions_dir.join("SKILL.md"), SKILL_DECISIONS_ADR)?;
-
-    let standup_dir = skills_dir.join("standup-context");
-    fs::create_dir_all(&standup_dir).context("Failed to create .claude/skills/standup-context")?;
-    write_if_missing(&standup_dir.join("SKILL.md"), SKILL_STANDUP_CONTEXT)?;
+    for (name, content) in skills {
+        let skill_dir = skills_dir.join(name);
+        fs::create_dir_all(&skill_dir)
+            .with_context(|| format!("Failed to create .claude/skills/{}", name))?;
+        write_if_missing(&skill_dir.join("SKILL.md"), content)?;
+    }
 
     output::ok("Created .claude/skills/");
 

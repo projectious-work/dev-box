@@ -1,7 +1,9 @@
 use anyhow::{Result, bail};
 use std::path::PathBuf;
 
-use crate::config::{AddonBundle, AiProvider, DevBoxConfig, ImageFlavor, ProcessFlavor, Theme};
+use crate::config::{
+    AddonBundle, AiProvider, DevBoxConfig, ImageFlavor, ProcessFlavor, StarshipPreset, Theme,
+};
 use crate::context;
 use crate::generate;
 use crate::output;
@@ -16,6 +18,7 @@ pub struct InitParams {
     pub ai: Option<Vec<AiProvider>>,
     pub user: Option<String>,
     pub theme: Option<Theme>,
+    pub prompt: Option<StarshipPreset>,
     pub addons: Option<Vec<AddonBundle>>,
 }
 
@@ -352,6 +355,11 @@ fn serialize_config_with_comments(config: &DevBoxConfig) -> String {
     out.push_str("# Options: gruvbox-dark, catppuccin-mocha, catppuccin-latte, dracula, tokyo-night, nord\n");
     out.push_str("[appearance]\n");
     out.push_str(&format!("theme = \"{}\"\n", config.appearance.theme));
+    out.push_str(&format!(
+        "# Starship prompt preset. Options: default, plain, minimal, nerd-font, pastel, bracketed\n\
+         prompt = \"{}\"\n",
+        config.appearance.prompt
+    ));
 
     // [audio] section
     out.push_str("\n# Audio support for PulseAudio bridging (e.g., Claude Code voice).\n");
@@ -424,6 +432,7 @@ pub fn cmd_init(config_path: &Option<String>, params: InitParams) -> Result<()> 
         },
         appearance: AppearanceSection {
             theme: params.theme.unwrap_or_default(),
+            prompt: params.prompt.unwrap_or_default(),
         },
         audio: AudioSection::default(),
     };

@@ -339,17 +339,51 @@ fn default_theme() -> Theme {
     Theme::default()
 }
 
-/// [appearance] section — color theme configuration.
+/// Starship prompt presets.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, clap::ValueEnum)]
+#[serde(rename_all = "kebab-case")]
+#[clap(rename_all = "kebab-case")]
+pub enum StarshipPreset {
+    #[default]
+    Default,       // Clean, informative — dir, git, language, duration
+    Plain,         // ASCII only — no Nerd Font needed
+    Minimal,       // Just directory + git branch
+    NerdFont,      // Full Nerd Font symbols
+    Pastel,        // Soft powerline segments
+    Bracketed,     // [segments] in brackets
+}
+
+impl std::fmt::Display for StarshipPreset {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            StarshipPreset::Default => write!(f, "default"),
+            StarshipPreset::Plain => write!(f, "plain"),
+            StarshipPreset::Minimal => write!(f, "minimal"),
+            StarshipPreset::NerdFont => write!(f, "nerd-font"),
+            StarshipPreset::Pastel => write!(f, "pastel"),
+            StarshipPreset::Bracketed => write!(f, "bracketed"),
+        }
+    }
+}
+
+fn default_prompt() -> StarshipPreset {
+    StarshipPreset::default()
+}
+
+/// [appearance] section — color theme and prompt configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppearanceSection {
     #[serde(default = "default_theme")]
     pub theme: Theme,
+    #[serde(default = "default_prompt")]
+    pub prompt: StarshipPreset,
 }
 
 impl Default for AppearanceSection {
     fn default() -> Self {
         Self {
             theme: default_theme(),
+            prompt: default_prompt(),
         }
     }
 }

@@ -2,7 +2,7 @@
 //!
 //! Each theme provides config snippets for Zellij, Vim, Yazi, and lazygit.
 
-use crate::config::Theme;
+use crate::config::{StarshipPreset, Theme};
 
 /// Returns the Zellij theme KDL content for the given theme.
 pub fn zellij_theme(theme: &Theme) -> &'static str {
@@ -282,5 +282,230 @@ pub fn lazygit_theme(theme: &Theme) -> &'static str {
     searchingActiveBorderColor:
       - '#EBCB8B'
 "#,
+    }
+}
+
+/// Color palette values for Starship prompt theming.
+fn theme_palette(theme: &Theme) -> (&str, &str, &str, &str, &str) {
+    // Returns (bg, fg, accent, green, red)
+    match theme {
+        Theme::GruvboxDark => ("#282828", "#D5C4A1", "#D79921", "#98971A", "#CC241D"),
+        Theme::CatppuccinMocha => ("#1E1E2E", "#CDD6F4", "#89B4FA", "#A6E3A1", "#F38BA8"),
+        Theme::CatppuccinLatte => ("#EFF1F5", "#4C4F69", "#1E66F5", "#40A02B", "#D20F39"),
+        Theme::Dracula => ("#282A36", "#F8F8F2", "#BD93F9", "#50FA7B", "#FF5555"),
+        Theme::TokyoNight => ("#1A1B26", "#C0CAF5", "#7AA2F7", "#9ECE6A", "#F7768E"),
+        Theme::Nord => ("#2E3440", "#D8DEE9", "#88C0D0", "#A3BE8C", "#BF616A"),
+    }
+}
+
+/// Generate starship.toml content for the given preset and theme.
+pub fn starship_config(preset: &StarshipPreset, theme: &Theme) -> String {
+    let (bg, fg, accent, green, _red) = theme_palette(theme);
+
+    match preset {
+        StarshipPreset::Default => format!(
+r#"# dev-box starship config — default preset
+palette = "devbox"
+
+format = "$directory$git_branch$git_status$python$rust$nodejs$golang$cmd_duration$line_break$character"
+
+[directory]
+style = "bold fg:{accent}"
+truncation_length = 3
+
+[git_branch]
+style = "fg:{green}"
+
+[git_status]
+style = "fg:{accent}"
+
+[python]
+style = "fg:#D79921"
+format = "[$symbol$version]($style) "
+
+[rust]
+style = "fg:#D65D0E"
+format = "[$symbol$version]($style) "
+
+[nodejs]
+style = "fg:#98971A"
+format = "[$symbol$version]($style) "
+
+[golang]
+style = "fg:#689D6A"
+format = "[$symbol$version]($style) "
+
+[cmd_duration]
+style = "fg:#928374"
+min_time = 2_000
+
+[character]
+success_symbol = "[❯](bold fg:{green})"
+error_symbol = "[❯](bold fg:red)"
+
+[palettes.devbox]
+bg = "{bg}"
+fg = "{fg}"
+accent = "{accent}"
+"#),
+
+        StarshipPreset::Plain => format!(
+r#"# dev-box starship config — plain preset (no Nerd Font needed)
+format = "$directory$git_branch$git_status$cmd_duration$line_break$character"
+
+[directory]
+style = "bold fg:{accent}"
+
+[git_branch]
+symbol = ""
+style = "fg:{green}"
+
+[git_status]
+style = "fg:{accent}"
+
+[character]
+success_symbol = "[>](bold fg:{green})"
+error_symbol = "[>](bold fg:red)"
+
+[python]
+symbol = "py "
+[rust]
+symbol = "rs "
+[nodejs]
+symbol = "js "
+[golang]
+symbol = "go "
+"#),
+
+        StarshipPreset::Minimal => format!(
+r#"# dev-box starship config — minimal preset
+format = "$directory$git_branch$line_break$character"
+
+[directory]
+style = "bold fg:{accent}"
+truncation_length = 2
+
+[git_branch]
+style = "fg:{green}"
+format = " [$branch]($style)"
+
+[character]
+success_symbol = "[❯](fg:{accent})"
+error_symbol = "[❯](bold fg:red)"
+"#),
+
+        StarshipPreset::NerdFont => format!(
+r#"# dev-box starship config — nerd-font preset
+palette = "devbox"
+
+format = "$os$directory$git_branch$git_status$python$rust$nodejs$golang$docker_context$cmd_duration$line_break$character"
+
+[os]
+disabled = false
+style = "fg:{fg}"
+
+[directory]
+style = "bold fg:{accent}"
+read_only = " 󰌾"
+
+[git_branch]
+symbol = " "
+style = "fg:{green}"
+
+[git_status]
+style = "fg:{accent}"
+
+[python]
+symbol = " "
+[rust]
+symbol = " "
+[nodejs]
+symbol = " "
+[golang]
+symbol = " "
+[docker_context]
+symbol = " "
+
+[cmd_duration]
+style = "fg:#928374"
+
+[character]
+success_symbol = "[❯](bold fg:{green})"
+error_symbol = "[❯](bold fg:red)"
+
+[palettes.devbox]
+bg = "{bg}"
+fg = "{fg}"
+accent = "{accent}"
+"#),
+
+        StarshipPreset::Pastel => format!(
+r#"# dev-box starship config — pastel powerline preset
+palette = "devbox"
+
+format = """
+[](fg:{accent})\
+$directory\
+[](fg:{accent} bg:{green})\
+$git_branch\
+$git_status\
+[](fg:{green} bg:{bg})\
+$python$rust$nodejs$golang\
+$cmd_duration\
+$line_break$character"""
+
+[directory]
+style = "bold bg:{accent} fg:{bg}"
+truncation_length = 3
+
+[git_branch]
+style = "bg:{green} fg:{bg}"
+symbol = " "
+
+[git_status]
+style = "bg:{green} fg:{bg}"
+
+[character]
+success_symbol = "[❯](bold fg:{accent})"
+error_symbol = "[❯](bold fg:red)"
+
+[palettes.devbox]
+bg = "{bg}"
+fg = "{fg}"
+accent = "{accent}"
+"#),
+
+        StarshipPreset::Bracketed => format!(
+r#"# dev-box starship config — bracketed segments preset
+format = "$directory$git_branch$git_status$python$rust$nodejs$golang$cmd_duration$line_break$character"
+
+[directory]
+style = "fg:{accent}"
+format = "[$path]($style)[$read_only]($read_only_style) "
+
+[git_branch]
+style = "fg:{green}"
+format = "[\\[$branch\\]]($style) "
+
+[git_status]
+style = "fg:{accent}"
+format = "[\\[$all_status$ahead_behind\\]]($style) "
+
+[python]
+format = "[\\[$symbol$version\\]](fg:#D79921) "
+[rust]
+format = "[\\[$symbol$version\\]](fg:#D65D0E) "
+[nodejs]
+format = "[\\[$symbol$version\\]](fg:#98971A) "
+[golang]
+format = "[\\[$symbol$version\\]](fg:#689D6A) "
+
+[cmd_duration]
+format = "[\\[$duration\\]](fg:#928374) "
+
+[character]
+success_symbol = "[❯](bold fg:{green})"
+error_symbol = "[❯](bold fg:red)"
+"#),
     }
 }
