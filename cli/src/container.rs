@@ -305,6 +305,25 @@ fn serialize_config_with_comments(config: &DevBoxConfig) -> String {
     out.push_str("# Extra environment: [container.environment]\n");
     out.push_str("# MY_VAR = \"value\"\n");
 
+    // [addons] section
+    out.push_str("\n# Addon bundles install additional tool sets into the container.\n");
+    out.push_str("# Options: infrastructure, kubernetes, cloud-aws, cloud-gcp, cloud-azure\n");
+    out.push_str("[addons]\n");
+    if config.addons.bundles.is_empty() {
+        out.push_str("# bundles = [\"infrastructure\", \"kubernetes\"]\n");
+    } else {
+        out.push_str(&format!(
+            "bundles = [{}]\n",
+            config
+                .addons
+                .bundles
+                .iter()
+                .map(|b| format!("\"{}\"", b))
+                .collect::<Vec<_>>()
+                .join(", ")
+        ));
+    }
+
     // [context] section
     out.push_str("\n[context]\n");
     out.push_str(&format!(
@@ -351,6 +370,7 @@ fn serialize_config_with_comments(config: &DevBoxConfig) -> String {
 }
 
 /// Init command: create a dev-box.toml and generate files.
+#[allow(clippy::too_many_arguments)]
 pub fn cmd_init(
     config_path: &Option<String>,
     name: Option<String>,
@@ -359,10 +379,11 @@ pub fn cmd_init(
     ai: Option<Vec<AiProvider>>,
     user: Option<String>,
     theme: Option<crate::config::Theme>,
+    addons: Option<Vec<crate::config::AddonBundle>>,
 ) -> Result<()> {
     use crate::config::{
-        AiSection, AppearanceSection, AudioSection, ContainerSection, ContextSection, DevBoxConfig,
-        DevBoxSection,
+        AddonsSection, AiSection, AppearanceSection, AudioSection, ContainerSection,
+        ContextSection, DevBoxConfig, DevBoxSection,
     };
 
     let toml_path = config_path
@@ -385,6 +406,7 @@ pub fn cmd_init(
 
     let container_user = user.unwrap_or_else(|| "root".to_string());
     let ai_providers = ai.unwrap_or_else(|| vec![AiProvider::Claude]);
+    let addon_bundles = addons.unwrap_or_default();
 
     let config = DevBoxConfig {
         dev_box: DevBoxSection {
@@ -406,6 +428,9 @@ pub fn cmd_init(
         context: ContextSection::default(),
         ai: AiSection {
             providers: ai_providers,
+        },
+        addons: AddonsSection {
+            bundles: addon_bundles,
         },
         appearance: AppearanceSection {
             theme: theme.unwrap_or_default(),

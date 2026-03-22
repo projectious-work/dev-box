@@ -758,6 +758,7 @@ mod tests {
             },
             context: ContextSection::default(),
             ai: crate::config::AiSection::default(),
+            addons: crate::config::AddonsSection::default(),
             appearance: crate::config::AppearanceSection::default(),
             audio: AudioSection {
                 enabled: audio_enabled,

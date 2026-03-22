@@ -24,6 +24,10 @@ RUN uv tool install aider-chat
 RUN npm install -g @google/generative-ai-cli || pip install google-generativeai
 {% endif %}
 {% endfor %}
+{% for addon_cmd in addon_commands %}
+
+{{ addon_cmd }}
+{% endfor %}
 {% if local_content %}
 
 # Project-specific layers (from Dockerfile.local)

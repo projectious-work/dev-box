@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand, ValueEnum};
 
-use crate::config::{AiProvider, ImageFlavor, ProcessFlavor, Theme};
+use crate::config::{AddonBundle, AiProvider, ImageFlavor, ProcessFlavor, Theme};
 
 /// Available Zellij IDE layouts.
 #[derive(Clone, Debug, ValueEnum)]
@@ -92,6 +92,10 @@ pub enum Commands {
         /// Color theme for all tools (default: gruvbox-dark)
         #[arg(long, value_enum)]
         theme: Option<Theme>,
+
+        /// Addon bundles to install (e.g., infrastructure, kubernetes, cloud-aws)
+        #[arg(long, value_enum, num_args = 1..)]
+        addons: Option<Vec<AddonBundle>>,
     },
     /// Reconcile project state with dev-box.toml configuration
     ///
@@ -204,6 +208,11 @@ pub enum Commands {
         #[arg(long)]
         yes: bool,
     },
+    /// Run security checks on the project
+    ///
+    /// Checks Rust dependencies (cargo audit), Python dependencies
+    /// (pip-audit), and container images (trivy) if the tools are available.
+    Audit,
     /// Host-side audio diagnostics and setup for PulseAudio
     ///
     /// Manages PulseAudio configuration on the host machine for
