@@ -2,6 +2,33 @@
 
 All notable changes to dev-box are documented here.
 
+## v0.6.0 — 2026-03-22
+
+### Added
+- **AI provider flexibility** (#19) — AI tools are now optional and selectable:
+  - `providers = ["claude", "aider", "gemini"]` in dev-box.toml
+  - `providers = []` for no AI tools (no AI pane in layouts)
+  - Multiple providers stacked in one pane (cowork) or separate tabs (dev/focus)
+  - Dockerfile conditionally installs only selected providers
+  - docker-compose mounts provider-specific config directories
+- **Process templates** (#29, DEC-011) — 4 standard process docs scaffolded for managed/research/product:
+  - `context/processes/release.md`, `code-review.md`, `feature-development.md`, `bug-fix.md`
+  - Thin declarations (WHAT, not HOW) — skills handle execution
+- **SKILL.md support** (#30, DEC-011) — 3 example skills scaffolded into `.claude/skills/`:
+  - `backlog-context`, `decisions-adr`, `standup-context`
+  - Uses the SKILL.md open standard format
+
+### Fixed
+- **Dockerfile optimization** (#27):
+  - Pinned uv to v0.7.12 (was `:latest`)
+  - Pinned Rust toolchain to v1.87.0 (was `stable`)
+  - Fixed fontconfig registration in latex runtime stage (was in builder, got discarded)
+  - Consolidated 10 COPY layers into 1 in base Dockerfile
+- ripgrep and delta use gnu builds for aarch64 (no musl available)
+
+### Changed
+- All `generate` references replaced with `sync` across docs, CLI, and source
+
 ## v0.5.0 — 2026-03-22
 
 ### Added
