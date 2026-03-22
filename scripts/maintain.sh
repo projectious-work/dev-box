@@ -259,17 +259,30 @@ cmd_push_images() {
 }
 
 cmd_docs_serve() {
-  command -v mkdocs &>/dev/null || die "mkdocs not found. Install: pip install mkdocs-material"
   cd "${PROJECT_ROOT}"
-  info "Serving docs at http://localhost:8000 ..."
-  mkdocs serve -a 0.0.0.0:8000
+  if command -v zensical &>/dev/null; then
+    info "Serving docs with Zensical at http://localhost:8000 ..."
+    zensical serve -a 0.0.0.0:8000
+  elif command -v mkdocs &>/dev/null; then
+    info "Serving docs with MkDocs at http://localhost:8000 ..."
+    mkdocs serve -a 0.0.0.0:8000
+  else
+    die "Neither zensical nor mkdocs found. Install: pip install zensical"
+  fi
 }
 
 cmd_docs_deploy() {
   local dry_run=false
   [[ "${1:-}" == "--dry-run" ]] && dry_run=true
 
-  command -v mkdocs &>/dev/null || die "mkdocs not found. Install: pip install mkdocs-material"
+  local docs_cmd=""
+  if command -v zensical &>/dev/null; then
+    docs_cmd="zensical"
+  elif command -v mkdocs &>/dev/null; then
+    docs_cmd="mkdocs"
+  else
+    die "Neither zensical nor mkdocs found. Install: pip install zensical"
+  fi
   command -v git &>/dev/null    || die "git not found"
   git rev-parse --is-inside-work-tree &>/dev/null || die "Not inside a git repository"
 
@@ -284,8 +297,8 @@ cmd_docs_deploy() {
   info "Source: ${current_branch}@${commit_sha}"
 
   cd "${PROJECT_ROOT}"
-  info "Building MkDocs site..."
-  mkdocs build --strict --clean
+  info "Building docs with ${docs_cmd}..."
+  ${docs_cmd} build --strict --clean
   ok "Site built in site/"
 
   if [[ "${dry_run}" == "true" ]]; then
