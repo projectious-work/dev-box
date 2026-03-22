@@ -2,6 +2,27 @@
 
 All notable changes to dev-box are documented here.
 
+## v0.7.0 — 2026-03-22
+
+### Added
+- **Addon packages system** (#18) — selectable tool bundles in dev-box.toml:
+  - `infrastructure` (OpenTofu, Ansible, Packer)
+  - `kubernetes` (kubectl, Helm, k9s, Kustomize)
+  - `cloud-aws`, `cloud-gcp`, `cloud-azure`
+  - `--addons` flag on `dev-box init`
+  - Addons generate install layers in the Dockerfile
+- **`dev-box audit` command** (#24) — run security checks:
+  - cargo audit (Rust dependencies)
+  - pip-audit (Python dependencies)
+  - trivy (container image scanning)
+  - Graceful skip when tools aren't installed
+- **Zensical migration** (#26) — `zensical.toml` config created, `maintain.sh` auto-detects Zensical or falls back to MkDocs
+- **Skills documentation page** — new `docs/skills.md` covering SKILL.md format, bundled skills, security
+- **Comprehensive docs update** — all v0.6.0 features documented: AI providers, process templates, skills, shell tools
+
+### Changed
+- `maintain.sh` docs commands prefer Zensical over MkDocs when available
+
 ## v0.6.0 — 2026-03-22
 
 ### Added
