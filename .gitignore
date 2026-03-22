@@ -4,7 +4,9 @@
 
 .root/
 scratch.txt
+scratch.md
 .claude
+tmp/
 
 # Rust build artifacts
 cli/target/
