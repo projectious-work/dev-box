@@ -3,7 +3,7 @@
 Central task registry. Each item has a unique ID for cross-referencing.
 Source of truth — GitHub issues are for external visibility.
 
-## Next ID: BACK-036
+## Next ID: BACK-038
 
 ## Format
 
@@ -49,6 +49,8 @@ Priority values: `must`, `should`, `could`, `wont`
 | BACK-033 | Context ideas research review | todo | should | After BACK-022 implementation, review all files in context/ideas/ for actionable insights not yet captured in backlog |
 | BACK-034 | New skill: software modularization | todo | should | Skill on keeping software in small, independent packages optimized for AI agent context limits. Covers module boundaries, package decomposition, API surface design for agent comprehension |
 | BACK-035 | New skill: microservice creation & orchestration | todo | should | Skill on creating new services/microservices and orchestrating them. Service boundaries, inter-service communication, deployment patterns |
+| BACK-036 | Bug: Yazi "e" key does not open files in vim | todo | must | Pressing "e" in yazi does nothing. Enter opens file in vim but in yazi's own pane (not the layout vim pane) and with wrong theme settings. Likely open-in-editor.sh or yazi keymap issue in v0.8.0 |
+| BACK-037 | Bug: Yazi preview broken for images/PDF/GIF | todo | must | PNG/SVG preview shows nothing; PDF fills screen with binary data; GIF preview also broken. Likely missing preview dependencies (ueberzugpp, file, poppler-utils) in base image |
 
 ### BACK-022 Expanded Scope
 

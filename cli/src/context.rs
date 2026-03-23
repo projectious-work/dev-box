@@ -4,6 +4,7 @@ use std::path::Path;
 
 use crate::config::{AddonsSection, DevBoxConfig};
 use crate::output;
+use crate::process_registry;
 
 // --- Minimal templates ---
 const MINIMAL_CLAUDE_MD: &str = include_str!("../../templates/minimal/CLAUDE.md.template");
@@ -386,32 +387,57 @@ are working with and tailor their communication and technical approach according
 - **Current focus:** <!-- e.g., migrating auth system, learning Kubernetes -->
 "#;
 
-/// Scaffold the context/ directory based on the chosen work process flavor.
+/// Scaffold the context/ directory using the process registry and selective skill deployment.
 ///
-/// - Creates context/ directory and populates it with template files
+/// - Resolves process packages and effective skills from config
+/// - Creates context/ directory and populates it with template files per package
 /// - Creates CLAUDE.md at project root from the template
 /// - Replaces {{project_name}} placeholders with the actual project name
+/// - Deploys only the skills that belong to the resolved package set
 /// - Creates .dev-box-version file
 /// - Updates .gitignore with generated file entries and language-specific blocks
 pub fn scaffold_context(config: &DevBoxConfig) -> Result<()> {
-    let packages = &config.process.packages;
+    let packages = process_registry::resolve_packages(&config.process.packages)
+        .map_err(|e| anyhow::anyhow!(e))?;
+    let effective_skills = process_registry::resolve_skills(
+        &packages,
+        &config.skills.include,
+        &config.skills.exclude,
+    )
+    .map_err(|e| anyhow::anyhow!(e))?;
+
     let project_name = &config.container.name;
     let addons = &config.addons;
 
-    output::info(&format!("Scaffolding context for {:?} packages...", packages));
+    output::info(&format!(
+        "Scaffolding context for {:?} packages ({} skills)...",
+        config.process.packages,
+        effective_skills.len()
+    ));
 
-    // Dispatch based on which packages are present.
-    // "product" is the most comprehensive, then "research", then "managed".
-    // If none of those are present, fall back to minimal.
-    if packages.iter().any(|p| p == "product") {
-        scaffold_product(project_name)?;
-    } else if packages.iter().any(|p| p == "research") {
-        scaffold_research(project_name)?;
-    } else if packages.iter().any(|p| p == "managed") {
-        scaffold_managed(project_name)?;
-    } else {
-        scaffold_minimal(project_name)?;
+    // Always create CLAUDE.md (use product template as most complete)
+    let claude_md = render(PRODUCT_CLAUDE_MD, project_name);
+    write_if_missing(Path::new("CLAUDE.md"), &claude_md)?;
+    output::ok("Created CLAUDE.md");
+
+    // Create context/ directory
+    let context = Path::new("context");
+    fs::create_dir_all(context)?;
+
+    // Scaffold context files from each package
+    for pkg in &packages {
+        scaffold_package_context(context, pkg, project_name)?;
     }
+
+    // Scaffold only effective skills
+    scaffold_skills_selective(&effective_skills)?;
+
+    // Process declarations
+    scaffold_processes(context)?;
+
+    // OWNER.md (local copy) — done via core package's scaffold_package_context,
+    // but setup_owner_md handles the shared/ location and backward compat
+    setup_owner_md(context)?;
 
     // Create .dev-box-version
     write_if_missing(Path::new(".dev-box-version"), env!("CARGO_PKG_VERSION"))?;
@@ -443,11 +469,148 @@ pub fn scaffold_context(config: &DevBoxConfig) -> Result<()> {
          #   COPY --from=builder /app/dist /workspace/dist\n",
     )?;
 
-    output::ok(&format!("Context scaffolded ({:?} packages)", packages));
+    output::ok(&format!(
+        "Context scaffolded ({:?} packages, {} skills)",
+        config.process.packages,
+        effective_skills.len()
+    ));
+    Ok(())
+}
+
+/// Scaffold context files for a single process package.
+///
+/// Creates directories listed in `pkg.directories` and writes context files
+/// using template content matched by `template_key`. Unknown template keys
+/// are written as simple placeholder files.
+fn scaffold_package_context(
+    _context: &Path,
+    pkg: &process_registry::ProcessPackage,
+    project_name: &str,
+) -> Result<()> {
+    // Create directories
+    for dir in pkg.directories {
+        let dir_path = Path::new(dir);
+        fs::create_dir_all(dir_path)
+            .with_context(|| format!("Failed to create {}", dir_path.display()))?;
+        // Add .gitkeep for empty directories
+        let gitkeep = dir_path.join(".gitkeep");
+        write_if_missing(&gitkeep, "")?;
+    }
+
+    // Scaffold context files
+    for cf in pkg.context_files {
+        let file_path = Path::new(cf.path);
+        if let Some(parent) = file_path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        let content = template_content_for_key(cf.template_key, project_name);
+        write_if_missing(file_path, &content)?;
+        output::ok(&format!("Created {}", cf.path));
+    }
+
+    Ok(())
+}
+
+/// Map a template_key to actual template content.
+///
+/// Falls back to a simple placeholder for keys that don't have a template yet.
+fn template_content_for_key(key: &str, project_name: &str) -> String {
+    match key {
+        // core
+        "devbox_md" => format!(
+            "# dev-box Configuration Notes\n\n\
+             Project: {}\n\n\
+             This file contains notes about the dev-box configuration for this project.\n",
+            project_name
+        ),
+        "owner_md" => OWNER_CONTENT.to_string(),
+
+        // tracking
+        "backlog_md" => PRODUCT_BACKLOG.to_string(),
+        "decisions_md" => PRODUCT_DECISIONS.to_string(),
+        "eventlog_md" => {
+            "# Event Log\n\n\
+             Chronological record of significant project events.\n\n\
+             | Date | Event | Details |\n\
+             |------|-------|---------|\n"
+                .to_string()
+        }
+
+        // standups
+        "standups_md" => PRODUCT_STANDUPS.to_string(),
+
+        // handover
+        "session_template_md" => {
+            "# Session Handover Template\n\n\
+             ## Context\n\n\
+             ## What was done\n\n\
+             ## Open items\n\n\
+             ## Next steps\n"
+                .to_string()
+        }
+
+        // product
+        "prd_md" => PRODUCT_PRD.to_string(),
+        "projects_md" => PRODUCT_PROJECTS.to_string(),
+
+        // code
+        "development_md" => PRODUCT_DEVELOPMENT.to_string(),
+
+        // research
+        "progress_md" => RESEARCH_PROGRESS.to_string(),
+
+        // operations
+        "team_md" => PRODUCT_TEAM.to_string(),
+
+        // Unknown key — placeholder
+        other => format!(
+            "# {}\n\nPlaceholder — template for '{}' not yet available.\n",
+            other, other
+        ),
+    }
+}
+
+/// Scaffold only the skills that are in the effective skill set.
+///
+/// Keeps the full skill definitions list but filters deployment to only those
+/// skills resolved from the process packages, include, and exclude lists.
+fn scaffold_skills_selective(effective_skills: &[String]) -> Result<()> {
+    let skills_dir = Path::new(".claude").join("skills");
+    fs::create_dir_all(&skills_dir).context("Failed to create .claude/skills")?;
+
+    let all_skills: &[SkillDef] = ALL_SKILL_DEFS;
+
+    let mut deployed = 0;
+    for (name, content, refs) in all_skills {
+        if effective_skills.iter().any(|s| s == name) {
+            let skill_dir = skills_dir.join(name);
+            fs::create_dir_all(&skill_dir)
+                .with_context(|| format!("Failed to create .claude/skills/{}", name))?;
+            write_if_missing(&skill_dir.join("SKILL.md"), content)?;
+            if !refs.is_empty() {
+                let refs_dir = skill_dir.join("references");
+                fs::create_dir_all(&refs_dir).with_context(|| {
+                    format!("Failed to create .claude/skills/{}/references", name)
+                })?;
+                for (ref_name, ref_content) in *refs {
+                    write_if_missing(&refs_dir.join(ref_name), ref_content)?;
+                }
+            }
+            deployed += 1;
+        }
+    }
+
+    output::ok(&format!(
+        "Created .claude/skills/ ({} of {} available skills deployed)",
+        deployed,
+        all_skills.len()
+    ));
+
     Ok(())
 }
 
 /// Scaffold minimal process: just CLAUDE.md at root, no context/ directory.
+#[allow(dead_code)]
 fn scaffold_minimal(project_name: &str) -> Result<()> {
     let claude_md = render(MINIMAL_CLAUDE_MD, project_name);
     write_if_missing(Path::new("CLAUDE.md"), &claude_md)?;
@@ -456,6 +619,7 @@ fn scaffold_minimal(project_name: &str) -> Result<()> {
 }
 
 /// Scaffold managed process.
+#[allow(dead_code)]
 fn scaffold_managed(project_name: &str) -> Result<()> {
     let context = Path::new("context");
     fs::create_dir_all(context.join("work-instructions"))
@@ -493,6 +657,7 @@ fn scaffold_managed(project_name: &str) -> Result<()> {
 }
 
 /// Scaffold research process.
+#[allow(dead_code)]
 fn scaffold_research(project_name: &str) -> Result<()> {
     let context = Path::new("context");
     fs::create_dir_all(context.join("research")).context("Failed to create context/research")?;
@@ -535,6 +700,7 @@ fn scaffold_research(project_name: &str) -> Result<()> {
 }
 
 /// Scaffold product process (full set).
+#[allow(dead_code)]
 fn scaffold_product(project_name: &str) -> Result<()> {
     let context = Path::new("context");
     fs::create_dir_all(context.join("work-instructions"))
@@ -633,14 +799,9 @@ fn scaffold_processes(context: &Path) -> Result<()> {
 /// A skill definition: (directory_name, skill_content, reference_files).
 type SkillDef = (&'static str, &'static str, &'static [(&'static str, &'static str)]);
 
-/// Scaffold the .claude/skills/ directory with curated skill templates.
-fn scaffold_skills() -> Result<()> {
-    let skills_dir = Path::new(".claude").join("skills");
-    fs::create_dir_all(&skills_dir).context("Failed to create .claude/skills")?;
-
-    // All available skills: (directory_name, skill_content, reference_files)
-    // Reference files are deployed to .claude/skills/<name>/references/<filename>
-    let skills: &[SkillDef] = &[
+/// All available skills: (directory_name, skill_content, reference_files).
+/// Reference files are deployed to .claude/skills/<name>/references/<filename>.
+static ALL_SKILL_DEFS: &[SkillDef] = &[
         // Core process skills
         ("backlog-context", SKILL_BACKLOG_CONTEXT, &[]),
         ("decisions-adr", SKILL_DECISIONS_ADR, &[]),
@@ -847,7 +1008,13 @@ fn scaffold_skills() -> Result<()> {
         ]),
     ];
 
-    for (name, content, refs) in skills {
+/// Scaffold all skills (legacy — deploys everything).
+#[allow(dead_code)]
+fn scaffold_skills() -> Result<()> {
+    let skills_dir = Path::new(".claude").join("skills");
+    fs::create_dir_all(&skills_dir).context("Failed to create .claude/skills")?;
+
+    for (name, content, refs) in ALL_SKILL_DEFS {
         let skill_dir = skills_dir.join(name);
         fs::create_dir_all(&skill_dir)
             .with_context(|| format!("Failed to create .claude/skills/{}", name))?;
@@ -895,70 +1062,28 @@ fn setup_owner_md(context: &Path) -> Result<()> {
 }
 
 /// Returns the list of expected context files for a given set of process packages.
+///
+/// Uses the process registry to resolve packages and collect their context file paths.
 pub fn expected_context_files(packages: &[String]) -> Vec<&'static str> {
-    if packages.iter().any(|p| p == "product") {
-        vec![
-            "CLAUDE.md",
-            "context/shared/OWNER.md",
-            "context/DECISIONS.md",
-            "context/BACKLOG.md",
-            "context/STANDUPS.md",
-            "context/PROJECTS.md",
-            "context/PRD.md",
-            "context/work-instructions/GENERAL.md",
-            "context/work-instructions/DEVELOPMENT.md",
-            "context/work-instructions/TEAM.md",
-            "context/project-notes/.gitkeep",
-            "context/ideas/.gitkeep",
-            "context/research/_template.md",
-            "experiments/README.md",
-            "context/processes/README.md",
-            "context/processes/release.md",
-            "context/processes/code-review.md",
-            "context/processes/feature-development.md",
-            "context/processes/bug-fix.md",
-            ".claude/skills/backlog-context/SKILL.md",
-            ".claude/skills/decisions-adr/SKILL.md",
-            ".claude/skills/standup-context/SKILL.md",
-        ]
-    } else if packages.iter().any(|p| p == "research") {
-        vec![
-            "CLAUDE.md",
-            "context/shared/OWNER.md",
-            "context/PROGRESS.md",
-            "context/research/_template.md",
-            "context/analysis/.gitkeep",
-            "experiments/README.md",
-            "context/processes/README.md",
-            "context/processes/release.md",
-            "context/processes/code-review.md",
-            "context/processes/feature-development.md",
-            "context/processes/bug-fix.md",
-            ".claude/skills/backlog-context/SKILL.md",
-            ".claude/skills/decisions-adr/SKILL.md",
-            ".claude/skills/standup-context/SKILL.md",
-        ]
-    } else if packages.iter().any(|p| p == "managed") {
-        vec![
-            "CLAUDE.md",
-            "context/shared/OWNER.md",
-            "context/DECISIONS.md",
-            "context/BACKLOG.md",
-            "context/STANDUPS.md",
-            "context/work-instructions/GENERAL.md",
-            "context/processes/README.md",
-            "context/processes/release.md",
-            "context/processes/code-review.md",
-            "context/processes/feature-development.md",
-            "context/processes/bug-fix.md",
-            ".claude/skills/backlog-context/SKILL.md",
-            ".claude/skills/decisions-adr/SKILL.md",
-            ".claude/skills/standup-context/SKILL.md",
-        ]
-    } else {
-        // minimal / core
-        vec!["CLAUDE.md"]
+    let mut files: Vec<&'static str> = vec!["CLAUDE.md"];
+
+    if let Ok(pkgs) = process_registry::resolve_packages(packages) {
+        for pkg in &pkgs {
+            for cf in pkg.context_files {
+                files.push(cf.path);
+            }
+        }
+        // Process declarations are always scaffolded when there are packages
+        if pkgs.len() > 1 || pkgs.iter().any(|p| p.name != "core") {
+            files.push("context/processes/README.md");
+            files.push("context/processes/release.md");
+            files.push("context/processes/code-review.md");
+            files.push("context/processes/feature-development.md");
+            files.push("context/processes/bug-fix.md");
+        }
     }
+
+    files
 }
 
 /// Replace {{project_name}} in template content.
@@ -1309,7 +1434,7 @@ mod tests {
 
     #[test]
     #[serial]
-    fn scaffold_minimal_creates_claude_md_and_version() {
+    fn scaffold_core_creates_claude_md_and_version() {
         in_temp_dir(|| {
             let config = test_config_with_packages(vec!["core".to_string()]);
             scaffold_context(&config).unwrap();
@@ -1318,82 +1443,159 @@ mod tests {
                 Path::new(".dev-box-version").exists(),
                 ".dev-box-version should exist"
             );
+            // Core package creates DEVBOX.md and OWNER.md
+            assert!(Path::new("context/DEVBOX.md").exists());
+            // Core skills are deployed
+            assert!(Path::new(".claude/skills/agent-management/SKILL.md").exists());
         });
     }
 
     #[test]
     #[serial]
-    fn scaffold_managed_creates_expected_files() {
+    fn scaffold_managed_preset_creates_expected_files() {
         in_temp_dir(|| {
+            // "managed" is a preset -> core + tracking + standups + handover
             let config = test_config_with_packages(vec!["managed".to_string()]);
             scaffold_context(&config).unwrap();
             assert!(Path::new("CLAUDE.md").exists());
             assert!(Path::new(".dev-box-version").exists());
+            // core package
+            assert!(Path::new("context/DEVBOX.md").exists());
+            // tracking package
             assert!(Path::new("context/DECISIONS.md").exists());
             assert!(Path::new("context/BACKLOG.md").exists());
+            assert!(Path::new("context/EVENTLOG.md").exists());
+            // standups package
             assert!(Path::new("context/STANDUPS.md").exists());
-            assert!(Path::new("context/work-instructions/GENERAL.md").exists());
-            assert!(Path::new("context/shared/OWNER.md").exists());
+            // handover package
+            assert!(Path::new("context/project-notes/session-template.md").exists());
+            // owner
+            // Core package creates context/OWNER.md (legacy path detected by setup_owner_md)
+            assert!(Path::new("context/OWNER.md").exists());
+            // process declarations
             assert!(Path::new("context/processes/README.md").exists());
             assert!(Path::new("context/processes/release.md").exists());
             assert!(Path::new("context/processes/code-review.md").exists());
             assert!(Path::new("context/processes/feature-development.md").exists());
             assert!(Path::new("context/processes/bug-fix.md").exists());
+            // Skills from packages (only those with templates get deployed)
             assert!(Path::new(".claude/skills/backlog-context/SKILL.md").exists());
             assert!(Path::new(".claude/skills/decisions-adr/SKILL.md").exists());
             assert!(Path::new(".claude/skills/standup-context/SKILL.md").exists());
+            assert!(Path::new(".claude/skills/agent-management/SKILL.md").exists());
         });
     }
 
     #[test]
     #[serial]
-    fn scaffold_research_creates_expected_files() {
+    fn scaffold_research_package_creates_expected_files() {
         in_temp_dir(|| {
+            // "research" is a package, core is always added
             let config = test_config_with_packages(vec!["research".to_string()]);
             scaffold_context(&config).unwrap();
             assert!(Path::new("CLAUDE.md").exists());
+            // research package context files
             assert!(Path::new("context/PROGRESS.md").exists());
-            assert!(Path::new("context/research/_template.md").exists());
+            // research package directories
+            assert!(Path::new("context/research/.gitkeep").exists());
             assert!(Path::new("context/analysis/.gitkeep").exists());
-            assert!(Path::new("context/shared/OWNER.md").exists());
-            assert!(Path::new("experiments/README.md").exists());
+            assert!(Path::new("experiments/.gitkeep").exists());
+            // owner
+            // Core package creates context/OWNER.md (legacy path detected by setup_owner_md)
+            assert!(Path::new("context/OWNER.md").exists());
+            // process declarations
             assert!(Path::new("context/processes/README.md").exists());
-            assert!(Path::new("context/processes/release.md").exists());
-            assert!(Path::new(".claude/skills/backlog-context/SKILL.md").exists());
-            assert!(Path::new(".claude/skills/decisions-adr/SKILL.md").exists());
-            assert!(Path::new(".claude/skills/standup-context/SKILL.md").exists());
+            // Research skills deployed
+            assert!(Path::new(".claude/skills/data-science/SKILL.md").exists());
+            assert!(Path::new(".claude/skills/data-visualization/SKILL.md").exists());
+            assert!(Path::new(".claude/skills/feature-engineering/SKILL.md").exists());
         });
     }
 
     #[test]
     #[serial]
-    fn scaffold_product_creates_all_expected_files() {
+    fn scaffold_full_product_preset_creates_all_expected_files() {
         in_temp_dir(|| {
-            let config = test_config_with_packages(vec!["product".to_string()]);
+            // "full-product" preset -> many packages
+            let config = test_config_with_packages(vec!["full-product".to_string()]);
             scaffold_context(&config).unwrap();
             assert!(Path::new("CLAUDE.md").exists());
             assert!(Path::new(".dev-box-version").exists());
+            // tracking
             assert!(Path::new("context/DECISIONS.md").exists());
             assert!(Path::new("context/BACKLOG.md").exists());
+            // standups
             assert!(Path::new("context/STANDUPS.md").exists());
+            // product
             assert!(Path::new("context/PROJECTS.md").exists());
             assert!(Path::new("context/PRD.md").exists());
-            assert!(Path::new("context/work-instructions/GENERAL.md").exists());
+            // code
             assert!(Path::new("context/work-instructions/DEVELOPMENT.md").exists());
+            // operations
             assert!(Path::new("context/work-instructions/TEAM.md").exists());
-            assert!(Path::new("context/project-notes/.gitkeep").exists());
-            assert!(Path::new("context/ideas/.gitkeep").exists());
-            assert!(Path::new("context/research/_template.md").exists());
-            assert!(Path::new("experiments/README.md").exists());
-            assert!(Path::new("context/shared/OWNER.md").exists());
+            // handover
+            assert!(Path::new("context/project-notes/session-template.md").exists());
+            // owner
+            // Core package creates context/OWNER.md (legacy path detected by setup_owner_md)
+            assert!(Path::new("context/OWNER.md").exists());
+            // process declarations
             assert!(Path::new("context/processes/README.md").exists());
-            assert!(Path::new("context/processes/release.md").exists());
-            assert!(Path::new("context/processes/code-review.md").exists());
-            assert!(Path::new("context/processes/feature-development.md").exists());
-            assert!(Path::new("context/processes/bug-fix.md").exists());
-            assert!(Path::new(".claude/skills/backlog-context/SKILL.md").exists());
+            // Skills from code package
+            assert!(Path::new(".claude/skills/code-review/SKILL.md").exists());
+            assert!(Path::new(".claude/skills/testing-strategy/SKILL.md").exists());
+            // Skills from security package
+            assert!(Path::new(".claude/skills/secure-coding/SKILL.md").exists());
+            // Skills from operations package
+            assert!(Path::new(".claude/skills/ci-cd-setup/SKILL.md").exists());
+        });
+    }
+
+    #[test]
+    #[serial]
+    fn scaffold_selective_skills_excludes_unselected() {
+        in_temp_dir(|| {
+            // core-only config should NOT deploy code-review skill
+            let config = test_config_with_packages(vec!["core".to_string()]);
+            scaffold_context(&config).unwrap();
+            assert!(
+                !Path::new(".claude/skills/code-review/SKILL.md").exists(),
+                "code-review should not be deployed for core-only"
+            );
+            assert!(
+                !Path::new(".claude/skills/data-science/SKILL.md").exists(),
+                "data-science should not be deployed for core-only"
+            );
+        });
+    }
+
+    #[test]
+    #[serial]
+    fn scaffold_with_include_adds_extra_skill() {
+        in_temp_dir(|| {
+            let mut config = test_config_with_packages(vec!["core".to_string()]);
+            config.skills.include = vec!["flutter-development".to_string()];
+            scaffold_context(&config).unwrap();
+            assert!(
+                Path::new(".claude/skills/flutter-development/SKILL.md").exists(),
+                "flutter-development should be deployed via include"
+            );
+        });
+    }
+
+    #[test]
+    #[serial]
+    fn scaffold_with_exclude_removes_skill() {
+        in_temp_dir(|| {
+            // managed preset includes tracking -> backlog-context skill
+            let mut config = test_config_with_packages(vec!["managed".to_string()]);
+            config.skills.exclude = vec!["backlog-context".to_string()];
+            scaffold_context(&config).unwrap();
+            assert!(
+                !Path::new(".claude/skills/backlog-context/SKILL.md").exists(),
+                "backlog-context should be excluded"
+            );
+            // Other tracking skills should still be present
             assert!(Path::new(".claude/skills/decisions-adr/SKILL.md").exists());
-            assert!(Path::new(".claude/skills/standup-context/SKILL.md").exists());
         });
     }
 
@@ -1474,10 +1676,50 @@ mod tests {
         in_temp_dir(|| {
             let config = test_config_with_packages(vec!["managed".to_string()]);
             scaffold_context(&config).unwrap();
-            let content = fs::read_to_string("context/shared/OWNER.md").unwrap();
+            // Core package creates context/OWNER.md, which triggers
+            // setup_owner_md's legacy path detection (skips shared/).
+            let content = fs::read_to_string("context/OWNER.md").unwrap();
             assert!(content.contains("Domain expertise"));
             assert!(content.contains("Timezone"));
             assert!(content.contains("Communication language"));
         });
+    }
+
+    #[test]
+    fn expected_context_files_core_only() {
+        let files = expected_context_files(&["core".to_string()]);
+        assert!(files.contains(&"CLAUDE.md"));
+        assert!(files.contains(&"context/DEVBOX.md"));
+        assert!(files.contains(&"context/OWNER.md"));
+    }
+
+    #[test]
+    fn expected_context_files_managed_preset() {
+        let files = expected_context_files(&["managed".to_string()]);
+        assert!(files.contains(&"CLAUDE.md"));
+        assert!(files.contains(&"context/BACKLOG.md"));
+        assert!(files.contains(&"context/DECISIONS.md"));
+        assert!(files.contains(&"context/STANDUPS.md"));
+        assert!(files.contains(&"context/processes/README.md"));
+    }
+
+    #[test]
+    fn expected_context_files_with_product_package() {
+        let files = expected_context_files(&["product".to_string()]);
+        assert!(files.contains(&"CLAUDE.md"));
+        assert!(files.contains(&"context/PRD.md"));
+        assert!(files.contains(&"context/PROJECTS.md"));
+    }
+
+    #[test]
+    fn expected_context_files_with_code_package() {
+        let files = expected_context_files(&["code".to_string()]);
+        assert!(files.contains(&"context/work-instructions/DEVELOPMENT.md"));
+    }
+
+    #[test]
+    fn expected_context_files_with_operations_package() {
+        let files = expected_context_files(&["operations".to_string()]);
+        assert!(files.contains(&"context/work-instructions/TEAM.md"));
     }
 }
