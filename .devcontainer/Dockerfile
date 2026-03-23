@@ -106,9 +106,8 @@ COPY --from=builder /usr/local/bin/yazi /usr/local/bin/yazi
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uvx /usr/local/bin/uvx
 
-# Zensical docs + asciinema for terminal recordings (installed via uv)
-RUN uv tool install zensical && \
-    uv tool install asciinema
+# asciinema for terminal recordings (installed via uv)
+RUN uv tool install asciinema
 
 # ── Rust toolchain via rustup ─────────────────────────────────────────────────
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
@@ -152,6 +151,12 @@ COPY config/gitconfig /root/.config/git/config
 
 # Audio — PulseAudio config for Claude Code voice support
 COPY config/asoundrc /root/.asoundrc
+
+# ── Node.js (for Docusaurus docs build) ─────────────────────────────────────
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/* \
+    && npm install -g npm@latest
 
 # Install code assistants and runtimes
 ENV PATH="/root/.cargo/bin:/root/.local/bin:/root/.bun/bin:${PATH}"

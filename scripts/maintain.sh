@@ -260,30 +260,16 @@ cmd_push_images() {
 }
 
 cmd_docs_serve() {
-  cd "${PROJECT_ROOT}"
-  if command -v zensical &>/dev/null; then
-    info "Serving docs with Zensical at http://localhost:8000 ..."
-    zensical serve -f zensical.toml -a 0.0.0.0:8000
-  elif command -v mkdocs &>/dev/null; then
-    info "Serving docs with MkDocs at http://localhost:8000 ..."
-    mkdocs serve -a 0.0.0.0:8000
-  else
-    die "Neither zensical nor mkdocs found. Install: pip install zensical"
-  fi
+  cd "${PROJECT_ROOT}/docs-site"
+  info "Serving docs with Docusaurus at http://localhost:3000 ..."
+  npx docusaurus start --host 0.0.0.0
 }
 
 cmd_docs_deploy() {
   local dry_run=false
   [[ "${1:-}" == "--dry-run" ]] && dry_run=true
 
-  local docs_cmd=""
-  if command -v zensical &>/dev/null; then
-    docs_cmd="zensical"
-  elif command -v mkdocs &>/dev/null; then
-    docs_cmd="mkdocs"
-  else
-    die "Neither zensical nor mkdocs found. Install: pip install zensical"
-  fi
+  command -v npx &>/dev/null    || die "npx not found. Install Node.js."
   command -v git &>/dev/null    || die "git not found"
   git rev-parse --is-inside-work-tree &>/dev/null || die "Not inside a git repository"
 
@@ -297,14 +283,10 @@ cmd_docs_deploy() {
   info "Remote: ${remote_url}"
   info "Source: ${current_branch}@${commit_sha}"
 
-  cd "${PROJECT_ROOT}"
-  info "Building docs with ${docs_cmd}..."
-  if [[ "${docs_cmd}" == "zensical" ]]; then
-    ${docs_cmd} build -f zensical.toml -c
-  else
-    ${docs_cmd} build --strict --clean
-  fi
-  ok "Site built in site/"
+  cd "${PROJECT_ROOT}/docs-site"
+  info "Building docs with Docusaurus..."
+  npx docusaurus build
+  ok "Site built in docs-site/build/"
 
   if [[ "${dry_run}" == "true" ]]; then
     warn "Dry run — site is in site/"
@@ -315,7 +297,7 @@ cmd_docs_deploy() {
   tmpdir=$(mktemp -d)
   trap 'rm -rf "${tmpdir}"' EXIT
 
-  cp -r site/* "${tmpdir}/"
+  cp -r docs-site/build/* "${tmpdir}/"
   touch "${tmpdir}/.nojekyll"
 
   info "Pushing to gh-pages branch..."
