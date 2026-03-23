@@ -16,23 +16,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 {% endfor %}
     && rm -rf /var/lib/apt/lists/*
 {% endif %}
-{% for provider in ai_providers %}
-{% if provider == "aider" %}
-
-# Aider AI coding assistant
-RUN uv tool install aider-chat
-{% endif %}
-{% if provider == "gemini" %}
-
-# Gemini CLI
-RUN npm install -g @google/generative-ai-cli || pip install google-generativeai
-{% endif %}
-{% if provider == "mistral" %}
-
-# Mistral AI CLI
-RUN pip install --no-cache-dir mistralai
-{% endif %}
-{% endfor %}
 {% for addon_cmd in addon_commands %}
 
 {{ addon_cmd }}

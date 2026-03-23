@@ -4,7 +4,7 @@ Central task registry. Each item has a unique ID for cross-referencing.
 Source of truth — GitHub issues are for external visibility.
 Archive of completed/merged items: [archive/BACKLOG.md](archive/BACKLOG.md)
 
-## Next ID: BACK-043
+## Next ID: BACK-044
 
 ## Format
 
@@ -48,8 +48,9 @@ Priority values: `must`, `should`, `could`, `wont`
 | BACK-034 | New skill: software modularization | todo | should | Skill on keeping software in small, independent packages optimized for AI agent context limits. Covers module boundaries, package decomposition, API surface design for agent comprehension |
 | BACK-035 | New skill: microservice creation & orchestration | todo | should | Skill on creating new services/microservices and orchestrating them. Service boundaries, inter-service communication, deployment patterns |
 | BACK-039 | Develop visual identity | todo | must | Research and create brand identity: logo (SVG, multiple sizes), tagline/claim, color palette (for web + docs), page design vibe, font selection (headings + body), favicon. Produce 4-5 alternative concepts, then select one. Informs Docusaurus theme, README, social preview image |
-| BACK-040 | Analyse base image Dockerfile for multistage build optimization | todo | should | Current Dockerfile has 2 stages (builder for binary downloads, runtime). Analyse opportunities to further reduce final image size: separate apt-get layers (core utils vs preview deps vs audio), split binary downloads into individual stages for better cache invalidation, evaluate whether vim colorscheme downloads can be a separate stage, measure current image size and estimate savings. Consider impact on build time vs image size tradeoff. **Key target:** Node/Bun are only needed for Docusaurus docs builds — investigate using a dedicated builder stage to run the docs build and copy only the static output, avoiding Node/Bun runtime in the final image entirely. **Also investigate:** non-root user in dev-containers (user "aibox") — security best practice, affects file ownership on mounts, PATH, home directory location |
+| BACK-040 | Analyse base image Dockerfile for multistage build optimization | done | should | All phases complete. Non-root user "aibox" + gosu entrypoint (session 2026-03-23b). Node multi-stage COPY in .devcontainer (session 2026-03-23b). Published image: 12 parallel BuildKit stages (10 tools + vim colors + fetch-base), per-tool cache invalidation, vim colorschemes in builder stage, apt groups documented with size estimates (~490 MB total). Apt kept as single RUN (splitting hurts more than helps). |
 | BACK-042 | Internal project site for context documents | todo | could | Investigate and design a project-internal site that renders all markdown files in `./context/` as a browsable, nicely formatted site. Could be extended to a GitHub-independent wiki. **Intent:** collaboration for future multiple human workers, better readability of context files. Options: lightweight static site generator (e.g., Docusaurus second instance, mdBook, wiki.js), or extend existing docs-site with a context section. Should be simple to start — just rendered markdown with navigation |
+| BACK-043 | Research additional AI provider integrations | todo | should | Research which additional AI coding agents/providers should be supported as addons. Minimum: **OpenAI Codex CLI** (open source, npm-based), **GitHub Copilot CLI**. Also evaluate: Cline, Continue.dev, Cursor CLI, Amazon Q Developer CLI, Cody. For each candidate: installation method, config directory, binary name, maturity level, license. Output: decision on which to add to addon_registry.rs |
 
 ### BACK-028 Expanded Scope
 

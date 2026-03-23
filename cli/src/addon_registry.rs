@@ -345,6 +345,49 @@ static ADDONS: &[AddonDef] = &[
             default_version: "",
         }],
     },
+    // ── AI coding agents ────────────────────────────────────────────────
+    // Installed per-project via [ai].providers → auto-resolved to addons.
+    // See DEC-016: AI providers are addons, not baked into the base image.
+    AddonDef {
+        name: "ai-claude",
+        addon_version: "1.0.0",
+        tools: &[ToolDef {
+            name: "claude",
+            default_enabled: true,
+            supported_versions: &[],
+            default_version: "",
+        }],
+    },
+    AddonDef {
+        name: "ai-aider",
+        addon_version: "1.0.0",
+        tools: &[ToolDef {
+            name: "aider",
+            default_enabled: true,
+            supported_versions: &[],
+            default_version: "",
+        }],
+    },
+    AddonDef {
+        name: "ai-gemini",
+        addon_version: "1.0.0",
+        tools: &[ToolDef {
+            name: "gemini",
+            default_enabled: true,
+            supported_versions: &[],
+            default_version: "",
+        }],
+    },
+    AddonDef {
+        name: "ai-mistral",
+        addon_version: "1.0.0",
+        tools: &[ToolDef {
+            name: "mistral",
+            default_enabled: true,
+            supported_versions: &[],
+            default_version: "",
+        }],
+    },
 ];
 
 // ---------------------------------------------------------------------------
@@ -709,6 +752,10 @@ pub fn generate_runtime_commands(
         "docs-starlight" => generate_docs_starlight_runtime(tools),
         "docs-mdbook" => generate_docs_mdbook_runtime(tools),
         "docs-hugo" => generate_docs_hugo_runtime(tools),
+        "ai-claude" => generate_ai_claude_runtime(tools),
+        "ai-aider" => generate_ai_aider_runtime(tools),
+        "ai-gemini" => generate_ai_gemini_runtime(tools),
+        "ai-mistral" => generate_ai_mistral_runtime(tools),
         _ => String::new(),
     }
 }
@@ -984,6 +1031,34 @@ fn generate_docs_hugo_runtime(_tools: &HashMap<String, ToolConfig>) -> String {
         .to_string()
 }
 
+// ── AI coding agents ─────────────────────────────────────────────────
+
+fn generate_ai_claude_runtime(_tools: &HashMap<String, ToolConfig>) -> String {
+    "# Addon: ai-claude\n\
+     USER aibox\n\
+     RUN curl -fsSL https://claude.ai/install.sh | bash\n\
+     USER root"
+        .to_string()
+}
+
+fn generate_ai_aider_runtime(_tools: &HashMap<String, ToolConfig>) -> String {
+    "# Addon: ai-aider\n\
+     RUN uv tool install aider-chat"
+        .to_string()
+}
+
+fn generate_ai_gemini_runtime(_tools: &HashMap<String, ToolConfig>) -> String {
+    "# Addon: ai-gemini\n\
+     RUN npm install -g @google/generative-ai-cli || pip install google-generativeai"
+        .to_string()
+}
+
+fn generate_ai_mistral_runtime(_tools: &HashMap<String, ToolConfig>) -> String {
+    "# Addon: ai-mistral\n\
+     RUN pip install --no-cache-dir mistralai"
+        .to_string()
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -1013,7 +1088,7 @@ mod tests {
     #[test]
     fn all_addons_returns_all_entries() {
         let addons = all_addons();
-        assert!(addons.len() >= 17, "expected at least 17 add-ons");
+        assert!(addons.len() >= 21, "expected at least 21 add-ons (17 tools + 4 AI agents)");
     }
 
     #[test]
@@ -1273,5 +1348,41 @@ mod tests {
         ]);
         let cmds = generate_runtime_commands("node", &tools);
         assert!(cmds.contains("bun"));
+    }
+
+    // ── AI provider addons ──────────────────────────────────────────────
+
+    #[test]
+    fn ai_claude_addon_exists() {
+        assert!(get_addon("ai-claude").is_some());
+    }
+
+    #[test]
+    fn ai_claude_runtime_installs_claude() {
+        let tools = tc(&[("claude", true, "")]);
+        let cmds = generate_runtime_commands("ai-claude", &tools);
+        assert!(cmds.contains("claude.ai/install.sh"), "should install Claude Code CLI");
+        assert!(cmds.contains("USER aibox"), "should switch to aibox user for install");
+    }
+
+    #[test]
+    fn ai_aider_runtime_installs_aider() {
+        let tools = tc(&[("aider", true, "")]);
+        let cmds = generate_runtime_commands("ai-aider", &tools);
+        assert!(cmds.contains("aider-chat"), "should install aider via uv");
+    }
+
+    #[test]
+    fn ai_gemini_runtime_installs_gemini() {
+        let tools = tc(&[("gemini", true, "")]);
+        let cmds = generate_runtime_commands("ai-gemini", &tools);
+        assert!(cmds.contains("generative-ai"), "should install gemini CLI");
+    }
+
+    #[test]
+    fn ai_mistral_runtime_installs_mistral() {
+        let tools = tc(&[("mistral", true, "")]);
+        let cmds = generate_runtime_commands("ai-mistral", &tools);
+        assert!(cmds.contains("mistralai"), "should install mistral SDK");
     }
 }

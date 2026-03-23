@@ -413,7 +413,7 @@ pub fn cmd_init(config_path: &Option<String>, params: InitParams) -> Result<()> 
     let ai_providers = params.ai.unwrap_or_else(|| vec![AiProvider::Claude]);
     let _addon_names = params.addons.unwrap_or_default();
 
-    let config = AiboxConfig {
+    let mut config = AiboxConfig {
         aibox: AiboxSection {
             version: env!("CARGO_PKG_VERSION").to_string(),
             base: base_image,
@@ -445,6 +445,7 @@ pub fn cmd_init(config_path: &Option<String>, params: InitParams) -> Result<()> 
         },
         audio: AudioSection::default(),
     };
+    config.resolve_ai_provider_addons();
 
     config.validate()?;
 

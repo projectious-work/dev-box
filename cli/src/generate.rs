@@ -81,10 +81,9 @@ fn generate_dockerfile(
         .get_template("Dockerfile")
         .context("Failed to load Dockerfile template")?;
 
-    // Build list of AI provider strings for Dockerfile template
-    let ai_providers: Vec<String> = config.ai.providers.iter().map(|p| p.to_string()).collect();
-
-    // Build addon Dockerfile content (builder stages + runtime commands)
+    // Build addon Dockerfile content (builder stages + runtime commands).
+    // AI providers are resolved into addons at config load time, so they
+    // flow through this pipeline automatically — no hardcoded template logic.
     let addon_output = crate::addons::generate_dockerfile_content(&config.addons);
     let addon_builder_stages = addon_output.builder_stages;
     let addon_commands = addon_output.runtime_commands;
@@ -96,7 +95,6 @@ fn generate_dockerfile(
             image => format!("base-{}", config.aibox.base),
             version => config.aibox.version,
             extra_packages => config.container.extra_packages,
-            ai_providers => ai_providers,
             addon_builder_stages => addon_builder_stages,
             addon_commands => addon_commands,
             local_content => local_content,
@@ -786,6 +784,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let mut config = make_config(&[], false);
         config.ai.providers = vec![];
+        config.resolve_ai_provider_addons();
         generate_devcontainer_json(&config, dir.path()).unwrap();
         let content = fs::read_to_string(dir.path().join("devcontainer.json")).unwrap();
         assert!(!content.contains("claude"), "should not have claude profile");
@@ -798,6 +797,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let mut config = make_config(&[], false);
         config.ai.providers = vec![crate::config::AiProvider::Aider];
+        config.resolve_ai_provider_addons();
         generate_devcontainer_json(&config, dir.path()).unwrap();
         let content = fs::read_to_string(dir.path().join("devcontainer.json")).unwrap();
         assert!(content.contains("aider"), "should have aider profile");
@@ -809,6 +809,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let mut config = make_config(&[], false);
         config.ai.providers = vec![crate::config::AiProvider::Aider];
+        config.resolve_ai_provider_addons();
         generate_dockerfile(&config, dir.path(), &test_env()).unwrap();
         let content = fs::read_to_string(dir.path().join("Dockerfile")).unwrap();
         assert!(content.contains("aider"), "should install aider");
@@ -816,12 +817,15 @@ mod tests {
     }
 
     #[test]
-    fn dockerfile_no_extra_ai_install_for_claude_only() {
+    fn dockerfile_claude_installed_via_addon() {
         let dir = tempfile::tempdir().unwrap();
-        let config = make_config(&[], false);
+        let mut config = make_config(&[], false);
+        config.ai.providers = vec![crate::config::AiProvider::Claude];
+        config.resolve_ai_provider_addons();
         generate_dockerfile(&config, dir.path(), &test_env()).unwrap();
         let content = fs::read_to_string(dir.path().join("Dockerfile")).unwrap();
-        // Claude is installed in the base image, not via Dockerfile template
+        // Claude is now installed via addon pipeline, not baked into base image
+        assert!(content.contains("claude.ai/install.sh"), "should install Claude via addon");
         assert!(!content.contains("aider"), "should not install aider");
         assert!(!content.contains("gemini"), "should not install gemini");
     }
@@ -831,6 +835,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let mut config = make_config(&[], false);
         config.ai.providers = vec![crate::config::AiProvider::Aider];
+        config.resolve_ai_provider_addons();
         generate_docker_compose(&config, dir.path(), &test_env()).unwrap();
         let content = fs::read_to_string(dir.path().join("docker-compose.yml")).unwrap();
         assert!(content.contains(".aider"), "should have aider volume mount");
@@ -841,6 +846,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let mut config = make_config(&[], false);
         config.ai.providers = vec![crate::config::AiProvider::Gemini];
+        config.resolve_ai_provider_addons();
         generate_docker_compose(&config, dir.path(), &test_env()).unwrap();
         let content = fs::read_to_string(dir.path().join("docker-compose.yml")).unwrap();
         assert!(content.contains(".gemini"), "should have gemini volume mount");
@@ -851,6 +857,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let mut config = make_config(&[], false);
         config.ai.providers = vec![];
+        config.resolve_ai_provider_addons();
         generate_docker_compose(&config, dir.path(), &test_env()).unwrap();
         let content = fs::read_to_string(dir.path().join("docker-compose.yml")).unwrap();
         assert!(!content.contains(".claude"), "should not have claude volume");

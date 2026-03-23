@@ -488,8 +488,9 @@ impl AiboxConfig {
     pub fn load(path: &Path) -> Result<Self> {
         let content = std::fs::read_to_string(path)
             .with_context(|| format!("Failed to read config file: {}", path.display()))?;
-        let config: AiboxConfig = toml::from_str(&content)
+        let mut config: AiboxConfig = toml::from_str(&content)
             .with_context(|| format!("Failed to parse config file: {}", path.display()))?;
+        config.resolve_ai_provider_addons();
         config.validate()?;
         Ok(config)
     }
@@ -517,8 +518,9 @@ impl AiboxConfig {
     /// Parse config from a TOML string. Useful for testing and programmatic use.
     #[allow(dead_code)]
     pub fn from_str(toml_str: &str) -> Result<Self> {
-        let config: AiboxConfig =
+        let mut config: AiboxConfig =
             toml::from_str(toml_str).context("Failed to parse TOML config")?;
+        config.resolve_ai_provider_addons();
         config.validate()?;
         Ok(config)
     }
@@ -630,6 +632,22 @@ impl AiboxConfig {
         Ok(())
     }
 
+    /// Resolve `[ai].providers` into addon entries so the addon pipeline
+    /// handles AI tool installation. Called before `validate()` during load.
+    /// Idempotent — won't overwrite if the user already configured the addon
+    /// explicitly in `[addons]`.
+    pub fn resolve_ai_provider_addons(&mut self) {
+        for provider in &self.ai.providers {
+            let addon_name = format!("ai-{}", provider);
+            self.addons
+                .addons
+                .entry(addon_name)
+                .or_insert_with(|| AddonToolsSection {
+                    tools: HashMap::new(),
+                });
+        }
+    }
+
     /// Get the host root path (.aibox-home/ directory), respecting env override.
     /// Falls back to `.root/` if that directory exists (backward compatibility).
     pub fn host_root_dir(&self) -> PathBuf {
@@ -669,7 +687,7 @@ impl AiboxConfig {
 /// Only available in test builds to reduce boilerplate across test modules.
 #[cfg(test)]
 pub fn test_config() -> AiboxConfig {
-    AiboxConfig {
+    let mut config = AiboxConfig {
         aibox: AiboxSection {
             version: "0.9.0".to_string(),
             base: BaseImage::Debian,
@@ -693,7 +711,9 @@ pub fn test_config() -> AiboxConfig {
         skills: SkillsSection::default(),
         appearance: AppearanceSection::default(),
         audio: AudioSection::default(),
-    }
+    };
+    config.resolve_ai_provider_addons();
+    config
 }
 
 // ---------------------------------------------------------------------------
@@ -1338,5 +1358,69 @@ target = "/b"
     fn test_config_validates() {
         let config = test_config();
         config.validate().expect("test_config should be valid");
+    }
+
+    // -- AI provider → addon resolution ------------------------------------
+
+    #[test]
+    fn resolve_ai_providers_creates_addon_entries() {
+        let config = test_config(); // default: providers = [Claude]
+        assert!(
+            config.addons.has_addon("ai-claude"),
+            "ai-claude addon should be auto-resolved from [ai].providers"
+        );
+    }
+
+    #[test]
+    fn resolve_ai_providers_multiple() {
+        let toml = r#"
+            [aibox]
+            version = "0.9.0"
+            [container]
+            name = "test"
+            [ai]
+            providers = ["claude", "aider", "gemini", "mistral"]
+        "#;
+        let config = AiboxConfig::from_str(toml).unwrap();
+        assert!(config.addons.has_addon("ai-claude"));
+        assert!(config.addons.has_addon("ai-aider"));
+        assert!(config.addons.has_addon("ai-gemini"));
+        assert!(config.addons.has_addon("ai-mistral"));
+    }
+
+    #[test]
+    fn resolve_ai_providers_empty_creates_no_addons() {
+        let toml = r#"
+            [aibox]
+            version = "0.9.0"
+            [container]
+            name = "test"
+            [ai]
+            providers = []
+        "#;
+        let config = AiboxConfig::from_str(toml).unwrap();
+        assert!(!config.addons.has_addon("ai-claude"));
+        assert!(!config.addons.has_addon("ai-aider"));
+    }
+
+    #[test]
+    fn resolve_ai_providers_does_not_overwrite_explicit_addon() {
+        let toml = r#"
+            [aibox]
+            version = "0.9.0"
+            [container]
+            name = "test"
+            [ai]
+            providers = ["aider"]
+            [addons.ai-aider.tools]
+            aider = { version = "custom" }
+        "#;
+        let config = AiboxConfig::from_str(toml).unwrap();
+        // Should keep the user's explicit config, not overwrite with empty tools
+        let aider_tools = &config.addons.get_addon("ai-aider").unwrap().tools;
+        assert!(
+            aider_tools.contains_key("aider"),
+            "should preserve user-configured tool entry"
+        );
     }
 }
