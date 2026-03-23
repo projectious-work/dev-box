@@ -1,0 +1,38 @@
+.heroBanner {
+  padding: 4rem 0;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.heroDescription {
+  font-size: 1.2rem;
+  max-width: 600px;
+  margin: 0 auto 1.5rem;
+  opacity: 0.85;
+}
+
+.buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.features {
+  display: flex;
+  align-items: center;
+  padding: 2rem 0;
+}
+
+.quickstart {
+  padding: 2rem 0;
+  text-align: center;
+}
+
+.quickstart pre {
+  display: inline-block;
+  text-align: left;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+}

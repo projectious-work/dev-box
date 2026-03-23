@@ -1,0 +1,16 @@
+/* Nerd Fonts Symbols — icon glyphs for terminal screencasts (Yazi, Zellij status bar) */
+@font-face {
+  font-family: "Symbols Nerd Font";
+  src: url("NerdFontsSymbols.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Symbols Nerd Font Mono";
+  src: url("NerdFontsSymbols.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
