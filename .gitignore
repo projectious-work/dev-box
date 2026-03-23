@@ -14,6 +14,11 @@ cli/target/
 # Release artifacts
 dist/
 
+# Docusaurus build artifacts
+docs-site/.docusaurus/
+docs-site/build/
+docs-site/node_modules/
+
 # =============================================================================
 # OS Generated Files
 # =============================================================================
