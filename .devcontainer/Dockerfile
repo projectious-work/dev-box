@@ -173,7 +173,9 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
     sh -s -- -y \
     --default-toolchain stable \
     --component clippy \
-    --component rustfmt
+    --component rustfmt \
+    && . "$HOME/.cargo/env" \
+    && rustup target add x86_64-unknown-linux-gnu
 
 # Install code assistants and runtimes
 ENV PATH="/home/aibox/.cargo/bin:/home/aibox/.local/bin:/home/aibox/.bun/bin:${PATH}"
