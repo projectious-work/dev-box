@@ -128,21 +128,21 @@ pub fn vim_background(theme: &Theme) -> &'static str {
 }
 
 /// Returns the Yazi theme.toml content for the given theme.
-/// Gruvbox uses the default theme.toml; others are bundled from images/base/config/yazi/themes/.
+/// Gruvbox uses the default theme.toml; others are bundled from images/base-debian/config/yazi/themes/.
 pub fn yazi_theme(theme: &Theme) -> &'static str {
     match theme {
-        Theme::GruvboxDark => include_str!("../../images/base/config/yazi/theme.toml"),
+        Theme::GruvboxDark => include_str!("../../images/base-debian/config/yazi/theme.toml"),
         Theme::CatppuccinMocha => {
-            include_str!("../../images/base/config/yazi/themes/catppuccin-mocha.toml")
+            include_str!("../../images/base-debian/config/yazi/themes/catppuccin-mocha.toml")
         }
         Theme::CatppuccinLatte => {
-            include_str!("../../images/base/config/yazi/themes/catppuccin-latte.toml")
+            include_str!("../../images/base-debian/config/yazi/themes/catppuccin-latte.toml")
         }
-        Theme::Dracula => include_str!("../../images/base/config/yazi/themes/dracula.toml"),
+        Theme::Dracula => include_str!("../../images/base-debian/config/yazi/themes/dracula.toml"),
         Theme::TokyoNight => {
-            include_str!("../../images/base/config/yazi/themes/tokyo-night.toml")
+            include_str!("../../images/base-debian/config/yazi/themes/tokyo-night.toml")
         }
-        Theme::Nord => include_str!("../../images/base/config/yazi/themes/nord.toml"),
+        Theme::Nord => include_str!("../../images/base-debian/config/yazi/themes/nord.toml"),
     }
 }
 

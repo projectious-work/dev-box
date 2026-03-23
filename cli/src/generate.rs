@@ -93,7 +93,7 @@ fn generate_dockerfile(
         .render(context! {
             header => header,
             registry => crate::config::IMAGE_REGISTRY,
-            image => config.dev_box.base.to_string(),
+            image => format!("base-{}", config.dev_box.base),
             version => config.dev_box.version,
             extra_packages => config.container.extra_packages,
             ai_providers => ai_providers,
@@ -456,11 +456,11 @@ mod tests {
         let content = fs::read_to_string(dir.path().join("Dockerfile")).unwrap();
         assert!(
             content.contains(&format!(
-                "FROM {}:debian-v{} AS dev-box",
+                "FROM {}:base-debian-v{} AS dev-box",
                 crate::config::IMAGE_REGISTRY,
                 config.dev_box.version
             )),
-            "Dockerfile should reference debian base image with correct tag format and stage alias"
+            "Dockerfile should reference base-debian image with correct tag format and stage alias"
         );
     }
 

@@ -184,7 +184,7 @@ cmd_build_images() {
   local no_cache=""
   [[ "${1:-}" == "--no-cache" ]] && no_cache="--no-cache"
 
-  local flavors=("base" "python" "rust" "latex" "typst" "node" "go" "python-latex" "python-typst" "rust-latex")
+  local flavors=("base-debian")
 
   for flavor in "${flavors[@]}"; do
     info "Building ${flavor} image..."
@@ -195,7 +195,7 @@ cmd_build_images() {
     ok "Built ${IMAGE_REGISTRY}:${flavor}-latest"
   done
 
-  ok "All 10 images built"
+  ok "All images built"
 }
 
 cmd_push_images() {
@@ -228,7 +228,7 @@ cmd_push_images() {
     fi
   fi
 
-  local flavors=("base" "python" "rust" "latex" "typst" "node" "go" "python-latex" "python-typst" "rust-latex")
+  local flavors=("base-debian")
 
   # Verify all latest images exist and create versioned tags
   for flavor in "${flavors[@]}"; do
@@ -394,7 +394,7 @@ cmd_release() {
   # ── Step 4: Build images (if runtime available) ────────────────────────────
   if [[ -n "${RUNTIME_BIN}" ]]; then
     info "Building container images..."
-    local flavors=("base" "python" "rust" "latex" "typst" "node" "go" "python-latex" "python-typst" "rust-latex")
+    local flavors=("base-debian")
     for flavor in "${flavors[@]}"; do
       ${RUNTIME_BIN} build \
         -t "${IMAGE_REGISTRY}:${flavor}-v${version}" \
@@ -435,7 +435,7 @@ cmd_release() {
     echo ""
     echo "| Image | Tag |"
     echo "|-------|-----|"
-    for flavor in base python latex typst rust node go python-latex python-typst rust-latex; do
+    for flavor in base-debian; do
       echo "| ${flavor} | \`${IMAGE_REGISTRY}:${flavor}-v${version}\` |"
     done
     echo ""

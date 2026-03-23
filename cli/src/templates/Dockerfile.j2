@@ -1,4 +1,8 @@
-{{ header }}FROM {{ registry }}:{{ image }}-v{{ version }} AS dev-box
+{{ header }}{% for stage in addon_builder_stages %}
+{{ stage }}
+
+{% endfor %}
+FROM {{ registry }}:{{ image }}-v{{ version }} AS dev-box
 {% if extra_packages %}
 
 # Extra packages from dev-box.toml
@@ -22,6 +26,11 @@ RUN uv tool install aider-chat
 
 # Gemini CLI
 RUN npm install -g @google/generative-ai-cli || pip install google-generativeai
+{% endif %}
+{% if provider == "mistral" %}
+
+# Mistral AI CLI
+RUN pip install --no-cache-dir mistralai
 {% endif %}
 {% endfor %}
 {% for addon_cmd in addon_commands %}
