@@ -42,13 +42,9 @@ Interactive asciinema recordings and screenshot gallery showing all 6 themes acr
 
 Comprehensive input validation, container security audit, and supply chain review.
 
-### Skill Install Command (BACK-003)
+### External Skill Installation (BACK-024)
 
-`aibox skill install` — install skills from external sources into project `.claude/skills/`.
-
-### CLI Simplification (BACK-005)
-
-Merge `build`/`attach` into `start` to reduce command surface area.
+Allow installing skills from external sources beyond the curated list.
 
 ## Planned — Medium Term
 

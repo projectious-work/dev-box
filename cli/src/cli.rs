@@ -225,6 +225,15 @@ pub enum Commands {
         #[command(subcommand)]
         action: AddonAction,
     },
+    /// Manage skills (AI agent capabilities)
+    ///
+    /// Browse, add, or remove skills that define what AI agents can
+    /// do in this project. Skills are deployed to .claude/skills/.
+    /// Changes are written to aibox.toml [skills] section.
+    Skill {
+        #[command(subcommand)]
+        action: SkillAction,
+    },
 }
 
 #[derive(Subcommand)]
@@ -249,6 +258,35 @@ pub enum AddonAction {
     /// Displays available tools, supported versions, and defaults.
     Info {
         /// Add-on name
+        name: String,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum SkillAction {
+    /// List all available skills and their deploy status
+    ///
+    /// Shows skills from the registry, grouped by which process
+    /// package provides them. Marks deployed vs available.
+    List,
+    /// Add a skill to [skills].include in aibox.toml
+    ///
+    /// Adds the skill to the include list and runs skill reconciliation.
+    Add {
+        /// Skill name (e.g., code-review, data-science)
+        name: String,
+    },
+    /// Remove a skill by adding it to [skills].exclude
+    ///
+    /// If the skill was in [skills].include, removes it from there.
+    /// Otherwise adds it to [skills].exclude.
+    Remove {
+        /// Skill name to exclude
+        name: String,
+    },
+    /// Show info about a skill
+    Info {
+        /// Skill name
         name: String,
     },
 }

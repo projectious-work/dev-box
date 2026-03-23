@@ -26,26 +26,26 @@ curl -fsSL https://raw.githubusercontent.com/projectious-work/aibox/main/scripts
 mkdir my-project && cd my-project
 aibox init --name my-project --image python --process managed
 
-# Build and start
-aibox build
+# Sync config and build
+aibox sync
+
+# Start and attach
 aibox start
 ```
 
-After `aibox start`, you're inside a Zellij terminal session with Yazi file browser, Vim editor, Claude Code, lazygit, and a shell — all themed consistently and ready to work.
+After `aibox start`, you're inside a Zellij terminal session with Yazi file browser, Vim editor, lazygit, and a shell — all themed consistently and ready to work.
 
 ![aibox dev layout](docs/assets/readme-dev-layout.gif)
 
 ## What aibox manages
 
-**Container images** — 10 pre-built images (base, python, latex, typst, rust, node, go, and combinations) on Debian Trixie Slim. Each includes Zellij, Yazi, Vim, Git, lazygit, GitHub CLI, ripgrep, fd, bat, fzf, delta, Starship, and configurable AI assistants.
+**Container images** — One minimal base image (Debian Trixie Slim) with composable addons. Includes Zellij, Yazi, Vim, Git, lazygit, GitHub CLI, ripgrep, fd, bat, fzf, delta, and Starship. AI assistants and language runtimes are installed per-project via addons.
 
 **Project configuration** — A single `aibox.toml` drives everything. The CLI generates `.devcontainer/` files from this config. Change the config, run `aibox sync`, done.
 
 ```toml
 [aibox]
-version = "0.8.0"
-image = "python"
-process = "managed"
+version = "0.9.0"
 
 [container]
 name = "my-project"
@@ -53,18 +53,22 @@ name = "my-project"
 [ai]
 providers = ["claude", "aider"]
 
+[process]
+packages = ["managed"]
+
 [appearance]
 theme = "catppuccin-mocha"
 
-[addons]
-bundles = ["infrastructure", "kubernetes"]
+[addons.python.tools]
+python = { version = "3.13" }
+uv = { version = "0.7" }
 ```
 
-**AI context structure** — Structured context files (DECISIONS.md, BACKLOG.md, OWNER.md) give AI agents project knowledge. Four process flavors (minimal, managed, research, product) scale from quick scripts to full product development.
+**AI context structure** — Structured context files (DECISIONS.md, BACKLOG.md, OWNER.md) give AI agents project knowledge. 13 composable process packages and 4 convenience presets scale from quick scripts to full product development.
 
-**83 curated agent skills** — Instructions following the open [SKILL.md standard](https://agentskills.io/specification) across 14 categories: from Kubernetes and SQL patterns to RAG engineering and prompt design. Progressive disclosure keeps agent context lean.
+**84 curated agent skills** — Instructions following the open [SKILL.md standard](https://agentskills.io/specification) across 14 categories: from Kubernetes and SQL patterns to RAG engineering and prompt design. Managed via `aibox skill {list,add,remove,info}`.
 
-**Addon packages** — Selectable tool bundles (infrastructure, kubernetes, cloud-aws/gcp/azure) added via config.
+**21 composable addons** — Language runtimes (Python, Rust, Node, Go), tool bundles (infrastructure, kubernetes, cloud providers), documentation frameworks, and AI coding agents. Managed via `aibox addon {list,add,remove,info}`.
 
 **6 color themes** — Gruvbox Dark, Catppuccin Mocha/Latte, Dracula, Tokyo Night, Nord — applied consistently across Zellij, Vim, Yazi, lazygit, and Starship.
 
@@ -79,13 +83,13 @@ bundles = ["infrastructure", "kubernetes"]
 
 ```
 aibox init       Create new project (interactive or with flags)
-aibox sync       Apply config changes (themes, AI providers, addons)
-aibox build      Build container image
-aibox start      Start and attach via Zellij
+aibox sync       Reconcile config, regenerate files, build image
+aibox start      Start container and attach via Zellij
 aibox stop       Stop container
 aibox remove     Stop and remove container
-aibox attach     Reattach to running container
 aibox status     Show container state
+aibox addon      Manage addons (list, add, remove, info)
+aibox skill      Manage skills (list, add, remove, info)
 aibox doctor     Validate project structure
 aibox update     Check for and apply CLI updates
 aibox env        Manage named environments
@@ -105,7 +109,7 @@ This project is developed inside its own dev-container.
 
 ```bash
 cd cli && cargo build                    # Build CLI
-cd cli && cargo test                     # Run tests (151 tests)
+cd cli && cargo test                     # Run tests (241+ tests)
 cd cli && cargo clippy -- -D warnings    # Lint
 ```
 

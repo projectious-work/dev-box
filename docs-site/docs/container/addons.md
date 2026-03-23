@@ -250,7 +250,7 @@ Any image can be extended with additional apt packages via `aibox.toml`:
 extra_packages = ["universal-ctags", "graphviz", "postgresql-client"]
 ```
 
-These packages are installed during `aibox build` via the generated Dockerfile. They persist across container restarts but are reinstalled on image rebuild.
+These packages are installed during `aibox sync` via the generated Dockerfile. They persist across container restarts but are reinstalled on image rebuild.
 
 :::tip When to use a different flavor vs extra_packages
 

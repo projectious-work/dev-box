@@ -76,7 +76,7 @@ If your project already has a `.devcontainer/` directory with hand-written files
    - Extra apt packages go in `container.extra_packages`
    - Port mappings go in `container.ports`
    - Environment variables go in `container.environment`
-4. Rebuild: `aibox build --no-cache`
+4. Rebuild: `aibox sync --no-cache`
 
 ### Option B: Keep hand-written files
 
@@ -157,8 +157,8 @@ The `migrations/` directory in the aibox repository contains ready-made
 Once `aibox.toml` and `.devcontainer/` are in place:
 
 ```bash
-aibox build
-aibox start
+aibox sync     # Regenerate files and build image
+aibox start    # Start and attach
 ```
 
 The workflow is identical to a [new project](new-project.md#build-and-start) from this point forward.

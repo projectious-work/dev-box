@@ -166,11 +166,11 @@ aibox sync
 ## Build and Start
 
 ```bash
-aibox build    # Build the container image
+aibox sync     # Reconcile config, regenerate files, build image
 aibox start    # Start the container and attach via Zellij
 ```
 
-You land in a Zellij session with the **dev** layout: Yazi file browser (40%) and Vim editor (60%) side by side, plus tabs for Claude Code, lazygit, and shell.
+You land in a Zellij session with the **dev** layout: Yazi file browser (40%) and Vim editor (60%) side by side, plus tabs for lazygit and shell.
 
 Two additional layouts are available: **focus** (one tool per tab, fullscreen) and **cowork** (Yazi+Vim left, Claude right). See [Layouts](../container/base-image.md#layouts).
 

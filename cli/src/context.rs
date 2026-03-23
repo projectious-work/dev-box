@@ -823,6 +823,19 @@ fn scaffold_processes(context: &Path) -> Result<()> {
 /// A skill definition: (directory_name, skill_content, reference_files).
 type SkillDef = (&'static str, &'static str, &'static [(&'static str, &'static str)]);
 
+/// Returns the names of all skills in the registry.
+pub fn all_skill_names() -> Vec<&'static str> {
+    ALL_SKILL_DEFS.iter().map(|(name, _, _)| *name).collect()
+}
+
+/// Returns the SKILL.md content for a given skill name, if it exists.
+pub fn skill_content(name: &str) -> Option<&'static str> {
+    ALL_SKILL_DEFS
+        .iter()
+        .find(|(n, _, _)| *n == name)
+        .map(|(_, content, _)| *content)
+}
+
 /// All available skills: (directory_name, skill_content, reference_files).
 /// Reference files are deployed to .claude/skills/<name>/references/<filename>.
 static ALL_SKILL_DEFS: &[SkillDef] = &[

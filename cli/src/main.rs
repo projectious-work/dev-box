@@ -1,6 +1,7 @@
 mod addon_cmd;
 #[allow(dead_code)]
 mod addon_registry;
+
 mod addons;
 mod audit;
 mod audio;
@@ -18,6 +19,7 @@ mod process_registry;
 mod reset;
 mod runtime;
 mod seed;
+mod skill_cmd;
 mod themes;
 mod update;
 
@@ -109,6 +111,12 @@ fn dispatch(cli: cli::Cli) -> anyhow::Result<()> {
             cli::AddonAction::Add { name } => addon_cmd::cmd_addon_add(config_path, &name),
             cli::AddonAction::Remove { name } => addon_cmd::cmd_addon_remove(config_path, &name),
             cli::AddonAction::Info { name } => addon_cmd::cmd_addon_info(&name),
+        },
+        cli::Commands::Skill { action } => match action {
+            cli::SkillAction::List => skill_cmd::cmd_skill_list(config_path),
+            cli::SkillAction::Add { name } => skill_cmd::cmd_skill_add(config_path, &name),
+            cli::SkillAction::Remove { name } => skill_cmd::cmd_skill_remove(config_path, &name),
+            cli::SkillAction::Info { name } => skill_cmd::cmd_skill_info(&name),
         },
     }
 }

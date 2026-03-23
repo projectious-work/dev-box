@@ -33,12 +33,12 @@ aibox init [OPTIONS]
 | Option | Default | Description |
 |--------|---------|-------------|
 | `--name <NAME>` | Current directory name | Project and container name |
-| `--image <FLAVOR>` | `base` | Image flavor: `base`, `python`, `latex`, `typst`, `rust`, `node`, `go`, `python-latex`, `python-typst`, `rust-latex` |
-| `--process <FLAVOR>` | `product` | Work process flavor: `minimal`, `managed`, `research`, `product` |
-| `--ai <PROVIDER>` | `claude` | AI provider(s) to configure: `claude`, `aider`, `gemini` (can be specified multiple times) |
+| `--base <BASE>` | `debian` | Base image: `debian` |
+| `--process <PACKAGES>` | `core` | Process packages (space-separated): package names or presets |
+| `--ai <PROVIDER>` | `claude` | AI provider(s): `claude`, `aider`, `gemini`, `mistral` (can be repeated) |
 | `--theme <THEME>` | `gruvbox-dark` | Color theme: `gruvbox-dark`, `catppuccin-mocha`, `catppuccin-latte`, `dracula`, `tokyo-night`, `nord` |
-| `--user <USER>` | `root` | Container user |
-| `--addons <BUNDLE>` | -- | Addon bundles to install (can be specified multiple times): `infrastructure`, `kubernetes`, `cloud-aws`, `cloud-gcp`, `cloud-azure`, `docs-mkdocs`, `docs-zensical`, `docs-docusaurus`, `docs-starlight`, `docs-mdbook`, `docs-hugo` |
+| `--user <USER>` | `aibox` | Container user |
+| `--addons <NAME>` | -- | Addon names (can be repeated): `python`, `rust`, `node`, `go`, `latex`, `typst`, `infrastructure`, `kubernetes`, `cloud-aws`, etc. |
 
 ### What It Does
 
@@ -96,41 +96,40 @@ In non-interactive environments (scripts, CI pipelines), omitted flags silently 
 
 ## aibox sync
 
-Reconcile project state with `aibox.toml`. The primary command for applying config changes.
+Reconcile project state with `aibox.toml`. The single command for applying any config change.
 
 ### Usage
 
 ```bash
-aibox sync
+aibox sync [OPTIONS]
 ```
+
+### Options
+
+| Option | Description |
+|--------|-------------|
+| `--no-cache` | Build the container image without using the layer cache |
 
 ### What It Does
 
-1. **Force-updates theme-dependent config files** in `.aibox-home/`:
-   - `.vim/vimrc` (colorscheme and background)
-   - `.config/zellij/config.kdl` (theme name)
-   - `.config/zellij/themes/<theme>.kdl` (theme colors)
-   - `.config/lazygit/config.yml` (theme colors)
-   - `.config/yazi/theme.toml` (theme colors)
-
-2. **Regenerates `.devcontainer/` files** from `aibox.toml`:
-   - `.devcontainer/Dockerfile`
-   - `.devcontainer/docker-compose.yml`
-   - `.devcontainer/devcontainer.json`
+1. **Checks for version migrations** (schema updates between versions)
+2. **Force-updates theme-dependent config files** in `.aibox-home/`
+3. **Seeds `.aibox-home/`** directory with default configs (if missing)
+4. **Regenerates `.devcontainer/` files** from `aibox.toml`
+5. **Reconciles skills** — deploys missing skills, reports orphans
+6. **Generates AIBOX.md** — universal agent baseline document
+7. **Builds the container image** via `docker compose build` (skipped gracefully if no runtime)
 
 Only files whose content has actually changed are written. Reports what was updated.
 
 ### Examples
 
 ```bash
-# Change theme, then apply
-vim aibox.toml
-aibox sync
-
 # After any config change
 aibox sync
-aibox build
-aibox start
+
+# Force full image rebuild
+aibox sync --no-cache
 ```
 
 ### Exit Codes
@@ -142,47 +141,6 @@ aibox start
 
 !!! note "`generate` is an alias"
     `aibox generate` still works as an alias for `sync`. New projects should use `sync`.
-
----
-
-## aibox build
-
-Build the container image.
-
-### Usage
-
-```bash
-aibox build [OPTIONS]
-```
-
-### Options
-
-| Option | Description |
-|--------|-------------|
-| `--no-cache` | Build without using the layer cache |
-
-### What It Does
-
-1. Loads and validates `aibox.toml`
-2. Runs `sync` to ensure devcontainer files are current
-3. Runs `docker compose build` (or `podman compose build`)
-
-### Examples
-
-```bash
-# Standard build (uses cache)
-aibox build
-
-# Full rebuild from scratch
-aibox build --no-cache
-```
-
-### Exit Codes
-
-| Code | Meaning |
-|------|---------|
-| 0 | Build succeeded |
-| 1 | Config error, runtime not found, or build failure |
 
 ---
 
@@ -309,47 +267,6 @@ aibox rm
 |------|---------|
 | 0 | Container removed, or was already missing |
 | 1 | Config error or runtime not found |
-
----
-
-## aibox attach
-
-Attach to a running container via Zellij.
-
-### Usage
-
-```bash
-aibox attach [OPTIONS]
-```
-
-### Options
-
-| Option | Default | Description |
-|--------|---------|-------------|
-| `--layout <LAYOUT>` | `dev` | Zellij layout: `dev`, `focus`, or `cowork` |
-
-### What It Does
-
-Execs into the container and launches `zellij --layout <LAYOUT>`. Unlike `start`, this command does not create or start the container -- it must already be running.
-
-See [aibox start](#aibox-start) for available layouts.
-
-### Examples
-
-```bash
-# Attach from a second terminal
-aibox attach
-
-# Attach with focus layout
-aibox attach --layout focus
-```
-
-### Exit Codes
-
-| Code | Meaning |
-|------|---------|
-| 0 | Success (after Zellij session ends) |
-| 1 | Container is not running |
 
 ---
 
@@ -737,6 +654,131 @@ aibox update
 |------|---------|
 | 0 | Success |
 | 1 | Config error |
+
+---
+
+## aibox addon
+
+Manage add-ons (language runtimes, tools, AI agents).
+
+### Subcommands
+
+#### aibox addon list
+
+List all available add-ons and their install status.
+
+```bash
+aibox addon list
+```
+
+Shows each add-on's name, tool count, and whether it's installed in the current project.
+
+#### aibox addon add
+
+Add an add-on to `aibox.toml` and run sync.
+
+```bash
+aibox addon add <name>
+```
+
+Inserts `[addons.<name>.tools]` with default-enabled tools into `aibox.toml`, then runs a full sync (regenerates files and rebuilds the image).
+
+#### aibox addon remove
+
+Remove an add-on from `aibox.toml` and run sync.
+
+```bash
+aibox addon remove <name>
+```
+
+#### aibox addon info
+
+Show detailed info about an add-on: tools, supported versions, and defaults.
+
+```bash
+aibox addon info <name>
+```
+
+### Examples
+
+```bash
+# See what's available
+aibox addon list
+
+# Add Python runtime
+aibox addon add python
+
+# Add Kubernetes tools
+aibox addon add kubernetes
+
+# Check what's in an add-on
+aibox addon info rust
+
+# Remove an add-on
+aibox addon remove python
+```
+
+---
+
+## aibox skill
+
+Manage skills (AI agent capabilities).
+
+### Subcommands
+
+#### aibox skill list
+
+List all available skills and their deploy status.
+
+```bash
+aibox skill list
+```
+
+Shows each skill's name, source package, and whether it's active in the current project.
+
+#### aibox skill add
+
+Add a skill to `[skills].include` in `aibox.toml`.
+
+```bash
+aibox skill add <name>
+```
+
+If the skill was in `[skills].exclude`, it's removed from there. Runs skill reconciliation after.
+
+#### aibox skill remove
+
+Remove a skill by managing `[skills].include` and `[skills].exclude`.
+
+```bash
+aibox skill remove <name>
+```
+
+If the skill was in `[skills].include`, removes it. Otherwise, adds it to `[skills].exclude`. Core skills (`agent-management`, `owner-profile`) cannot be removed.
+
+#### aibox skill info
+
+Show info about a skill, including a preview of its SKILL.md content.
+
+```bash
+aibox skill info <name>
+```
+
+### Examples
+
+```bash
+# See all skills and their status
+aibox skill list
+
+# Add a skill not in your process packages
+aibox skill add data-science
+
+# Remove a skill from your active set
+aibox skill remove debugging
+
+# Preview a skill's content
+aibox skill info code-review
+```
 
 ---
 

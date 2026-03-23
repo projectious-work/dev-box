@@ -111,7 +111,7 @@ To switch themes in an existing project:
 
 3. Rebuild and restart:
    ```bash
-   aibox build --no-cache
+   aibox sync --no-cache
    aibox start
    ```
 
