@@ -105,8 +105,9 @@ COPY --from=builder /usr/local/bin/yazi /usr/local/bin/yazi
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uvx /usr/local/bin/uvx
 
-# MkDocs Material (installed via uv into a global tool environment)
-RUN uv tool install 'mkdocs<2' --with mkdocs-material
+# Zensical docs + asciinema for terminal recordings (installed via uv)
+RUN uv tool install zensical && \
+    uv tool install asciinema
 
 # ── Rust toolchain via rustup ─────────────────────────────────────────────────
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \

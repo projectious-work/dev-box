@@ -33,6 +33,8 @@ dev-box start
 
 After `dev-box start`, you're inside a Zellij terminal session with Yazi file browser, Vim editor, Claude Code, lazygit, and a shell — all themed consistently and ready to work.
 
+![dev-box dev layout](docs/assets/readme-dev-layout.gif)
+
 ## What dev-box manages
 
 **Container images** — 10 pre-built images (base, python, latex, typst, rust, node, go, and combinations) on Debian Trixie Slim. Each includes Zellij, Yazi, Vim, Git, lazygit, GitHub CLI, ripgrep, fd, bat, fzf, delta, Starship, and configurable AI assistants.

@@ -1,0 +1,128 @@
+# =============================================================================
+# Yazi theme — catppuccin latte
+# Docs: https://yazi-rs.github.io/docs/configuration/theme
+# =============================================================================
+
+[manager]
+cwd = { fg = "#1E66F5" }
+
+# Hovered item
+hovered         = { fg = "#EFF1F5", bg = "#4C4F69" }
+preview_hovered = { underline = true }
+
+# Find highlights
+find_keyword  = { fg = "#DF8E1D", bold = true }
+find_position = { fg = "#EA76CB", italic = true }
+
+# Markers (selected / yanked)
+marker_selected = { fg = "#40A02B", bg = "#40A02B" }
+marker_copied   = { fg = "#1E66F5", bg = "#1E66F5" }
+marker_cut      = { fg = "#D20F39", bg = "#D20F39" }
+
+# Tabs
+tab_active   = { fg = "#EFF1F5", bg = "#4C4F69" }
+tab_inactive = { fg = "#9CA0B0", bg = "#CCD0DA" }
+tab_width    = 1
+
+[status]
+separator_open  = ""
+separator_close = ""
+
+# Mode indicators
+mode_normal = { fg = "#EFF1F5", bg = "#40A02B", bold = true }
+mode_select = { fg = "#EFF1F5", bg = "#1E66F5", bold = true }
+mode_unset  = { fg = "#EFF1F5", bg = "#EA76CB", bold = true }
+
+# Progress bar
+progress_label  = { fg = "#4C4F69", bold = true }
+progress_normal = { fg = "#1E66F5", bg = "#CCD0DA" }
+progress_error  = { fg = "#D20F39", bg = "#CCD0DA" }
+
+# Permissions
+permissions_t = { fg = "#1E66F5" }
+permissions_r = { fg = "#DF8E1D" }
+permissions_w = { fg = "#D20F39" }
+permissions_x = { fg = "#40A02B" }
+permissions_s = { fg = "#9CA0B0" }
+
+[input]
+border   = { fg = "#1E66F5" }
+title    = {}
+value    = {}
+selected = { reversed = true }
+
+[select]
+border   = { fg = "#1E66F5" }
+active   = { fg = "#EA76CB" }
+inactive = {}
+
+[completion]
+border   = { fg = "#1E66F5" }
+active   = { fg = "#EA76CB" }
+inactive = {}
+
+[tasks]
+border  = { fg = "#1E66F5" }
+title   = {}
+hovered = { underline = true }
+
+[which]
+mask            = { bg = "#CCD0DA" }
+cand            = { fg = "#179299" }
+rest            = { fg = "#9CA0B0" }
+desc            = { fg = "#EA76CB" }
+separator       = "  "
+separator_style = { fg = "#BCC0CC" }
+
+[help]
+on      = { fg = "#179299" }
+run     = { fg = "#EA76CB" }
+desc    = {}
+hovered = { bg = "#CCD0DA", bold = true }
+footer  = { fg = "#CCD0DA", bg = "#4C4F69" }
+
+[filetype]
+rules = [
+    # Directories
+    { name = "*/", fg = "#1E66F5", bold = true },
+
+    # Source code
+    { name = "*.rs",   fg = "#FE640B" },
+    { name = "*.py",   fg = "#DF8E1D" },
+    { name = "*.js",   fg = "#DF8E1D" },
+    { name = "*.ts",   fg = "#1E66F5" },
+    { name = "*.sh",   fg = "#40A02B" },
+    { name = "*.toml", fg = "#179299" },
+    { name = "*.yaml", fg = "#179299" },
+    { name = "*.yml",  fg = "#179299" },
+    { name = "*.json", fg = "#179299" },
+    { name = "*.kdl",  fg = "#179299" },
+    { name = "*.html", fg = "#FE640B" },
+    { name = "*.css",  fg = "#1E66F5" },
+
+    # Documents
+    { name = "*.md",   fg = "#4C4F69" },
+    { name = "*.tex",  fg = "#40A02B" },
+    { name = "*.typ",  fg = "#40A02B" },
+    { name = "*.pdf",  fg = "#D20F39" },
+
+    # Media
+    { name = "*.png",  fg = "#EA76CB" },
+    { name = "*.jpg",  fg = "#EA76CB" },
+    { name = "*.jpeg", fg = "#EA76CB" },
+    { name = "*.gif",  fg = "#EA76CB" },
+    { name = "*.svg",  fg = "#EA76CB" },
+
+    # Archives
+    { name = "*.zip",  fg = "#FE640B" },
+    { name = "*.tar*", fg = "#FE640B" },
+    { name = "*.gz",   fg = "#FE640B" },
+
+    # Config / dotfiles
+    { name = "*.gitignore",  fg = "#9CA0B0" },
+    { name = ".env*",        fg = "#D20F39" },
+    { name = "Dockerfile*",  fg = "#1E66F5" },
+    { name = "Makefile",     fg = "#40A02B" },
+    { name = "Cargo.toml",   fg = "#FE640B", bold = true },
+    { name = "Cargo.lock",   fg = "#9CA0B0" },
+]

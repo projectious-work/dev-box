@@ -86,6 +86,8 @@ ${bold}Development:${reset}
   push-images <version>    Push images to GHCR (requires ghcr.io login)
   docs-serve               Serve MkDocs locally (http://localhost:8000)
   docs-deploy [--dry-run]  Build MkDocs and push to gh-pages branch
+  test-visual              Run screencast smoke tests (~40s)
+  record-docs              Regenerate all docs screencasts + README GIF
 
 ${bold}Release:${reset}
   release <version>        Tag, build CLI, generate release prompt
@@ -610,6 +612,16 @@ cmd_status() {
   esac
 }
 
+cmd_test_visual() {
+  info "Running visual smoke tests..."
+  "${SCRIPT_DIR}/test-screencasts.sh" all
+}
+
+cmd_record_docs() {
+  info "Recording all docs screencasts..."
+  "${SCRIPT_DIR}/record-asciinema.sh" all
+}
+
 # =============================================================================
 # Entrypoint
 # =============================================================================
@@ -622,6 +634,8 @@ case "${COMMAND}" in
   push-images)  cmd_push_images "$@" ;;
   docs-serve)   cmd_docs_serve ;;
   docs-deploy)  cmd_docs_deploy "$@" ;;
+  test-visual)  cmd_test_visual ;;
+  record-docs)  cmd_record_docs ;;
   release)      cmd_release "$@" ;;
   start)        cmd_start ;;
   stop)         cmd_stop ;;

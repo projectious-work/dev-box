@@ -21,6 +21,8 @@ The `init` command accepts these options:
 
 If you omit options, `dev-box init` runs interactively and prompts for each value.
 
+<div class="asciinema" data-cast="assets/screencasts/init-demo.cast" data-poster="npt:0" data-fit="width"></div>
+
 ## What Gets Created
 
 After running `init` with `--process product`, your project looks like this:

@@ -1,0 +1,128 @@
+# =============================================================================
+# Yazi theme — nord
+# Docs: https://yazi-rs.github.io/docs/configuration/theme
+# =============================================================================
+
+[manager]
+cwd = { fg = "#88C0D0" }
+
+# Hovered item
+hovered         = { fg = "#2E3440", bg = "#D8DEE9" }
+preview_hovered = { underline = true }
+
+# Find highlights
+find_keyword  = { fg = "#EBCB8B", bold = true }
+find_position = { fg = "#B48EAD", italic = true }
+
+# Markers (selected / yanked)
+marker_selected = { fg = "#A3BE8C", bg = "#A3BE8C" }
+marker_copied   = { fg = "#88C0D0", bg = "#88C0D0" }
+marker_cut      = { fg = "#BF616A", bg = "#BF616A" }
+
+# Tabs
+tab_active   = { fg = "#2E3440", bg = "#D8DEE9" }
+tab_inactive = { fg = "#4C566A", bg = "#3B4252" }
+tab_width    = 1
+
+[status]
+separator_open  = ""
+separator_close = ""
+
+# Mode indicators
+mode_normal = { fg = "#2E3440", bg = "#A3BE8C", bold = true }
+mode_select = { fg = "#2E3440", bg = "#88C0D0", bold = true }
+mode_unset  = { fg = "#2E3440", bg = "#B48EAD", bold = true }
+
+# Progress bar
+progress_label  = { fg = "#D8DEE9", bold = true }
+progress_normal = { fg = "#81A1C1", bg = "#3B4252" }
+progress_error  = { fg = "#BF616A", bg = "#3B4252" }
+
+# Permissions
+permissions_t = { fg = "#81A1C1" }
+permissions_r = { fg = "#EBCB8B" }
+permissions_w = { fg = "#BF616A" }
+permissions_x = { fg = "#A3BE8C" }
+permissions_s = { fg = "#4C566A" }
+
+[input]
+border   = { fg = "#88C0D0" }
+title    = {}
+value    = {}
+selected = { reversed = true }
+
+[select]
+border   = { fg = "#81A1C1" }
+active   = { fg = "#B48EAD" }
+inactive = {}
+
+[completion]
+border   = { fg = "#81A1C1" }
+active   = { fg = "#B48EAD" }
+inactive = {}
+
+[tasks]
+border  = { fg = "#81A1C1" }
+title   = {}
+hovered = { underline = true }
+
+[which]
+mask            = { bg = "#3B4252" }
+cand            = { fg = "#88C0D0" }
+rest            = { fg = "#4C566A" }
+desc            = { fg = "#B48EAD" }
+separator       = "  "
+separator_style = { fg = "#434C5E" }
+
+[help]
+on      = { fg = "#88C0D0" }
+run     = { fg = "#B48EAD" }
+desc    = {}
+hovered = { bg = "#3B4252", bold = true }
+footer  = { fg = "#3B4252", bg = "#D8DEE9" }
+
+[filetype]
+rules = [
+    # Directories
+    { name = "*/", fg = "#81A1C1", bold = true },
+
+    # Source code
+    { name = "*.rs",   fg = "#D08770" },
+    { name = "*.py",   fg = "#EBCB8B" },
+    { name = "*.js",   fg = "#EBCB8B" },
+    { name = "*.ts",   fg = "#81A1C1" },
+    { name = "*.sh",   fg = "#A3BE8C" },
+    { name = "*.toml", fg = "#88C0D0" },
+    { name = "*.yaml", fg = "#88C0D0" },
+    { name = "*.yml",  fg = "#88C0D0" },
+    { name = "*.json", fg = "#88C0D0" },
+    { name = "*.kdl",  fg = "#88C0D0" },
+    { name = "*.html", fg = "#D08770" },
+    { name = "*.css",  fg = "#81A1C1" },
+
+    # Documents
+    { name = "*.md",   fg = "#D8DEE9" },
+    { name = "*.tex",  fg = "#A3BE8C" },
+    { name = "*.typ",  fg = "#A3BE8C" },
+    { name = "*.pdf",  fg = "#BF616A" },
+
+    # Media
+    { name = "*.png",  fg = "#B48EAD" },
+    { name = "*.jpg",  fg = "#B48EAD" },
+    { name = "*.jpeg", fg = "#B48EAD" },
+    { name = "*.gif",  fg = "#B48EAD" },
+    { name = "*.svg",  fg = "#B48EAD" },
+
+    # Archives
+    { name = "*.zip",  fg = "#D08770" },
+    { name = "*.tar*", fg = "#D08770" },
+    { name = "*.gz",   fg = "#D08770" },
+
+    # Config / dotfiles
+    { name = "*.gitignore",  fg = "#4C566A" },
+    { name = ".env*",        fg = "#BF616A" },
+    { name = "Dockerfile*",  fg = "#81A1C1" },
+    { name = "Makefile",     fg = "#A3BE8C" },
+    { name = "Cargo.toml",   fg = "#D08770", bold = true },
+    { name = "Cargo.lock",   fg = "#4C566A" },
+]

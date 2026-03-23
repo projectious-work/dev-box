@@ -33,6 +33,8 @@ dev-box start
 
 After `dev-box start`, you're inside a Zellij terminal session with Yazi file browser, Vim editor, Claude Code, lazygit, and a shell — all themed consistently and ready to work.
 
+<div class="asciinema" data-cast="assets/screencasts/layout-dev.cast" data-poster="npt:4" data-autoplay="false" data-fit="width"></div>
+
 Two additional layouts are available: **focus** (one tool per tab, fullscreen) and **cowork** (Yazi+Vim left, Claude right for pair programming). See [Layouts](container/base-image.md#layouts).
 
 ## What dev-box manages

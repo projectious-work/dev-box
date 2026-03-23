@@ -22,7 +22,7 @@ Before every release, check ALL upstream dependencies for updates.
 | Rust | stable (unpinned) | rustup in rust + .devcontainer | Verify stable works |
 | uv | latest (unpinned) | `COPY --from=ghcr.io/astral-sh/uv:latest` | `gh api repos/astral-sh/uv/releases/latest --jq .tag_name` |
 | Claude CLI | unpinned | `curl claude.ai/install.sh` | Always gets latest |
-| MkDocs | <2 constraint | `uv tool install 'mkdocs<2'` | Check if mkdocs 2.0 situation changed |
+| Zensical | unpinned | `uv tool install zensical` | `pip index versions zensical` |
 
 **Actions:** If pinned version has update, propose bump. Report all findings before proceeding.
 
@@ -37,7 +37,8 @@ Before every release, check ALL upstream dependencies for updates.
    git commit -m "chore: bump version to vX.Y.Z, update docs"
    git push origin main
    ```
-4. **Build**: `./scripts/maintain.sh release X.Y.Z`
+4. **Visual smoke tests**: `./scripts/maintain.sh test-visual`
+5. **Build**: `./scripts/maintain.sh release X.Y.Z`
 5. **Cross-compile x86_64**:
    ```bash
    cd cli

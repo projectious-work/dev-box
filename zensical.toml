@@ -7,6 +7,10 @@ site_url = "https://projectious-work.github.io/dev-box/"
 repo_url = "https://github.com/projectious-work/dev-box"
 repo_name = "projectious-work/dev-box"
 
+# Asciinema player for terminal screencasts
+extra_css = ["assets/player/asciinema-player.css", "assets/player/asciinema-fonts.css", "assets/player/asciinema-themes.css"]
+extra_javascript = ["assets/player/asciinema-player.min.js", "assets/player/asciinema-init.js"]
+
 nav = [
   { Home = ["index.md"] },
   { "Getting Started" = [
