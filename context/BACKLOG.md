@@ -3,7 +3,7 @@
 Central task registry. Each item has a unique ID for cross-referencing.
 Source of truth — GitHub issues are for external visibility.
 
-## Next ID: BACK-038
+## Next ID: BACK-040
 
 ## Format
 
@@ -49,6 +49,8 @@ Priority values: `must`, `should`, `could`, `wont`
 | BACK-035 | New skill: microservice creation & orchestration | todo | should | Skill on creating new services/microservices and orchestrating them. Service boundaries, inter-service communication, deployment patterns |
 | BACK-036 | Bug: Yazi "e" key does not open files in vim | todo | must | Pressing "e" in yazi does nothing. Enter opens file in vim but in yazi's own pane (not the layout vim pane) and with wrong theme settings. Likely open-in-editor.sh or yazi keymap issue in v0.8.0 |
 | BACK-037 | Bug: Yazi preview broken for images/PDF/GIF | todo | must | PNG/SVG preview shows nothing; PDF fills screen with binary data; GIF preview also broken. Likely missing preview dependencies (ueberzugpp, file, poppler-utils) in base image |
+| BACK-038 | Rename project to "aibox" | todo | must | Rename everywhere: GitHub repo (projectious-work/aibox), CLI binary, GHCR registry, all code references (dev-box → aibox, dev_box → aibox), dev-box.toml → aibox.toml, .dev-box-home → .aibox-home, docs, CLAUDE.md templates, install script, maintain.sh. Also: clean up GHCR — delete all images except v0.8.0 set (mark v0.8.0 for deprecation, remove by 2026-04-06). Working title — final name TBD |
+| BACK-039 | Develop visual identity | todo | must | Research and create brand identity: logo (SVG, multiple sizes), tagline/claim, color palette (for web + docs), page design vibe, font selection (headings + body), favicon. Produce 4-5 alternative concepts, then select one. Informs Docusaurus theme, README, social preview image |
 
 ### BACK-028 Expanded Scope
 
