@@ -130,9 +130,9 @@ impl Runtime {
         Ok(())
     }
 
-    /// Exec interactively into a container (passes terminal through).
-    pub fn exec_interactive(&self, container: &str, cmd: &[&str]) -> Result<()> {
-        let mut args = vec!["exec", "-it", container];
+    /// Exec interactively into a container as the specified user.
+    pub fn exec_interactive(&self, container: &str, user: &str, cmd: &[&str]) -> Result<()> {
+        let mut args = vec!["exec", "-it", "-u", user, container];
         args.extend_from_slice(cmd);
 
         let status = Command::new(&self.runtime_bin)

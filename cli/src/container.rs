@@ -130,7 +130,7 @@ pub fn cmd_start(config_path: &Option<String>, layout: &str) -> Result<()> {
     }
 
     output::info(&format!("Attaching via zellij (layout: {})...", layout));
-    runtime.exec_interactive(name, &["zellij", "--layout", layout])?;
+    runtime.exec_interactive(name, &config.container.user, &["zellij", "--layout", layout])?;
 
     Ok(())
 }
