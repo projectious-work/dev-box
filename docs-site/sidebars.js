@@ -11,11 +11,16 @@ const sidebars = {
     },
     {
       type: 'category', label: 'Addons',
-      items: ['addons/overview', 'addons/language-runtimes', 'addons/tool-bundles', 'addons/documentation'],
-    },
-    {
-      type: 'category', label: 'AI Providers',
-      items: ['ai/overview', 'ai/claude', 'ai/aider', 'ai/gemini', 'ai/mistral'],
+      items: [
+        'addons/overview',
+        'addons/language-runtimes',
+        'addons/tool-bundles',
+        'addons/documentation',
+        'addons/ai-claude',
+        'addons/ai-aider',
+        'addons/ai-gemini',
+        'addons/ai-mistral',
+      ],
     },
     {
       type: 'category', label: 'Context System',
