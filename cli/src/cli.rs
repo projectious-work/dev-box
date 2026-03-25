@@ -55,6 +55,10 @@ pub struct Cli {
     #[arg(long, global = true, env = "AIBOX_LOG_LEVEL", default_value = "info")]
     pub log_level: String,
 
+    /// Skip all confirmation prompts (like apt-get -y)
+    #[arg(short = 'y', long, global = true)]
+    pub yes: bool,
+
     #[command(subcommand)]
     pub command: Commands,
 }
@@ -199,22 +203,22 @@ pub enum Commands {
         /// Preview what would happen without modifying anything
         #[arg(long)]
         dry_run: bool,
-        /// Skip confirmation prompt
-        #[arg(long)]
+        /// Skip the confirmation prompt (alias: --force)
+        #[arg(long, visible_alias = "force")]
         yes: bool,
     },
-    /// Uninstall the aibox CLI binary and global config
+    /// Uninstall the aibox CLI binary
     ///
-    /// DANGER ZONE: Removes the aibox binary from its install location
-    /// and any global cache/config files (~/.aibox/). Does NOT touch
-    /// project files — use `reset` for that.
+    /// DANGER ZONE: Removes the aibox binary from its install location.
+    /// Global config (~/.aibox/) is kept by default. Use --purge to
+    /// also remove it. Does NOT touch project files — use `reset` for that.
     Uninstall {
         /// Preview what would be removed without deleting anything
         #[arg(long)]
         dry_run: bool,
-        /// Skip confirmation prompt
+        /// Also remove global config and cache (~/.aibox/)
         #[arg(long)]
-        yes: bool,
+        purge: bool,
     },
     /// Run security checks on the project
     ///

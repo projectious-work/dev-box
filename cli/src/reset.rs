@@ -354,8 +354,8 @@ pub fn cmd_reset(
     Ok(())
 }
 
-/// Uninstall command: remove the CLI binary and global config.
-pub fn cmd_uninstall(dry_run: bool, yes: bool) -> Result<()> {
+/// Uninstall command: remove the CLI binary, optionally purge global config.
+pub fn cmd_uninstall(dry_run: bool, purge: bool, yes: bool) -> Result<()> {
     // Find the CLI binary path (the currently running executable)
     let binary_path = std::env::current_exe()
         .context("Could not determine the path of the running aibox binary")?;
@@ -365,17 +365,24 @@ pub fn cmd_uninstall(dry_run: bool, yes: bool) -> Result<()> {
         .map(|h| h.join(".aibox"))
         .unwrap_or_else(|| PathBuf::from(".aibox"));
 
-    // Collect items to remove
-    let mut items: Vec<(PathBuf, &str)> = vec![];
+    let has_global_config = global_config_dir.exists();
 
-    if binary_path.exists() {
-        items.push((binary_path.clone(), "CLI binary"));
-    }
-    if global_config_dir.exists() {
-        items.push((global_config_dir.clone(), "global config (~/.aibox/)"));
-    }
+    // Determine whether to remove global config:
+    // --purge → always remove
+    // no --purge, interactive → ask (default: keep)
+    // no --purge, --yes → keep (safe default)
+    let remove_global = if purge {
+        true
+    } else if has_global_config && !yes {
+        ask_yes_no(
+            "  Remove global config (~/.aibox/)? [y/N] ",
+            false, // default: no
+        )?
+    } else {
+        false
+    };
 
-    if items.is_empty() {
+    if !binary_path.exists() && !remove_global {
         output::warn("Nothing to uninstall.");
         return Ok(());
     }
@@ -392,8 +399,23 @@ pub fn cmd_uninstall(dry_run: bool, yes: bool) -> Result<()> {
     );
     eprintln!();
     eprintln!("  The following will be removed:");
-    for (path, desc) in &items {
-        eprintln!("    \x1b[31m\u{2717}\x1b[0m  {} ({})", path.display(), desc);
+    if binary_path.exists() {
+        eprintln!(
+            "    \x1b[31m\u{2717}\x1b[0m  {} (CLI binary)",
+            binary_path.display()
+        );
+    }
+    if remove_global {
+        eprintln!(
+            "    \x1b[31m\u{2717}\x1b[0m  {} (global config)",
+            global_config_dir.display()
+        );
+    }
+    if has_global_config && !remove_global {
+        eprintln!(
+            "    \x1b[32m\u{2713}\x1b[0m  {} (kept)",
+            global_config_dir.display()
+        );
     }
     eprintln!();
     eprintln!("  Project files (aibox.toml, .devcontainer/, context/) are NOT affected.");
@@ -417,7 +439,7 @@ pub fn cmd_uninstall(dry_run: bool, yes: bool) -> Result<()> {
     }
 
     // Remove global config first (while the binary is still running)
-    if global_config_dir.exists() {
+    if remove_global && global_config_dir.exists() {
         delete_item(&global_config_dir)?;
         output::ok(&format!("Removed {}", global_config_dir.display()));
     }
@@ -440,6 +462,23 @@ pub fn cmd_uninstall(dry_run: bool, yes: bool) -> Result<()> {
     eprintln!("  To reinstall: curl -fsSL https://raw.githubusercontent.com/projectious-work/aibox/main/scripts/install.sh | bash");
 
     Ok(())
+}
+
+/// Ask a yes/no question with a default. Returns the user's choice.
+/// Empty input (just Enter) returns the default.
+fn ask_yes_no(prompt: &str, default: bool) -> Result<bool> {
+    if !std::io::IsTerminal::is_terminal(&std::io::stdin()) {
+        return Ok(default);
+    }
+    eprint!("{}", prompt);
+    let mut input = String::new();
+    std::io::stdin().read_line(&mut input)?;
+    let trimmed = input.trim().to_lowercase();
+    if trimmed.is_empty() {
+        Ok(default)
+    } else {
+        Ok(trimmed == "y" || trimmed == "yes")
+    }
 }
 
 #[cfg(test)]

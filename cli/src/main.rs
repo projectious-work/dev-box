@@ -46,6 +46,7 @@ fn main() {
 
 fn dispatch(cli: cli::Cli) -> anyhow::Result<()> {
     let config_path = &cli.config;
+    let global_yes = cli.yes;
 
     match cli.command {
         cli::Commands::Init {
@@ -87,9 +88,11 @@ fn dispatch(cli: cli::Cli) -> anyhow::Result<()> {
         }
         cli::Commands::Env { action } => match action {
             cli::EnvAction::Create { name } => env::cmd_env_create(config_path, &name),
-            cli::EnvAction::Switch { name, yes } => env::cmd_env_switch(config_path, &name, yes),
+            cli::EnvAction::Switch { name, yes } => {
+                env::cmd_env_switch(config_path, &name, yes || global_yes)
+            }
             cli::EnvAction::List => env::cmd_env_list(),
-            cli::EnvAction::Delete { name, yes } => env::cmd_env_delete(&name, yes),
+            cli::EnvAction::Delete { name, yes } => env::cmd_env_delete(&name, yes || global_yes),
             cli::EnvAction::Status => env::cmd_env_status(config_path),
         },
         cli::Commands::Backup {
@@ -100,8 +103,10 @@ fn dispatch(cli: cli::Cli) -> anyhow::Result<()> {
             no_backup,
             dry_run,
             yes,
-        } => reset::cmd_reset(config_path, no_backup, dry_run, yes),
-        cli::Commands::Uninstall { dry_run, yes } => reset::cmd_uninstall(dry_run, yes),
+        } => reset::cmd_reset(config_path, no_backup, dry_run, yes || global_yes),
+        cli::Commands::Uninstall { dry_run, purge } => {
+            reset::cmd_uninstall(dry_run, purge, global_yes)
+        }
         cli::Commands::Audit => audit::cmd_audit(config_path),
         cli::Commands::Audio { action } => match action {
             cli::AudioAction::Check { port } => audio::cmd_audio_check(port),
