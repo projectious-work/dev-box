@@ -354,6 +354,94 @@ pub fn cmd_reset(
     Ok(())
 }
 
+/// Uninstall command: remove the CLI binary and global config.
+pub fn cmd_uninstall(dry_run: bool, yes: bool) -> Result<()> {
+    // Find the CLI binary path (the currently running executable)
+    let binary_path = std::env::current_exe()
+        .context("Could not determine the path of the running aibox binary")?;
+
+    // Global config directory
+    let global_config_dir = dirs::home_dir()
+        .map(|h| h.join(".aibox"))
+        .unwrap_or_else(|| PathBuf::from(".aibox"));
+
+    // Collect items to remove
+    let mut items: Vec<(PathBuf, &str)> = vec![];
+
+    if binary_path.exists() {
+        items.push((binary_path.clone(), "CLI binary"));
+    }
+    if global_config_dir.exists() {
+        items.push((global_config_dir.clone(), "global config (~/.aibox/)"));
+    }
+
+    if items.is_empty() {
+        output::warn("Nothing to uninstall.");
+        return Ok(());
+    }
+
+    // Show what will be removed
+    eprintln!(
+        "\n\x1b[1;31m  ╔════════════════════════════════════════════════════════╗\x1b[0m"
+    );
+    eprintln!(
+        "\x1b[1;31m  ║  DANGER: aibox will be PERMANENTLY UNINSTALLED        ║\x1b[0m"
+    );
+    eprintln!(
+        "\x1b[1;31m  ╚════════════════════════════════════════════════════════╝\x1b[0m"
+    );
+    eprintln!();
+    eprintln!("  The following will be removed:");
+    for (path, desc) in &items {
+        eprintln!("    \x1b[31m\u{2717}\x1b[0m  {} ({})", path.display(), desc);
+    }
+    eprintln!();
+    eprintln!("  Project files (aibox.toml, .devcontainer/, context/) are NOT affected.");
+    eprintln!("  Use 'aibox reset' to remove project files.");
+    eprintln!();
+
+    if dry_run {
+        output::warn("[dry-run] No files were removed.");
+        return Ok(());
+    }
+
+    // Confirm
+    if !yes
+        && !confirm(
+            "  \x1b[1;31mThis will permanently remove the aibox CLI.\x1b[0m",
+            "uninstall",
+        )?
+    {
+        output::warn("Aborted.");
+        return Ok(());
+    }
+
+    // Remove global config first (while the binary is still running)
+    if global_config_dir.exists() {
+        delete_item(&global_config_dir)?;
+        output::ok(&format!("Removed {}", global_config_dir.display()));
+    }
+
+    // Remove the binary last
+    if binary_path.exists() {
+        // On Unix, a running binary can be deleted — the OS keeps the inode
+        // alive until the process exits.
+        fs::remove_file(&binary_path).with_context(|| {
+            format!(
+                "Failed to remove binary: {}. You may need to remove it manually.",
+                binary_path.display()
+            )
+        })?;
+        output::ok(&format!("Removed {}", binary_path.display()));
+    }
+
+    eprintln!();
+    output::ok("aibox has been uninstalled.");
+    eprintln!("  To reinstall: curl -fsSL https://raw.githubusercontent.com/projectious-work/aibox/main/scripts/install.sh | bash");
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

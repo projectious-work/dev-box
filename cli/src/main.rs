@@ -101,6 +101,7 @@ fn dispatch(cli: cli::Cli) -> anyhow::Result<()> {
             dry_run,
             yes,
         } => reset::cmd_reset(config_path, no_backup, dry_run, yes),
+        cli::Commands::Uninstall { dry_run, yes } => reset::cmd_uninstall(dry_run, yes),
         cli::Commands::Audit => audit::cmd_audit(config_path),
         cli::Commands::Audio { action } => match action {
             cli::AudioAction::Check { port } => audio::cmd_audio_check(port),

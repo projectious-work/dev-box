@@ -203,6 +203,19 @@ pub enum Commands {
         #[arg(long)]
         yes: bool,
     },
+    /// Uninstall the aibox CLI binary and global config
+    ///
+    /// DANGER ZONE: Removes the aibox binary from its install location
+    /// and any global cache/config files (~/.aibox/). Does NOT touch
+    /// project files — use `reset` for that.
+    Uninstall {
+        /// Preview what would be removed without deleting anything
+        #[arg(long)]
+        dry_run: bool,
+        /// Skip confirmation prompt
+        #[arg(long)]
+        yes: bool,
+    },
     /// Run security checks on the project
     ///
     /// Checks Rust dependencies (cargo audit), Python dependencies
