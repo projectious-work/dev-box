@@ -82,7 +82,7 @@ ${bold}Usage:${reset}
 
 ${bold}Development:${reset}
   test                     Run cargo fmt check, clippy, and tests
-  build-images [--no-cache] Build all 10 published images locally
+  build-images [--no-cache] Build published container images locally
   push-images <version>    Push images to GHCR (requires ghcr.io login)
   docs-serve               Serve MkDocs locally (http://localhost:8000)
   docs-deploy [--dry-run]  Build MkDocs and push to gh-pages branch
@@ -90,8 +90,9 @@ ${bold}Development:${reset}
   record-docs              Regenerate all docs screencasts + README GIF
 
 ${bold}Release:${reset}
-  release <version>        Tag, build CLI, generate release prompt
-                           Version must be semver (e.g. 0.2.0)
+  release <version>        Tag, build CLI, generate release prompt (in container)
+  release-host <version>   Build macOS binaries, upload to GH release,
+                           build + push images, deploy docs (on macOS host)
 
 ${bold}Container (this project's dev-container):${reset}
   start                    Ensure running, then attach via zellij
@@ -518,6 +519,50 @@ cmd_release() {
   echo "  an AI agent or run the commands yourself."
 }
 
+# ── Host-side release (run on macOS after container-side `release`) ──────────
+
+cmd_release_host() {
+  local version="${1:-}"
+  [[ -z "${version}" ]] && die "Usage: ./scripts/maintain.sh release-host <version>  (e.g. 0.10.2)"
+
+  if ! [[ "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    die "Version must be semver: X.Y.Z (got: ${version})"
+  fi
+
+  local tag="v${version}"
+
+  # ── Step 1: Build macOS binaries ──────────────────────────────────────────
+  info "Building macOS binaries..."
+  "${SCRIPT_DIR}/build-macos.sh" "${version}"
+
+  # ── Step 2: Upload macOS binaries to existing GitHub release ──────────────
+  info "Uploading macOS binaries to GitHub release ${tag}..."
+  if ! gh release view "${tag}" &>/dev/null; then
+    die "GitHub release ${tag} not found. Run 'release' in the container first."
+  fi
+  gh release upload "${tag}" "${DIST_DIR}"/aibox-v${version}-*-apple-darwin.tar.gz \
+    || warn "Upload failed — binaries may already be attached"
+  ok "macOS binaries uploaded to ${tag}"
+
+  # ── Step 3: Build and push container images ───────────────────────────────
+  info "Building container images..."
+  cmd_build_images
+  info "Pushing container images..."
+  cmd_push_images "${version}"
+
+  # ── Step 4: Deploy documentation ──────────────────────────────────────────
+  info "Deploying documentation..."
+  cmd_docs_deploy
+
+  # ── Done ──────────────────────────────────────────────────────────────────
+  echo ""
+  ok "Release ${tag} host-side steps complete."
+  echo ""
+  echo "  macOS binaries: uploaded to GitHub release"
+  echo "  Container images: pushed to GHCR"
+  echo "  Documentation: deployed to gh-pages"
+}
+
 # ── Container commands ───────────────────────────────────────────────────────
 
 cmd_start() {
@@ -619,6 +664,7 @@ case "${COMMAND}" in
   test-visual)  cmd_test_visual ;;
   record-docs)  cmd_record_docs ;;
   release)      cmd_release "$@" ;;
+  release-host) cmd_release_host "$@" ;;
   start)        cmd_start ;;
   stop)         cmd_stop ;;
   attach)       cmd_attach ;;
