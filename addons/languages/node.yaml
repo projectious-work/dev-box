@@ -1,0 +1,37 @@
+name: node
+version: "1.0.0"
+builder_weight: null
+
+tools:
+  - name: node
+    default_enabled: true
+    default_version: "22"
+    supported_versions: ["20", "22"]
+  - name: pnpm
+    default_enabled: true
+    default_version: "10"
+    supported_versions: ["9", "10"]
+  - name: yarn
+    default_enabled: false
+    default_version: "4"
+    supported_versions: ["4"]
+  - name: bun
+    default_enabled: false
+    default_version: "1.2"
+    supported_versions: ["1.2"]
+
+builder: null
+
+runtime: |
+  # Addon: node (runtime)
+  RUN curl -fsSL https://deb.nodesource.com/setup_{{ tools.node.version }}.x | bash - && \
+      apt-get install -y --no-install-recommends nodejs && \
+      rm -rf /var/lib/apt/lists/*
+
+  {% if tools.pnpm.enabled or tools.yarn.enabled %}
+  RUN npm install -g{% if tools.pnpm.enabled %} pnpm@{{ tools.pnpm.version }}{% endif %}{% if tools.yarn.enabled %} yarn@{{ tools.yarn.version }}{% endif %}
+
+  {% endif %}
+  {% if tools.bun.enabled %}
+  RUN curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr/local bash -s -- "bun-v{{ tools.bun.version }}"
+  {% endif %}

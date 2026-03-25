@@ -1,0 +1,46 @@
+name: python
+version: "1.0.0"
+builder_weight: null
+
+tools:
+  - name: python
+    default_enabled: true
+    default_version: "3.13"
+    supported_versions: ["3.12", "3.13", "3.14"]
+  - name: uv
+    default_enabled: true
+    default_version: "0.7"
+    supported_versions: ["0.6", "0.7"]
+  - name: poetry
+    default_enabled: false
+    default_version: "2.0"
+    supported_versions: ["1.8", "2.0"]
+  - name: pdm
+    default_enabled: false
+    default_version: "2.22"
+    supported_versions: ["2.22"]
+
+builder: null
+
+runtime: |
+  # Addon: python (runtime)
+  RUN apt-get update && apt-get install -y --no-install-recommends \
+      python{{ tools.python.version }} \
+      python3-pip \
+      python3-venv \
+      && rm -rf /var/lib/apt/lists/*
+
+  {% if tools.uv.enabled %}
+  COPY --from=ghcr.io/astral-sh/uv:{{ tools.uv.version }} /uv /usr/local/bin/uv
+  COPY --from=ghcr.io/astral-sh/uv:{{ tools.uv.version }} /uvx /usr/local/bin/uvx
+  {% endif %}
+
+  {% if tools.poetry.enabled %}
+  RUN pip3 install --no-cache-dir 'poetry~={{ tools.poetry.version }}.0'
+  {% endif %}
+
+  {% if tools.pdm.enabled %}
+  RUN pip3 install --no-cache-dir 'pdm~={{ tools.pdm.version }}.0'
+  {% endif %}
+
+  ENV PATH="/home/aibox/.local/bin:${PATH}"

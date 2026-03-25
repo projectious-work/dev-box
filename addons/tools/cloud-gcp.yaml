@@ -1,0 +1,18 @@
+name: cloud-gcp
+version: "1.0.0"
+builder_weight: null
+
+tools:
+  - name: gcloud-cli
+    default_enabled: true
+    default_version: ""
+    supported_versions: []
+
+builder: null
+
+runtime: |
+  # Addon: cloud-gcp
+  RUN curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg && \
+      echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" > /etc/apt/sources.list.d/google-cloud-sdk.list && \
+      apt-get update && apt-get install -y --no-install-recommends google-cloud-cli && \
+      rm -rf /var/lib/apt/lists/*

@@ -1,0 +1,15 @@
+name: docs-mkdocs
+version: "1.0.0"
+builder_weight: null
+
+tools:
+  - name: mkdocs
+    default_enabled: true
+    default_version: ""
+    supported_versions: []
+
+builder: null
+
+runtime: |
+  # Addon: docs-mkdocs
+  RUN uv tool install 'mkdocs<2' --with mkdocs-material

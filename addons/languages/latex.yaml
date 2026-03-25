@@ -1,0 +1,152 @@
+name: latex
+version: "1.0.0"
+builder_weight: "heavy"
+
+tools:
+  - name: texlive-core
+    default_enabled: true
+    default_version: ""
+    supported_versions: []
+  - name: texlive-recommended
+    default_enabled: true
+    default_version: ""
+    supported_versions: []
+  - name: texlive-fonts
+    default_enabled: true
+    default_version: ""
+    supported_versions: []
+  - name: texlive-biber
+    default_enabled: true
+    default_version: ""
+    supported_versions: []
+  - name: texlive-code
+    default_enabled: true
+    default_version: ""
+    supported_versions: []
+  - name: texlive-diagrams
+    default_enabled: true
+    default_version: ""
+    supported_versions: []
+  - name: texlive-math
+    default_enabled: true
+    default_version: ""
+    supported_versions: []
+  - name: texlive-music
+    default_enabled: false
+    default_version: ""
+    supported_versions: []
+  - name: texlive-chemistry
+    default_enabled: false
+    default_version: ""
+    supported_versions: []
+
+builder: |
+  # ── TeX Live builder ──────────────────────────────────────────────────
+  FROM debian:trixie-slim AS texlive-builder
+
+  ENV DEBIAN_FRONTEND=noninteractive
+
+  RUN apt-get update && apt-get install -y --no-install-recommends \
+      ca-certificates \
+      perl \
+      wget \
+      fontconfig \
+      && rm -rf /var/lib/apt/lists/*
+
+  ARG CTAN_MIRROR=https://ftp.math.utah.edu/pub/tex/historic/systems/texlive/2025/tlnet-final
+  RUN mkdir -p /tmp/texlive-installer && cd /tmp/texlive-installer \
+      && wget -q "${CTAN_MIRROR}/install-tl-unx.tar.gz" \
+      && tar -xzf install-tl-unx.tar.gz --strip-components=1 \
+      && echo "selected_scheme scheme-basic" > texlive.profile \
+      && echo "TEXDIR /usr/local/texlive" >> texlive.profile \
+      && echo "TEXMFLOCAL /usr/local/texlive/texmf-local" >> texlive.profile \
+      && echo "TEXMFSYSCONFIG /usr/local/texlive/texmf-config" >> texlive.profile \
+      && echo "TEXMFSYSVAR /usr/local/texlive/texmf-var" >> texlive.profile \
+      && echo "option_doc 0" >> texlive.profile \
+      && echo "option_src 0" >> texlive.profile \
+      && echo "tlpdbopt_autobackup 0" >> texlive.profile \
+      && echo "tlpdbopt_install_docfiles 0" >> texlive.profile \
+      && echo "tlpdbopt_install_srcfiles 0" >> texlive.profile \
+      && ./install-tl --profile=texlive.profile --no-interaction \
+         --repository "${CTAN_MIRROR}" \
+      && rm -rf /tmp/texlive-installer \
+      && ln -sf /usr/local/texlive/bin/*/* /usr/local/bin/
+
+  RUN tlmgr install --no-execute-actions \
+      # Core layout / typography / tables / colors / hyperlinks / misc
+      geometry fancyhdr lastpage multirow adjustbox \
+      microtype parskip setspace titlesec \
+      tabularray booktabs tabu colortbl \
+      xcolor graphics epstopdf svg \
+      hyperref bookmark cleveref url \
+      algorithms algorithmicx algorithm2e \
+      caption enumitem wrapfig \
+      footmisc appendix pdfpages pdflscape xkeyval iftex \
+      babel babel-english \
+      tools oberdiek symbol zapfding \
+      kvoptions kvsetkeys kvdefinekeys ltxcmds infwarerr \
+      epstopdf-pkg grfext pdftexcmds auxhook intcalc letltxmacro \
+      bitset bigintcalc atbegshi atveryend rerunfilecheck \
+      uniquecounter refcount gettitlestring hycolor \
+      stringenc pdfescape hobsub \
+      bytefield siunitx markdown soul ulem \
+      todonotes changes datetime2 tracklang was emoji \
+      ninecolors transparent spath3 nicematrix lipsum \
+  {% if tools["texlive-recommended"].enabled %}
+      # texlive-recommended
+      latex latex-bin latexmk collection-latexrecommended \
+  {% endif %}
+  {% if tools["texlive-fonts"].enabled %}
+      # texlive-fonts
+      luatex luaotfload luatexbase luacolor lua-ul fontspec unicode-math \
+      lualatex-math luahbtex \
+      lm lm-math sourcecodepro sourcesanspro tex-gyre gnu-freefont \
+      collection-fontsrecommended selnolig \
+  {% endif %}
+  {% if tools["texlive-biber"].enabled %}
+      # texlive-biber
+      biblatex biber csquotes \
+  {% endif %}
+  {% if tools["texlive-code"].enabled %}
+      # texlive-code
+      minted fvextra fancyvrb upquote lineno catchfile xstring framed float \
+      listings \
+  {% endif %}
+  {% if tools["texlive-diagrams"].enabled %}
+      # texlive-diagrams
+      pgf tikz-cd tikzmark pgfplots \
+      tcolorbox tikzfill pdfcol environ etoolbox \
+  {% endif %}
+  {% if tools["texlive-math"].enabled %}
+      # texlive-math
+      amsmath amscls mathtools amsfonts \
+  {% endif %}
+  {% if tools["texlive-music"].enabled %}
+      # texlive-music
+      musixtex \
+  {% endif %}
+  {% if tools["texlive-chemistry"].enabled %}
+      # texlive-chemistry
+      chemfig mhchem \
+  {% endif %}
+      && mktexlsr \
+      && updmap-sys \
+      && fmtutil-sys --all
+
+runtime: |
+  # Addon: latex (runtime — copy from builder)
+  RUN apt-get update && apt-get install -y --no-install-recommends \
+      perl \
+      fontconfig \
+      inkscape \
+      poppler-utils \
+      libfile-homedir-perl \
+      libyaml-tiny-perl \
+      liblog-log4perl-perl \
+      libunicode-linebreak-perl \
+      && rm -rf /var/lib/apt/lists/*
+
+  COPY --from=texlive-builder /usr/local/texlive /usr/local/texlive
+  RUN ln -sf /usr/local/texlive/bin/*/* /usr/local/bin/ && \
+      ln -sf /usr/local/texlive/texmf-dist/fonts/opentype /usr/share/fonts/opentype-texlive && \
+      fc-cache -f

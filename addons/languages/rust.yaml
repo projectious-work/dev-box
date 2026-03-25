@@ -1,0 +1,46 @@
+name: rust
+version: "1.0.0"
+builder_weight: "medium"
+
+tools:
+  - name: rustc
+    default_enabled: true
+    default_version: "1.87"
+    supported_versions: ["1.85", "1.87"]
+  - name: clippy
+    default_enabled: true
+    default_version: ""
+    supported_versions: []
+  - name: rustfmt
+    default_enabled: true
+    default_version: ""
+    supported_versions: []
+
+builder: |
+  # ── Rust builder ─────────────────────────────────────────────────────
+  FROM debian:trixie-slim AS rust-builder
+
+  ENV DEBIAN_FRONTEND=noninteractive
+
+  RUN apt-get update && apt-get install -y --no-install-recommends \
+      build-essential \
+      pkg-config \
+      libssl-dev \
+      ca-certificates \
+      curl \
+      && rm -rf /var/lib/apt/lists/*
+
+  RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
+      sh -s -- -y \
+      --default-toolchain {{ tools.rustc.version }}{% if tools.clippy.enabled %} \
+      --component clippy{% endif %}{% if tools.rustfmt.enabled %} \
+      --component rustfmt{% endif %}
+
+  ENV PATH="/home/aibox/.cargo/bin:${PATH}"
+
+runtime: |
+  # Addon: rust (runtime — copy from builder)
+  COPY --from=rust-builder /home/aibox/.cargo /home/aibox/.cargo
+  COPY --from=rust-builder /home/aibox/.rustup /home/aibox/.rustup
+
+  ENV PATH="/home/aibox/.cargo/bin:${PATH}"

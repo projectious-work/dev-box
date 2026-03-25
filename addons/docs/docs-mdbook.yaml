@@ -1,0 +1,17 @@
+name: docs-mdbook
+version: "1.0.0"
+builder_weight: null
+
+tools:
+  - name: mdbook
+    default_enabled: true
+    default_version: ""
+    supported_versions: []
+
+builder: null
+
+runtime: |
+  # Addon: docs-mdbook
+  RUN ARCH="$(uname -m)" && \
+      curl -fsSL "https://github.com/rust-lang/mdBook/releases/latest/download/mdbook-v0.4.43-${ARCH}-unknown-linux-musl.tar.gz" \
+      | tar -xz -C /usr/local/bin

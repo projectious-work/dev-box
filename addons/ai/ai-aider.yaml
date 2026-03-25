@@ -1,0 +1,15 @@
+name: ai-aider
+version: "1.0.0"
+builder_weight: null
+
+tools:
+  - name: aider
+    default_enabled: true
+    default_version: ""
+    supported_versions: []
+
+builder: null
+
+runtime: |
+  # Addon: ai-aider
+  RUN uv tool install aider-chat
