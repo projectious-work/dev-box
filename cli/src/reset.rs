@@ -360,14 +360,13 @@ pub fn cmd_uninstall(dry_run: bool, purge: bool, yes: bool) -> Result<()> {
     let binary_path = std::env::current_exe()
         .context("Could not determine the path of the running aibox binary")?;
 
-    // Global config directory
-    let global_config_dir = dirs::home_dir()
-        .map(|h| h.join(".aibox"))
-        .unwrap_or_else(|| PathBuf::from(".aibox"));
+    // Global directories (XDG Base Directory Specification)
+    let global_dirs = crate::dirs::all_global_dirs();
+    let existing_global_dirs: Vec<&PathBuf> =
+        global_dirs.iter().filter(|d| d.exists()).collect();
+    let has_global_config = !existing_global_dirs.is_empty();
 
-    let has_global_config = global_config_dir.exists();
-
-    // Determine whether to remove global config:
+    // Determine whether to remove global directories:
     // --purge → always remove
     // no --purge, interactive → ask (default: keep)
     // no --purge, --yes → keep (safe default)
@@ -375,7 +374,7 @@ pub fn cmd_uninstall(dry_run: bool, purge: bool, yes: bool) -> Result<()> {
         true
     } else if has_global_config && !yes {
         ask_yes_no(
-            "  Remove global config (~/.aibox/)? [y/N] ",
+            "  Remove global config/cache (XDG directories)? [y/N] ",
             false, // default: no
         )?
     } else {
@@ -405,17 +404,18 @@ pub fn cmd_uninstall(dry_run: bool, purge: bool, yes: bool) -> Result<()> {
             binary_path.display()
         );
     }
-    if remove_global {
-        eprintln!(
-            "    \x1b[31m\u{2717}\x1b[0m  {} (global config)",
-            global_config_dir.display()
-        );
-    }
-    if has_global_config && !remove_global {
-        eprintln!(
-            "    \x1b[32m\u{2713}\x1b[0m  {} (kept)",
-            global_config_dir.display()
-        );
+    for dir in &existing_global_dirs {
+        if remove_global {
+            eprintln!(
+                "    \x1b[31m\u{2717}\x1b[0m  {} (remove)",
+                dir.display()
+            );
+        } else {
+            eprintln!(
+                "    \x1b[32m\u{2713}\x1b[0m  {} (kept)",
+                dir.display()
+            );
+        }
     }
     eprintln!();
     eprintln!("  Project files (aibox.toml, .devcontainer/, context/) are NOT affected.");
@@ -438,10 +438,12 @@ pub fn cmd_uninstall(dry_run: bool, purge: bool, yes: bool) -> Result<()> {
         return Ok(());
     }
 
-    // Remove global config first (while the binary is still running)
-    if remove_global && global_config_dir.exists() {
-        delete_item(&global_config_dir)?;
-        output::ok(&format!("Removed {}", global_config_dir.display()));
+    // Remove global directories first (while the binary is still running)
+    if remove_global {
+        for dir in &existing_global_dirs {
+            delete_item(dir)?;
+            output::ok(&format!("Removed {}", dir.display()));
+        }
     }
 
     // Remove the binary last

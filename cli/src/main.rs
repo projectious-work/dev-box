@@ -1,6 +1,7 @@
 mod addon_cmd;
 #[allow(dead_code)]
 mod addon_registry;
+mod dirs;
 
 mod addons;
 mod audit;
