@@ -1,0 +1,15 @@
+name: docs-docusaurus
+version: "1.0.0"
+builder_weight: null
+
+tools:
+  - name: docusaurus
+    default_enabled: true
+    default_version: "3"
+    supported_versions: ["3"]
+
+builder: null
+
+runtime: |
+  # Addon: docs-docusaurus
+  RUN npm install -g create-docusaurus@latest

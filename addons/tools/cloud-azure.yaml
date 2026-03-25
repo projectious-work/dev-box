@@ -1,0 +1,15 @@
+name: cloud-azure
+version: "1.0.0"
+builder_weight: null
+
+tools:
+  - name: azure-cli
+    default_enabled: true
+    default_version: ""
+    supported_versions: []
+
+builder: null
+
+runtime: |
+  # Addon: cloud-azure
+  RUN pip3 install --no-cache-dir azure-cli

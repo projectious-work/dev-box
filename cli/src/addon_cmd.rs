@@ -208,6 +208,14 @@ mod tests {
     use super::*;
     use std::fs;
 
+    fn ensure_loaded() {
+        let addons_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .unwrap()
+            .join("addons");
+        let _ = crate::addon_loader::init_from_dir(&addons_dir);
+    }
+
     fn write_test_toml(dir: &std::path::Path) -> PathBuf {
         let path = dir.join("aibox.toml");
         fs::write(
@@ -229,6 +237,7 @@ uv = { version = "0.7" }
 
     #[test]
     fn addon_add_inserts_section() {
+        ensure_loaded();
         let dir = tempfile::tempdir().unwrap();
         let path = write_test_toml(dir.path());
 
@@ -290,12 +299,13 @@ uv = { version = "0.7" }
 
     #[test]
     fn addon_info_finds_known_addon() {
-        // Just verify it doesn't error — output goes to stdout
+        ensure_loaded();
         assert!(cmd_addon_info("python").is_ok());
     }
 
     #[test]
     fn addon_info_errors_on_unknown() {
+        ensure_loaded();
         assert!(cmd_addon_info("nonexistent").is_err());
     }
 }

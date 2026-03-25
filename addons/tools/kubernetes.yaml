@@ -1,0 +1,68 @@
+name: kubernetes
+version: "1.0.0"
+builder_weight: "medium"
+
+tools:
+  - name: kubectl
+    default_enabled: true
+    default_version: ""
+    supported_versions: []
+  - name: helm
+    default_enabled: true
+    default_version: ""
+    supported_versions: []
+  - name: kustomize
+    default_enabled: true
+    default_version: ""
+    supported_versions: []
+  - name: k9s
+    default_enabled: false
+    default_version: ""
+    supported_versions: []
+
+builder: |
+  # ── Kubernetes builder ────────────────────────────────────────────────
+  FROM debian:trixie-slim AS k8s-builder
+
+  ENV DEBIAN_FRONTEND=noninteractive
+
+  RUN apt-get update && apt-get install -y --no-install-recommends \
+      ca-certificates \
+      curl \
+      && rm -rf /var/lib/apt/lists/*
+
+  RUN mkdir -p /build/bin && \
+  {% if tools.kubectl.enabled %}
+      ARCH="$(dpkg --print-architecture)" && \
+      curl -fsSL "https://dl.k8s.io/release/$(curl -fsSL https://dl.k8s.io/release/stable.txt)/bin/linux/${ARCH}/kubectl" -o /build/bin/kubectl && \
+      chmod +x /build/bin/kubectl{% if tools.helm.enabled or tools.kustomize.enabled or tools.k9s.enabled %} && \
+  {% endif %}
+  {% endif %}
+  {% if tools.helm.enabled %}
+      curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | HELM_INSTALL_DIR=/build/bin bash{% if tools.kustomize.enabled or tools.k9s.enabled %} && \
+  {% endif %}
+  {% endif %}
+  {% if tools.kustomize.enabled %}
+      curl -fsSL "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash && \
+      mv kustomize /build/bin/{% if tools.k9s.enabled %} && \
+  {% endif %}
+  {% endif %}
+  {% if tools.k9s.enabled %}
+      ARCH="$(dpkg --print-architecture)" && \
+      curl -fsSL "https://github.com/derailed/k9s/releases/latest/download/k9s_Linux_${ARCH}.tar.gz" | tar xz -C /build/bin k9s
+  {% endif %}
+
+runtime: |
+  # Addon: kubernetes (runtime)
+  {% if tools.kubectl.enabled %}
+  COPY --from=k8s-builder /build/bin/kubectl /usr/local/bin/kubectl
+  {% endif %}
+  {% if tools.helm.enabled %}
+  COPY --from=k8s-builder /build/bin/helm /usr/local/bin/helm
+  {% endif %}
+  {% if tools.kustomize.enabled %}
+  COPY --from=k8s-builder /build/bin/kustomize /usr/local/bin/kustomize
+  {% endif %}
+  {% if tools.k9s.enabled %}
+  COPY --from=k8s-builder /build/bin/k9s /usr/local/bin/k9s
+  {% endif %}

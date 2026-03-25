@@ -1,0 +1,21 @@
+name: go
+version: "1.0.0"
+builder_weight: null
+
+tools:
+  - name: go
+    default_enabled: true
+    default_version: "1.26"
+    supported_versions: ["1.25", "1.26"]
+
+builder: null
+
+runtime: |
+  # Addon: go (runtime)
+  RUN ARCH=$(dpkg --print-architecture) && \
+      curl -fsSL "https://go.dev/dl/go{{ tools.go.version }}.linux-${ARCH}.tar.gz" \
+      | tar -xz -C /usr/local && \
+      ln -sf /usr/local/go/bin/* /usr/local/bin/
+
+  ENV GOPATH="/home/aibox/go"
+  ENV PATH="${GOPATH}/bin:${PATH}"

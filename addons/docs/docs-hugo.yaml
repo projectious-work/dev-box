@@ -1,0 +1,17 @@
+name: docs-hugo
+version: "1.0.0"
+builder_weight: null
+
+tools:
+  - name: hugo
+    default_enabled: true
+    default_version: ""
+    supported_versions: []
+
+builder: null
+
+runtime: |
+  # Addon: docs-hugo
+  RUN ARCH="$(dpkg --print-architecture)" && \
+      curl -fsSL "https://github.com/gohugoio/hugo/releases/latest/download/hugo_extended_0.141.0_linux-${ARCH}.tar.gz" \
+      | tar -xz -C /usr/local/bin hugo

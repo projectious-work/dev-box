@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use crate::addon_loader;
 use crate::addon_registry::{self, ToolConfig};
 use crate::config::AddonsSection;
 
@@ -11,22 +12,12 @@ pub struct DockerfileAddonOutput {
     pub runtime_commands: Vec<String>,
 }
 
-/// Canonical ordering for builder stages: heavy builds first, lighter ones later.
-const BUILDER_STAGE_ORDER: &[&str] = &[
-    "latex",
-    "rust",
-    "infrastructure",
-    "kubernetes",
-    // remaining addons rarely have builder stages but handle them gracefully
-];
-
-/// Return a sort key for addon builder-stage ordering.
-/// Addons listed in BUILDER_STAGE_ORDER get their index; unknown addons sort last.
+/// Return a sort key for addon builder-stage ordering based on builder_weight
+/// from the YAML definition. heavy=0, medium=1, light=2, unknown=3.
 fn builder_order_key(name: &str) -> usize {
-    BUILDER_STAGE_ORDER
-        .iter()
-        .position(|&n| n == name)
-        .unwrap_or(BUILDER_STAGE_ORDER.len())
+    addon_loader::get_addon(name)
+        .map(|a| a.builder_order_key())
+        .unwrap_or(3)
 }
 
 /// Process all enabled addons and generate Dockerfile content.
@@ -54,7 +45,7 @@ pub fn generate_dockerfile_content(addons: &AddonsSection) -> DockerfileAddonOut
             }
         };
 
-        let tool_configs = to_tool_configs(addon_name, &addon_tools_section.tools, addon_def);
+        let tool_configs = to_tool_configs(addon_name, &addon_tools_section.tools, &addon_def);
 
         // Builder stage (if this addon defines one)
         if let Some(stage) = addon_registry::generate_builder_stage(addon_name, &tool_configs) {
@@ -130,6 +121,14 @@ mod tests {
     use super::*;
     use crate::addon_registry::ToolDef;
     use crate::config::ToolEntry;
+
+    fn ensure_loaded() {
+        let addons_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .unwrap()
+            .join("addons");
+        let _ = crate::addon_loader::init_from_dir(&addons_dir);
+    }
 
     // ── to_tool_configs tests ───────────────────────────────────────────
 
@@ -217,15 +216,20 @@ mod tests {
 
     #[test]
     fn known_addons_sort_in_canonical_order() {
+        ensure_loaded();
+        // heavy < medium < no-builder
         assert!(builder_order_key("latex") < builder_order_key("rust"));
-        assert!(builder_order_key("rust") < builder_order_key("infrastructure"));
-        assert!(builder_order_key("infrastructure") < builder_order_key("kubernetes"));
+        // rust, infrastructure, kubernetes are all "medium" — same weight is fine
+        assert!(builder_order_key("rust") <= builder_order_key("infrastructure"));
+        assert!(builder_order_key("infrastructure") <= builder_order_key("kubernetes"));
+        // all medium < no-builder (python has no builder stage)
+        assert!(builder_order_key("kubernetes") < builder_order_key("python"));
     }
 
     #[test]
     fn unknown_addon_sorts_last() {
         let unknown = builder_order_key("some-future-addon");
-        assert!(unknown >= BUILDER_STAGE_ORDER.len());
+        assert_eq!(unknown, 3, "unknown addons should have weight 3 (no builder)");
     }
 
     // ── generate_dockerfile_content tests ───────────────────────────────

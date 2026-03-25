@@ -1,4 +1,5 @@
 mod addon_cmd;
+mod addon_loader;
 #[allow(dead_code)]
 mod addon_registry;
 mod dirs;
@@ -46,6 +47,19 @@ fn main() {
 }
 
 fn dispatch(cli: cli::Cli) -> anyhow::Result<()> {
+    // Initialize addon definitions from YAML files.
+    // Commands that don't need addons (completions, help) still work if this fails.
+    if let Err(e) = addon_loader::init() {
+        // Only fail for commands that actually need addons
+        match &cli.command {
+            cli::Commands::Completions { .. } => {} // doesn't need addons
+            _ => {
+                output::error(&format!("Failed to load addon definitions: {:#}", e));
+                std::process::exit(1);
+            }
+        }
+    }
+
     let config_path = &cli.config;
     let global_yes = cli.yes;
 

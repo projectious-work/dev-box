@@ -1,0 +1,17 @@
+name: ai-claude
+version: "1.0.0"
+builder_weight: null
+
+tools:
+  - name: claude
+    default_enabled: true
+    default_version: ""
+    supported_versions: []
+
+builder: null
+
+runtime: |
+  # Addon: ai-claude
+  USER aibox
+  RUN curl -fsSL https://claude.ai/install.sh | bash
+  USER root

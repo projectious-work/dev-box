@@ -1,0 +1,15 @@
+name: ai-mistral
+version: "1.0.0"
+builder_weight: null
+
+tools:
+  - name: mistral
+    default_enabled: true
+    default_version: ""
+    supported_versions: []
+
+builder: null
+
+runtime: |
+  # Addon: ai-mistral
+  RUN pip install --no-cache-dir mistralai

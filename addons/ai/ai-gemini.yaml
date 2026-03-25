@@ -1,0 +1,15 @@
+name: ai-gemini
+version: "1.0.0"
+builder_weight: null
+
+tools:
+  - name: gemini
+    default_enabled: true
+    default_version: ""
+    supported_versions: []
+
+builder: null
+
+runtime: |
+  # Addon: ai-gemini
+  RUN npm install -g @google/generative-ai-cli || pip install google-generativeai

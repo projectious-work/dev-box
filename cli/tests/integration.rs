@@ -7,10 +7,17 @@ fn aibox_bin() -> String {
     format!("{}/target/debug/aibox", manifest_dir)
 }
 
+/// Get the path to the addon YAML definitions in the repo.
+fn addons_dir() -> String {
+    let manifest_dir = env!("CARGO_MANIFEST_DIR");
+    format!("{}/../addons", manifest_dir)
+}
+
 /// Run the aibox binary with the given args and return the output.
 fn run(args: &[&str]) -> std::process::Output {
     Command::new(aibox_bin())
         .args(args)
+        .env("AIBOX_ADDONS_DIR", addons_dir())
         .output()
         .expect("failed to execute aibox binary")
 }
@@ -20,6 +27,7 @@ fn run_in_dir(dir: &std::path::Path, args: &[&str]) -> std::process::Output {
     Command::new(aibox_bin())
         .args(args)
         .current_dir(dir)
+        .env("AIBOX_ADDONS_DIR", addons_dir())
         .output()
         .expect("failed to execute aibox binary")
 }
