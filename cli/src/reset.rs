@@ -127,6 +127,7 @@ pub fn copy_item(src: &Path, dst: &Path) -> Result<()> {
 }
 
 /// Recursively copy a directory.
+/// Symlinks are reproduced as symlinks; broken symlinks are skipped.
 pub fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<()> {
     fs::create_dir_all(dst)
         .with_context(|| format!("Failed to create directory: {}", dst.display()))?;
@@ -136,7 +137,19 @@ pub fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<()> {
         let entry = entry?;
         let src_path = entry.path();
         let dst_path = dst.join(entry.file_name());
-        if src_path.is_dir() {
+        let file_type = fs::symlink_metadata(&src_path)
+            .with_context(|| format!("Failed to read metadata: {}", src_path.display()))?
+            .file_type();
+
+        if file_type.is_symlink() {
+            // Reproduce symlink; skip if we can't read the target path
+            if let Ok(target) = fs::read_link(&src_path) {
+                #[cfg(unix)]
+                {
+                    let _ = std::os::unix::fs::symlink(&target, &dst_path);
+                }
+            }
+        } else if file_type.is_dir() {
             copy_dir_recursive(&src_path, &dst_path)?;
         } else {
             fs::copy(&src_path, &dst_path).with_context(|| {
