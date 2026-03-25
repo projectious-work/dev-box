@@ -136,8 +136,8 @@ static ADDONS: &[AddonDef] = &[
         tools: &[ToolDef {
             name: "typst",
             default_enabled: true,
-            supported_versions: &["0.13", "0.14"],
-            default_version: "0.14",
+            supported_versions: &["0.13.1", "0.14.2"],
+            default_version: "0.14.2",
         }],
     },
     AddonDef {
@@ -873,7 +873,7 @@ fn generate_go_runtime(tools: &HashMap<String, ToolConfig>) -> String {
 // ── Typst ───────────────────────────────────────────────────────────────
 
 fn generate_typst_runtime(tools: &HashMap<String, ToolConfig>) -> String {
-    let typst_ver = version_or_default(tools, "typst", "0.14");
+    let typst_ver = version_or_default(tools, "typst", "0.14.2");
     format!(
         "# Addon: typst (runtime)\n\
          RUN apt-get update && apt-get install -y --no-install-recommends xz-utils \\\n    \
@@ -1217,9 +1217,9 @@ mod tests {
 
     #[test]
     fn typst_runtime_uses_version() {
-        let tools = tc(&[("typst", true, "0.13")]);
+        let tools = tc(&[("typst", true, "0.13.1")]);
         let cmds = generate_runtime_commands("typst", &tools);
-        assert!(cmds.contains("/v0.13/"));
+        assert!(cmds.contains("/v0.13.1/"));
     }
 
     #[test]
