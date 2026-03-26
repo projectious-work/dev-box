@@ -164,6 +164,12 @@ The Dockerfile bakes identical defaults into the image as a fallback. If no moun
 
 On first `aibox init` or `aibox start`, the `.aibox-home/` directory is auto-seeded from built-in templates. Existing files are never overwritten.
 
+## File Preview
+
+The base image ships with a complete set of preview tools covering raster images, vector graphics (SVG, EPS), PDF, and video — both inside Yazi and as standalone command-line viewers. PDF and SVG also support **watch-mode preview** that updates automatically as files change.
+
+See the dedicated [File Preview](file-preview.md) page for full documentation, including format coverage, standalone tools (`chafa`, `timg`), and the PDF/SVG watch-mode patterns.
+
 ## Container Entrypoint
 
 ```dockerfile

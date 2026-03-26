@@ -7,7 +7,7 @@ const sidebars = {
     },
     {
       type: 'category', label: 'Container',
-      items: ['container/base-image', 'container/configuration', 'container/audio'],
+      items: ['container/base-image', 'container/file-preview', 'container/configuration', 'container/audio'],
     },
     {
       type: 'category', label: 'Addons',
