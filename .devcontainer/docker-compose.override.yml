@@ -5,7 +5,7 @@
 services:
   aibox-devcontainer:
     build:
-      target: runtime
+      target: aibox
     depends_on:
       - aibox-e2e-testrunner
 
