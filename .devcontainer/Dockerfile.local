@@ -1,0 +1,36 @@
+# Project-specific layers for the aibox development container.
+# This file is appended to the generated Dockerfile by `aibox sync`.
+# It is never overwritten — you own this file.
+
+# Cross-compilation toolchain for release builds (aarch64 → x86_64)
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    pkg-config \
+    libssl-dev \
+    gcc-x86-64-linux-gnu \
+    libc6-dev-amd64-cross \
+    openssh-client \
+    && rm -rf /var/lib/apt/lists/*
+USER aibox
+
+# Rust toolchain (installed as aibox user for correct HOME paths)
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
+    sh -s -- -y \
+    --default-toolchain stable \
+    --component clippy \
+    --component rustfmt \
+    && . "$HOME/.cargo/env" \
+    && rustup target add x86_64-unknown-linux-gnu \
+    && cargo install cargo-audit
+ENV PATH="/home/aibox/.cargo/bin:${PATH}"
+
+# Bun runtime (for fast Docusaurus builds)
+RUN curl -fsSL https://bun.sh/install | bash
+
+# asciinema for terminal recordings
+RUN uv tool install asciinema
+
+# Switch back to root so the generated version stamp (appended after this)
+# can write to /etc/aibox-version
+USER root
