@@ -1,0 +1,21 @@
+# Basic aibox.toml fixture for E2E testing
+[aibox]
+version = "0.12.0"
+base = "debian"
+
+[container]
+name = "e2e-basic"
+hostname = "e2e-basic"
+
+[ai]
+providers = ["claude"]
+
+[audio]
+enabled = false
+
+[process]
+packages = ["core"]
+
+[appearance]
+theme = "gruvbox-dark"
+prompt = "default"

@@ -1,0 +1,21 @@
+# Legacy v0.11 aibox.toml fixture for migration testing
+[aibox]
+version = "0.11.0"
+base = "debian"
+
+[container]
+name = "e2e-legacy"
+hostname = "e2e-legacy"
+
+[ai]
+providers = ["claude"]
+
+[audio]
+enabled = false
+
+[process]
+packages = ["core"]
+
+[appearance]
+theme = "gruvbox-dark"
+prompt = "default"

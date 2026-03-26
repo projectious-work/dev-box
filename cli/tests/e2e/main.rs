@@ -9,6 +9,7 @@ pub mod runner;
 // Tier 1 tests (fast, no container needed)
 mod appearance;
 mod config_coverage;
+mod preview;
 
 // Tier 2 tests (require e2e-runner companion container)
 #[cfg(feature = "e2e")]

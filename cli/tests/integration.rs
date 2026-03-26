@@ -249,8 +249,9 @@ fn init_invalid_process_exits_nonzero() {
 
 #[test]
 fn init_with_all_base_images() {
-    // Currently only "debian" is supported
-    for base in &["debian"] {
+    // Currently only "debian" is supported; add more entries when new bases land
+    let bases = ["debian"];
+    for base in &bases {
         let dir = tempfile::tempdir().unwrap();
         let output = run_in_dir(
             dir.path(),

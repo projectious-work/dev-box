@@ -1,0 +1,163 @@
+# =============================================================================
+# E2E Test Companion Container
+# =============================================================================
+# Simulates a user's host machine for end-to-end testing of the aibox CLI.
+# Runs podman (rootless) for container operations and sshd for remote access.
+# Also includes terminal tools (zellij, yazi, vim, starship, asciinema) for
+# headless visual testing via asciinema recordings.
+# Started alongside the dev-container as the "e2e-runner" service.
+# =============================================================================
+
+# ── Tool fetchers (parallel BuildKit stages) ─────────────────────────────────
+FROM debian:trixie-slim AS fetch-base
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl ca-certificates unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+FROM fetch-base AS fetch-zellij
+ARG ZELLIJ_VERSION=0.44.0
+RUN ARCH=$(uname -m) && \
+    curl -fsSL \
+      "https://github.com/zellij-org/zellij/releases/download/v${ZELLIJ_VERSION}/zellij-${ARCH}-unknown-linux-musl.tar.gz" \
+      | tar -xz -C /usr/local/bin && \
+    chmod +x /usr/local/bin/zellij
+
+FROM fetch-base AS fetch-yazi
+ARG YAZI_VERSION=26.1.22
+RUN ARCH=$(uname -m) && \
+    curl -fsSL \
+      "https://github.com/sxyazi/yazi/releases/download/v${YAZI_VERSION}/yazi-${ARCH}-unknown-linux-musl.zip" \
+      -o /tmp/yazi.zip && \
+    unzip -q /tmp/yazi.zip -d /tmp/yazi && \
+    mv /tmp/yazi/yazi-${ARCH}-unknown-linux-musl/yazi /usr/local/bin/yazi && \
+    chmod +x /usr/local/bin/yazi && \
+    rm -rf /tmp/yazi /tmp/yazi.zip
+
+FROM fetch-base AS fetch-lazygit
+ARG LAZYGIT_VERSION=0.44.1
+RUN UNAME_ARCH=$(uname -m) && \
+    ARCH=$([ "$UNAME_ARCH" = "aarch64" ] && echo "arm64" || echo "x86_64") && \
+    curl -fsSL \
+      "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION}_Linux_${ARCH}.tar.gz" \
+      | tar -xz -C /usr/local/bin lazygit && \
+    chmod +x /usr/local/bin/lazygit
+
+FROM fetch-base AS fetch-starship
+ARG STARSHIP_VERSION=1.24.2
+RUN ARCH=$(uname -m) && \
+    curl -fsSL \
+      "https://github.com/starship/starship/releases/download/v${STARSHIP_VERSION}/starship-${ARCH}-unknown-linux-musl.tar.gz" \
+      | tar -xz -C /usr/local/bin && \
+    chmod +x /usr/local/bin/starship
+
+# ── Vim colorschemes ─────────────────────────────────────────────────────────
+FROM fetch-base AS fetch-vim-colors
+RUN mkdir -p /vim-colors/colors \
+      /vim-colors/pack/themes/start/dracula/colors \
+      /vim-colors/pack/themes/start/dracula/autoload && \
+    curl -fsSL -o /vim-colors/colors/gruvbox.vim \
+      https://raw.githubusercontent.com/morhetz/gruvbox/master/colors/gruvbox.vim && \
+    curl -fsSL -o /vim-colors/colors/catppuccin_mocha.vim \
+      https://raw.githubusercontent.com/catppuccin/vim/main/colors/catppuccin_mocha.vim && \
+    curl -fsSL -o /vim-colors/colors/catppuccin_latte.vim \
+      https://raw.githubusercontent.com/catppuccin/vim/main/colors/catppuccin_latte.vim && \
+    curl -fsSL -o /vim-colors/colors/tokyonight.vim \
+      https://raw.githubusercontent.com/ghifarit53/tokyonight-vim/master/colors/tokyonight.vim && \
+    curl -fsSL -o /vim-colors/colors/nord.vim \
+      https://raw.githubusercontent.com/nordtheme/vim/main/colors/nord.vim && \
+    curl -fsSL -o /vim-colors/pack/themes/start/dracula/colors/dracula.vim \
+      https://raw.githubusercontent.com/dracula/vim/master/colors/dracula.vim && \
+    curl -fsSL -o /vim-colors/pack/themes/start/dracula/autoload/dracula.vim \
+      https://raw.githubusercontent.com/dracula/vim/master/autoload/dracula.vim
+
+# ── Runtime image ────────────────────────────────────────────────────────────
+FROM debian:trixie-slim AS e2e-runner
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Podman for rootless container operations
+    podman \
+    podman-compose \
+    # SSH server for remote test execution
+    openssh-server \
+    # Utilities needed by aibox and tests
+    curl \
+    ca-certificates \
+    git \
+    jq \
+    sudo \
+    # For building container images (podman uses buildah under the hood)
+    buildah \
+    # Rootless networking (provides pasta binary for podman network namespace)
+    passt \
+    # Visual testing tools
+    asciinema \
+    vim \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── Install static binaries from builder stages ─────────────────────────────
+COPY --from=fetch-zellij   /usr/local/bin/zellij   /usr/local/bin/zellij
+COPY --from=fetch-yazi    /usr/local/bin/yazi     /usr/local/bin/yazi
+COPY --from=fetch-starship /usr/local/bin/starship /usr/local/bin/starship
+COPY --from=fetch-lazygit /usr/local/bin/lazygit  /usr/local/bin/lazygit
+
+# ── Vim colorschemes (system-wide) ──────────────────────────────────────────
+COPY --from=fetch-vim-colors /vim-colors/colors/ /usr/share/vim/vimfiles/colors/
+COPY --from=fetch-vim-colors /vim-colors/pack/ /usr/share/vim/vimfiles/pack/
+
+# ── Terminal environment for headless recording ─────────────────────────────
+# LANG=C.UTF-8: the en_US.UTF-8 locale is not generated in this slim image.
+# AcceptEnv in sshd is cleared below so the dev-container's LANG cannot
+# bleed in and break locale-sensitive tools like asciinema.
+ENV TERM=xterm-256color \
+    COLORTERM=truecolor \
+    LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8
+
+# ── SSH configuration ─────────────────────────────────────────────────────────
+RUN mkdir -p /run/sshd \
+    && ssh-keygen -A \
+    && sed -i 's/#PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config \
+    && sed -i 's/#PubkeyAuthentication.*/PubkeyAuthentication yes/' /etc/ssh/sshd_config \
+    && sed -i 's/#PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config \
+    && sed -i 's/^AcceptEnv.*/AcceptEnv/' /etc/ssh/sshd_config
+
+# ── Test user ─────────────────────────────────────────────────────────────────
+RUN groupadd --gid 1000 testuser \
+    && useradd --uid 1000 --gid testuser --shell /bin/bash --create-home testuser \
+    && echo "testuser ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/testuser \
+    && chmod 0440 /etc/sudoers.d/testuser
+
+# ── Pre-seed SSH authorized keys ──────────────────────────────────────────────
+RUN mkdir -p /home/testuser/.ssh && chmod 700 /home/testuser/.ssh
+COPY ssh-e2e/authorized_keys /home/testuser/.ssh/authorized_keys
+RUN chmod 600 /home/testuser/.ssh/authorized_keys \
+    && chown -R testuser:testuser /home/testuser/.ssh
+
+# ── Podman rootless configuration ─────────────────────────────────────────────
+# Use vfs storage driver (works without FUSE/overlay inside containers)
+RUN mkdir -p /home/testuser/.config/containers \
+    && printf '[storage]\ndriver = "vfs"\n' \
+       > /home/testuser/.config/containers/storage.conf \
+    && chown -R testuser:testuser /home/testuser/.config
+
+# Ensure subuid/subgid ranges exist for rootless podman
+# (useradd may already create them — duplicates cause overlapping newuidmap ranges
+# which the kernel rejects with "Invalid argument")
+RUN grep -q '^testuser:' /etc/subuid || echo "testuser:100000:65536" >> /etc/subuid \
+    && grep -q '^testuser:' /etc/subgid || echo "testuser:100000:65536" >> /etc/subgid
+
+# ── Workspace directory for test isolation ────────────────────────────────────
+RUN mkdir -p /workspaces && chown testuser:testuser /workspaces
+
+# ── Deployment directories ────────────────────────────────────────────────────
+# The aibox binary and addon YAMLs are deployed via SCP at test time (not baked
+# into the image). This keeps the image static and lets the test harness always
+# deploy the latest build without rebuilding this image.
+RUN mkdir -p /opt/aibox/addons && chown -R testuser:testuser /opt/aibox
+
+# ── Entrypoint: start sshd ───────────────────────────────────────────────────
+EXPOSE 22
+CMD ["sh", "-c", "mkdir -p /run/sshd && exec /usr/sbin/sshd -D -e"]
