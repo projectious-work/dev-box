@@ -825,7 +825,7 @@ mod tests {
         generate_dockerfile(&config, dir.path(), &test_env()).unwrap();
         let content = fs::read_to_string(dir.path().join("Dockerfile")).unwrap();
         // Claude is now installed via addon pipeline, not baked into base image
-        assert!(content.contains("claude.ai/install.sh"), "should install Claude via addon");
+        assert!(content.contains("claude-code"), "should install Claude via addon");
         assert!(!content.contains("aider"), "should not install aider");
         assert!(!content.contains("gemini"), "should not install gemini");
     }

@@ -52,9 +52,11 @@ fn change_appearance(dir: &std::path::Path, theme: &str, prompt: &str) {
     let toml_path = dir.join("aibox.toml");
     let content = fs::read_to_string(&toml_path).unwrap();
 
-    // Replace [appearance] section
+    // Replace [appearance] section — search for header at start of line to avoid matching comments.
     let section_header = "[appearance]";
-    if let Some(start) = content.find(section_header) {
+    let needle = format!("\n{}", section_header);
+    if let Some(needle_pos) = content.find(&needle) {
+        let start = needle_pos + 1; // position of '[' in section header
         let rest = &content[start + section_header.len()..];
         let end = rest
             .find("\n[")
@@ -71,7 +73,7 @@ fn change_appearance(dir: &std::path::Path, theme: &str, prompt: &str) {
         fs::write(&toml_path, new_content).unwrap();
     }
 
-    let output = run_in(dir, &["sync"]);
+    let output = run_in(dir, &["sync", "--no-build"]);
     assert!(
         output.status.success(),
         "sync after appearance change failed: {}",

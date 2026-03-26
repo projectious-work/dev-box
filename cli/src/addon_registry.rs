@@ -287,6 +287,6 @@ mod tests {
         ensure_loaded();
         let tools = tc(&[("claude", true, "")]);
         let cmds = generate_runtime_commands("ai-claude", &tools);
-        assert!(cmds.contains("claude.ai/install.sh"), "should install Claude: {cmds}");
+        assert!(cmds.contains("claude-code"), "should install Claude: {cmds}");
     }
 }

@@ -33,7 +33,13 @@ builder: |
 
   RUN mkdir -p /build/bin && \
   {% if tools.opentofu.enabled %}
-      curl -fsSL https://get.opentofu.org/install-opentofu.sh | sh -s -- --install-method standalone --install-path /build/bin{% if tools.packer.enabled %} && \
+      TOFU_VERSION="1.9.0" && \
+      ARCH="$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')" && \
+      curl -fsSL "https://github.com/opentofu/opentofu/releases/download/v${TOFU_VERSION}/tofu_${TOFU_VERSION}_linux_${ARCH}.tar.gz" -o /tmp/tofu.tar.gz && \
+      curl -fsSL "https://github.com/opentofu/opentofu/releases/download/v${TOFU_VERSION}/tofu_${TOFU_VERSION}_SHA256SUMS" -o /tmp/tofu_SHA256SUMS && \
+      grep "tofu_${TOFU_VERSION}_linux_${ARCH}.tar.gz" /tmp/tofu_SHA256SUMS | sha256sum -c && \
+      tar -xz -C /build/bin -f /tmp/tofu.tar.gz tofu && \
+      rm /tmp/tofu.tar.gz /tmp/tofu_SHA256SUMS{% if tools.packer.enabled %} && \
   {% endif %}
   {% endif %}
   {% if tools.packer.enabled %}

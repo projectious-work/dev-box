@@ -40,14 +40,18 @@ Before every release, check ALL upstream dependencies for updates.
    ```bash
    cd cli && cargo test && cargo clippy -- -D warnings
    ```
-4. **Build Linux release binaries** (both architectures — container is aarch64, cross-compile for x86_64):
+4. **Audit dependencies** (advisories must be clean before tagging the release):
+   ```bash
+   cd cli && cargo audit
+   ```
+6. **Build Linux release binaries** (both architectures — container is aarch64, cross-compile for x86_64):
    ```bash
    cd /workspace/cli
    cargo build --release
    CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc \
      cargo build --release --target x86_64-unknown-linux-gnu
    ```
-5. **Package Linux binaries**:
+7. **Package Linux binaries**:
    ```bash
    cd /workspace && mkdir -p dist && VERSION=X.Y.Z
    cp cli/target/release/aibox dist/aibox-v${VERSION}-aarch64-unknown-linux-gnu
@@ -60,23 +64,23 @@ Before every release, check ALL upstream dependencies for updates.
    rm dist/aibox-v${VERSION}-x86_64-unknown-linux-gnu
    ls -lh dist/aibox-v${VERSION}-*-linux-*.tar.gz   # verify both tarballs exist
    ```
-6. **Write release notes** to `dist/RELEASE-NOTES.md`
-7. **Commit, tag, push**:
+8. **Write release notes** to `dist/RELEASE-NOTES.md`
+9. **Commit, tag, push**:
    ```bash
    git add cli/Cargo.toml cli/Cargo.lock
    git commit -m "chore: bump version to vX.Y.Z"
    git tag vX.Y.Z
    git push origin main && git push origin vX.Y.Z
    ```
-8. **Create GitHub release with Linux binaries attached**:
-   ```bash
-   gh release create vX.Y.Z --repo projectious-work/aibox \
-     --title "aibox vX.Y.Z" --notes-file dist/RELEASE-NOTES.md \
-     dist/aibox-vX.Y.Z-aarch64-unknown-linux-gnu.tar.gz \
-     dist/aibox-vX.Y.Z-x86_64-unknown-linux-gnu.tar.gz
-   ```
-   Note: Always use `--notes-file`, never `--generate-notes`. macOS binaries are added in Phase 2.
-9. **Deploy documentation** (requires Node.js/Docusaurus — runs in container):
+10. **Create GitHub release with Linux binaries attached**:
+    ```bash
+    gh release create vX.Y.Z --repo projectious-work/aibox \
+      --title "aibox vX.Y.Z" --notes-file dist/RELEASE-NOTES.md \
+      dist/aibox-vX.Y.Z-aarch64-unknown-linux-gnu.tar.gz \
+      dist/aibox-vX.Y.Z-x86_64-unknown-linux-gnu.tar.gz
+    ```
+    Note: Always use `--notes-file`, never `--generate-notes`. macOS binaries are added in Phase 2.
+11. **Deploy documentation** (requires Node.js/Docusaurus — runs in container):
    ```bash
    ./scripts/maintain.sh docs-deploy
    ```

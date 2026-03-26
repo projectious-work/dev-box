@@ -28,8 +28,11 @@ builder: null
 
 runtime: |
   # Addon: node (runtime)
-  RUN curl -fsSL https://deb.nodesource.com/setup_{{ tools.node.version }}.x | bash - && \
-      apt-get install -y --no-install-recommends nodejs && \
+  RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl gpg && \
+      mkdir -p /etc/apt/keyrings && \
+      curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
+      echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_{{ tools.node.version }}.x nodistro main" > /etc/apt/sources.list.d/nodesource.list && \
+      apt-get update && apt-get install -y --no-install-recommends nodejs && \
       rm -rf /var/lib/apt/lists/*
 
   {% if tools.pnpm.enabled or tools.yarn.enabled %}
@@ -37,5 +40,15 @@ runtime: |
 
   {% endif %}
   {% if tools.bun.enabled %}
-  RUN curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr/local bash -s -- "bun-v{{ tools.bun.version }}"
+  # Install bun via versioned release asset (avoids curl-pipe-bash).
+  # Note: bun releases do not publish separate sha256 checksum files; version
+  # pinning provides supply-chain integrity over the previous curl-pipe-bash method.
+  RUN apt-get update && apt-get install -y --no-install-recommends unzip && \
+      rm -rf /var/lib/apt/lists/* && \
+      ARCH="$(uname -m | sed 's/x86_64/x64/;s/aarch64/aarch64/')" && \
+      curl -fsSL "https://github.com/oven-sh/bun/releases/download/bun-v{{ tools.bun.version }}/bun-linux-${ARCH}.zip" -o /tmp/bun.zip && \
+      unzip -q /tmp/bun.zip -d /tmp/bun-extracted && \
+      mv /tmp/bun-extracted/bun-linux-${ARCH}/bun /usr/local/bin/bun && \
+      chmod +x /usr/local/bin/bun && \
+      rm -rf /tmp/bun.zip /tmp/bun-extracted
   {% endif %}

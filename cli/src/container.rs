@@ -509,7 +509,7 @@ pub fn cmd_init(config_path: &Option<String>, params: InitParams) -> Result<()> 
     let (project_name, base_image, process_packages, addon_names) =
         resolve_init_values(params.name, params.base, params.process, params.addons, interactive)?;
 
-    let container_user = params.user.unwrap_or_else(|| "root".to_string());
+    let container_user = params.user.unwrap_or_else(|| "aibox".to_string());
     let ai_providers = params.ai.unwrap_or_else(|| vec![AiProvider::Claude]);
 
     let mut config = AiboxConfig {

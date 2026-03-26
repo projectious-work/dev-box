@@ -59,9 +59,13 @@ fn replace_toml_section(dir: &std::path::Path, section: &str, replacement: &str)
     let toml_path = dir.join("aibox.toml");
     let content = fs::read_to_string(&toml_path).expect("failed to read aibox.toml");
 
-    // Find the section and replace everything until the next section or EOF
+    // Find the section header at the start of a line (not in comments).
+    // We search for "\n[section]" to avoid matching comment lines like "# [section]".
     let section_header = format!("[{}]", section);
-    if let Some(start) = content.find(&section_header) {
+    let needle = format!("\n{}", section_header);
+    if let Some(needle_pos) = content.find(&needle) {
+        // start = position of the "[" in the section header (after the \n)
+        let start = needle_pos + 1;
         let rest = &content[start + section_header.len()..];
         // Find next top-level section (line starting with `[` but not `[[`)
         let end = rest
@@ -84,7 +88,7 @@ fn replace_toml_section(dir: &std::path::Path, section: &str, replacement: &str)
 
 /// Sync (regenerate) the project files.
 fn sync_project(dir: &std::path::Path) {
-    let output = run_in(dir, &["sync"]);
+    let output = run_in(dir, &["sync", "--no-build"]);
     assert!(
         output.status.success(),
         "sync failed: {}",

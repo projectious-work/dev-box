@@ -459,6 +459,33 @@ fn is_safe_name(s: &str) -> bool {
         .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
 }
 
+/// Check that a tool version string is safe: non-empty and contains only
+/// alphanumeric characters or [.-_+].
+fn is_safe_version(s: &str) -> bool {
+    !s.is_empty()
+        && s.chars()
+            .all(|c| c.is_alphanumeric() || matches!(c, '.' | '-' | '_' | '+'))
+}
+
+/// Check that a port string matches `\d+:\d+(/tcp|/udp)?` or `\d+(/tcp|/udp)?`.
+fn is_valid_port_string(s: &str) -> bool {
+    // Strip optional /tcp or /udp suffix
+    let s = if let Some(stripped) = s.strip_suffix("/tcp").or_else(|| s.strip_suffix("/udp")) {
+        stripped
+    } else {
+        s
+    };
+    // Must be digits or digits:digits
+    if let Some((host, container)) = s.split_once(':') {
+        !host.is_empty()
+            && host.chars().all(|c| c.is_ascii_digit())
+            && !container.is_empty()
+            && container.chars().all(|c| c.is_ascii_digit())
+    } else {
+        !s.is_empty() && s.chars().all(|c| c.is_ascii_digit())
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Root config — AiboxConfig
 // ---------------------------------------------------------------------------
@@ -576,6 +603,65 @@ impl AiboxConfig {
             }
         }
 
+        // Validate environment variable key names: ^[A-Za-z_][A-Za-z0-9_]*$
+        for key in self.container.environment.keys() {
+            let valid = {
+                let mut chars = key.chars();
+                match chars.next() {
+                    Some(c) if c.is_ascii_alphabetic() || c == '_' => {
+                        chars.all(|c| c.is_ascii_alphanumeric() || c == '_')
+                    }
+                    _ => false,
+                }
+            };
+            if !valid {
+                bail!(
+                    "Invalid environment variable name '{}': must match [A-Za-z_][A-Za-z0-9_]*",
+                    key
+                );
+            }
+        }
+
+        // Validate port strings: \d+:\d+(/tcp|/udp)? or \d+(/tcp|/udp)?
+        for port in &self.container.ports {
+            if port.contains('\n') || port.contains('\r') || port.contains(' ') {
+                bail!(
+                    "Invalid port '{}': must not contain whitespace or newlines",
+                    port
+                );
+            }
+            let valid = is_valid_port_string(port);
+            if !valid {
+                bail!(
+                    "Invalid port '{}': must match <host>:<container>[/tcp|/udp] or <port>[/tcp|/udp]",
+                    port
+                );
+            }
+        }
+
+        // Validate extra_volumes source and target paths
+        for vol in &self.container.extra_volumes {
+            for (field, path) in [("source", &vol.source), ("target", &vol.target)] {
+                if path.is_empty() {
+                    bail!("extra_volumes {} path must not be empty", field);
+                }
+                if path.contains('\n') || path.contains('\0') {
+                    bail!(
+                        "extra_volumes {} path '{}' must not contain newlines or null bytes",
+                        field,
+                        path
+                    );
+                }
+                if path.starts_with("..") {
+                    bail!(
+                        "extra_volumes {} path '{}' must not start with '..' (relative traversal)",
+                        field,
+                        path
+                    );
+                }
+            }
+        }
+
         // Validate process packages have safe names
         if self.process.packages.is_empty() {
             bail!("process.packages must not be empty (at minimum ['core'] is required)");
@@ -599,11 +685,22 @@ impl AiboxConfig {
                     addon_name
                 );
             }
-            for tool_name in addon_tools.tools.keys() {
+            for (tool_name, tool_entry) in &addon_tools.tools {
                 if !is_safe_name(tool_name) {
                     bail!(
                         "tool name '{}' in addon '{}' contains invalid characters. \
                          Must contain only [a-zA-Z0-9_-]",
+                        tool_name,
+                        addon_name
+                    );
+                }
+                if let Some(version) = &tool_entry.version
+                    && !is_safe_version(version)
+                {
+                    bail!(
+                        "tool version '{}' for '{}' in addon '{}' contains invalid characters. \
+                         Must be non-empty and contain only [a-zA-Z0-9._\\-+]",
+                        version,
                         tool_name,
                         addon_name
                     );

@@ -43,12 +43,23 @@ builder: |
   {% endif %}
   {% endif %}
   {% if tools.helm.enabled %}
-      curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | HELM_INSTALL_DIR=/build/bin bash{% if tools.kustomize.enabled or tools.k9s.enabled %} && \
+      HELM_VERSION="3.17.2" && \
+      ARCH="$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')" && \
+      curl -fsSL "https://get.helm.sh/helm-v${HELM_VERSION}-linux-${ARCH}.tar.gz" -o /tmp/helm.tar.gz && \
+      curl -fsSL "https://get.helm.sh/helm-v${HELM_VERSION}-linux-${ARCH}.tar.gz.sha256sum" -o /tmp/helm.tar.gz.sha256sum && \
+      sha256sum -c /tmp/helm.tar.gz.sha256sum && \
+      tar -xz --strip-components=1 -C /build/bin -f /tmp/helm.tar.gz "linux-${ARCH}/helm" && \
+      rm /tmp/helm.tar.gz /tmp/helm.tar.gz.sha256sum{% if tools.kustomize.enabled or tools.k9s.enabled %} && \
   {% endif %}
   {% endif %}
   {% if tools.kustomize.enabled %}
-      curl -fsSL "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash && \
-      mv kustomize /build/bin/{% if tools.k9s.enabled %} && \
+      KUSTOMIZE_VERSION="5.6.0" && \
+      ARCH="$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')" && \
+      curl -fsSL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_${ARCH}.tar.gz" -o /tmp/kustomize.tar.gz && \
+      curl -fsSL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v${KUSTOMIZE_VERSION}/checksums.txt" -o /tmp/kustomize.checksums.txt && \
+      grep "kustomize_${KUSTOMIZE_VERSION}_linux_${ARCH}.tar.gz" /tmp/kustomize.checksums.txt | sha256sum -c && \
+      tar -xz -C /build/bin -f /tmp/kustomize.tar.gz kustomize && \
+      rm /tmp/kustomize.tar.gz /tmp/kustomize.checksums.txt{% if tools.k9s.enabled %} && \
   {% endif %}
   {% endif %}
   {% if tools.k9s.enabled %}
