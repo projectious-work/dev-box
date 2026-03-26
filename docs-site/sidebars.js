@@ -41,7 +41,7 @@ const sidebars = {
     'roadmap',
     {
       type: 'category', label: 'Contributing',
-      items: ['contributing/index', 'contributing/maintenance'],
+      items: ['contributing/index', 'contributing/maintenance', 'contributing/e2e-tests'],
     },
   ],
 };
