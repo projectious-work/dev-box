@@ -212,42 +212,58 @@ pub fn cmd_status(config_path: &Option<String>) -> Result<()> {
 /// Serialize config to TOML with comprehensive comments.
 fn serialize_config_with_comments(config: &AiboxConfig) -> String {
     let mut out = String::new();
+    let sep = "# =============================================================================\n";
+
+    // File header
+    out.push_str(sep);
+    out.push_str("# aibox.toml — single source of truth for your aibox project.\n");
+    out.push_str("# All .devcontainer/ files are generated from this. Edit here, run `aibox sync`.\n");
+    out.push_str("# Reference: https://projectious-work.github.io/aibox/docs/reference/configuration\n");
+    out.push_str(sep);
+    out.push('\n');
 
     // [aibox] section
-    out.push_str("# aibox.toml — project configuration for aibox.\n");
-    out.push_str("# All generated files (.devcontainer/) derive from this file.\n");
-    out.push_str("# Run `aibox sync` after editing to regenerate.\n");
-    out.push_str("#\n");
-    out.push_str(
-        "# Full documentation: https://projectious-work.github.io/aibox/docs/reference/configuration\n\n",
-    );
     out.push_str("[aibox]\n");
-    out.push_str(&format!("version = \"{}\"\n", config.aibox.version));
     out.push_str(&format!(
-        "# Base image. Options: debian\n\
-         base = \"{}\"\n",
-        config.aibox.base
+        "version = {:20} # Set by aibox — do not edit manually\n",
+        format!("\"{}\"", config.aibox.version)
+    ));
+    out.push_str(&format!(
+        "base    = {:20} # Base image flavor. Options: debian\n",
+        format!("\"{}\"", config.aibox.base)
     ));
 
     // [container] section
-    out.push_str("\n[container]\n");
-    out.push_str(&format!("name = \"{}\"\n", config.container.name));
-    out.push_str(&format!("hostname = \"{}\"\n", config.container.hostname));
+    out.push('\n');
+    out.push_str(sep);
+    out.push_str("# [container] — runtime and build configuration\n");
+    out.push_str(sep);
+    out.push_str("[container]\n");
+    out.push_str(&format!(
+        "name     = {:20} # Container name used by docker/podman\n",
+        format!("\"{}\"", config.container.name)
+    ));
+    out.push_str(&format!(
+        "hostname = {:20} # Hostname visible inside the container\n",
+        format!("\"{}\"", config.container.hostname)
+    ));
+
+    // user — active if non-root, commented if root
     if config.container.user != "root" {
         out.push_str(&format!(
-            "# Container user. Determines mount paths inside container.\n\
-             user = \"{}\"\n",
-            config.container.user
+            "user     = {:20} # User inside the container (controls mount paths)\n",
+            format!("\"{}\"", config.container.user)
         ));
     } else {
-        out.push_str(
-            "# user = \"root\"  # Container user (default: root). Change to run as non-root.\n",
-        );
+        out.push_str("# user     = \"root\"               # User inside the container. Options: root, aibox, or any username\n");
+        out.push_str("#                                  # Controls mount paths (e.g. /root vs /home/<user>/.vim)\n");
     }
-    out.push_str("# ports = [\"8080:80\"]  # Host:container port forwarding\n");
+
+    // --- Ports ---
+    out.push_str("\n# --- Ports ---\n");
     if !config.container.ports.is_empty() {
         out.push_str(&format!(
-            "ports = [{}]\n",
+            "ports = [{}]                   # Host:container port forwarding\n",
             config
                 .container
                 .ports
@@ -256,11 +272,15 @@ fn serialize_config_with_comments(config: &AiboxConfig) -> String {
                 .collect::<Vec<_>>()
                 .join(", ")
         ));
+    } else {
+        out.push_str("# ports = [\"8080:80\", \"5432:5432\"]  # Host:container port forwarding (can list multiple)\n");
     }
-    out.push_str("# extra_packages = [\"ripgrep\", \"fd-find\"]  # Additional apt packages\n");
+
+    // --- Extra packages ---
+    out.push_str("\n# --- Extra packages ---\n");
     if !config.container.extra_packages.is_empty() {
         out.push_str(&format!(
-            "extra_packages = [{}]\n",
+            "extra_packages = [{}]          # Additional apt packages installed at build time\n",
             config
                 .container
                 .extra_packages
@@ -269,21 +289,90 @@ fn serialize_config_with_comments(config: &AiboxConfig) -> String {
                 .collect::<Vec<_>>()
                 .join(", ")
         ));
+    } else {
+        out.push_str("# extra_packages = [\"ripgrep\", \"fd-find\", \"jq\"]  # Additional apt packages installed at build time\n");
     }
-    out.push_str("# vscode_extensions = [\"eamodio.gitlens\"]  # Additional VS Code extensions\n");
-    out.push_str("# post_create_command = \"npm install\"  # Run after container creation\n");
-    out.push_str("# keepalive = true                       # Network keepalive (prevents OrbStack/VM NAT idle dropout)\n");
-    out.push_str("#\n");
-    out.push_str("# Extra volumes: [[container.extra_volumes]]\n");
-    out.push_str("# source = \"/host/path\"\n");
-    out.push_str("# target = \"/container/path\"\n");
-    out.push_str("# read_only = false\n");
-    out.push_str("#\n");
-    out.push_str("# Extra environment: [container.environment]\n");
-    out.push_str("# MY_VAR = \"value\"\n");
+
+    // --- VS Code ---
+    out.push_str("\n# --- VS Code ---\n");
+    if !config.container.vscode_extensions.is_empty() {
+        out.push_str(&format!(
+            "vscode_extensions = [{}]       # Auto-installed in Dev Containers\n",
+            config
+                .container
+                .vscode_extensions
+                .iter()
+                .map(|e| format!("\"{}\"", e))
+                .collect::<Vec<_>>()
+                .join(", ")
+        ));
+    } else {
+        out.push_str("# vscode_extensions = [\"eamodio.gitlens\", \"rust-lang.rust-analyzer\"]  # Auto-installed in Dev Containers\n");
+    }
+
+    // --- Lifecycle ---
+    out.push_str("\n# --- Lifecycle ---\n");
+    if let Some(cmd) = &config.container.post_create_command {
+        out.push_str(&format!(
+            "post_create_command = {:20} # Shell command run once after container first starts\n",
+            format!("\"{}\"", cmd)
+        ));
+    } else {
+        out.push_str("# post_create_command = \"npm install\"  # Shell command run once after container first starts\n");
+    }
+    if config.container.keepalive {
+        out.push_str("keepalive = true               # Send periodic keepalive (prevents NAT idle dropout in OrbStack/VMs)\n");
+    } else {
+        out.push_str("# keepalive           = true           # Send periodic keepalive (prevents NAT idle dropout in OrbStack/VMs)\n");
+    }
+
+    // --- Extra volumes ---
+    out.push_str("\n# --- Extra volumes ---\n");
+    if !config.container.extra_volumes.is_empty() {
+        for vol in &config.container.extra_volumes {
+            out.push_str("[[container.extra_volumes]]\n");
+            out.push_str(&format!("source    = \"{}\"", vol.source));
+            out.push_str("                # Absolute path on the host\n");
+            out.push_str(&format!("target    = \"{}\"", vol.target));
+            out.push_str("                # Absolute path inside the container\n");
+            out.push_str(&format!("read_only = {}                # Mount read-only (default: false)\n", vol.read_only));
+        }
+    } else {
+        out.push_str("# [[container.extra_volumes]]\n");
+        out.push_str("# source    = \"/host/path\"       # Absolute path on the host\n");
+        out.push_str("# target    = \"/container/path\"  # Absolute path inside the container\n");
+        out.push_str("# read_only = false               # Mount read-only (default: false)\n");
+    }
+
+    // --- Extra environment ---
+    out.push_str("\n# --- Extra environment ---\n");
+    if !config.container.environment.is_empty() {
+        out.push_str("[container.environment]\n");
+        let mut env_keys: Vec<_> = config.container.environment.keys().collect();
+        env_keys.sort();
+        for key in env_keys {
+            out.push_str(&format!(
+                "{} = \"{}\"                # Injected as environment variable into the container\n",
+                key, config.container.environment[key]
+            ));
+        }
+    } else {
+        out.push_str("# [container.environment]\n");
+        out.push_str("# MY_API_KEY = \"value\"           # Injected as environment variable into the container\n");
+    }
 
     // [process] section
-    out.push_str("\n# Process packages control which context files are scaffolded.\n");
+    out.push('\n');
+    out.push_str(sep);
+    out.push_str("# [process] — context files and skills scaffolded for this project\n");
+    out.push_str(sep);
+    out.push_str("# Presets (use one of these):\n");
+    out.push_str("#   managed          core + tracking + standups + handover  (recommended default)\n");
+    out.push_str("#   software         managed + code + architecture\n");
+    out.push_str("#   research-project managed + research + documentation\n");
+    out.push_str("#   full-product     managed + code + architecture + design + product + security + operations\n");
+    out.push_str("# Individual packages (advanced): core, tracking, standups, handover, code, architecture,\n");
+    out.push_str("#   design, product, security, data, operations, research, documentation\n");
     out.push_str("[process]\n");
     out.push_str(&format!(
         "packages = [{}]\n",
@@ -297,16 +386,34 @@ fn serialize_config_with_comments(config: &AiboxConfig) -> String {
     ));
 
     // [addons] section
-    out.push_str("\n# Addons install additional tool sets into the container.\n");
-    out.push_str("# Example:\n");
+    out.push('\n');
+    out.push_str(sep);
+    out.push_str("# [addons] — language runtimes and tool bundles\n");
+    out.push_str(sep);
+    out.push_str("# Each addon installs a tool set into the container at build time.\n");
+    out.push_str("# Run `aibox addon list` to see all available addons.\n");
+    out.push_str("# Run `aibox addon info <name>` for tool details and supported versions.\n");
+    out.push_str("#\n");
+    out.push_str("# Examples (uncomment and adjust versions as needed):\n");
     out.push_str("# [addons.python.tools]\n");
-    out.push_str("# python = { version = \"3.13\" }\n");
-    if config.addons.addons.is_empty() {
-        out.push_str("# (no addons configured)\n");
-    } else {
-        for (addon_name, addon_tools) in &config.addons.addons {
+    out.push_str("# python = { version = \"3.13\" }     # CPython interpreter\n");
+    out.push_str("# uv     = { version = \"0.7\" }      # Fast Python package manager\n");
+    out.push_str("#\n");
+    out.push_str("# [addons.rust.tools]\n");
+    out.push_str("# rust = { version = \"stable\" }     # Rust toolchain via rustup (stable/beta/nightly)\n");
+    out.push_str("#\n");
+    out.push_str("# [addons.node.tools]\n");
+    out.push_str("# node = { version = \"22\" }         # Node.js LTS\n");
+    if !config.addons.addons.is_empty() {
+        let mut addon_names: Vec<_> = config.addons.addons.keys().collect();
+        addon_names.sort();
+        for addon_name in addon_names {
+            let addon_tools = &config.addons.addons[addon_name];
             out.push_str(&format!("\n[addons.{}.tools]\n", addon_name));
-            for (tool_name, tool_entry) in &addon_tools.tools {
+            let mut tool_names: Vec<_> = addon_tools.tools.keys().collect();
+            tool_names.sort();
+            for tool_name in tool_names {
+                let tool_entry = &addon_tools.tools[tool_name];
                 match &tool_entry.version {
                     Some(v) => out.push_str(&format!("{} = {{ version = \"{}\" }}\n", tool_name, v)),
                     None => out.push_str(&format!("{} = {{}}\n", tool_name)),
@@ -316,14 +423,22 @@ fn serialize_config_with_comments(config: &AiboxConfig) -> String {
     }
 
     // [context] section
-    out.push_str("\n[context]\n");
+    out.push('\n');
+    out.push_str(sep);
+    out.push_str("# [context] — context system versioning\n");
+    out.push_str(sep);
+    out.push_str("[context]\n");
     out.push_str(&format!(
-        "schema_version = \"{}\"\n",
-        config.context.schema_version
+        "schema_version = {:12} # Context schema version — updated automatically by `aibox sync`\n",
+        format!("\"{}\"", config.context.schema_version)
     ));
 
     // [ai] section
-    out.push_str("\n# AI tool providers. Controls which AI CLI tools are installed and configured.\n");
+    out.push('\n');
+    out.push_str(sep);
+    out.push_str("# [ai] — AI coding assistant providers\n");
+    out.push_str(sep);
+    out.push_str("# Each provider listed here is automatically installed as an addon.\n");
     out.push_str("# Options: claude, aider, gemini, mistral\n");
     out.push_str("[ai]\n");
     out.push_str(&format!(
@@ -338,28 +453,33 @@ fn serialize_config_with_comments(config: &AiboxConfig) -> String {
     ));
 
     // [appearance] section
-    out.push_str("\n# Color theme applied across Zellij, Vim, Yazi, and lazygit.\n");
-    out.push_str("# Options: gruvbox-dark, catppuccin-mocha, catppuccin-latte, dracula, tokyo-night, nord\n");
+    out.push('\n');
+    out.push_str(sep);
+    out.push_str("# [appearance] — color theme and shell prompt\n");
+    out.push_str(sep);
+    out.push_str("# Theme is applied consistently across Zellij, Vim, Yazi, lazygit, and bat.\n");
+    out.push_str("# Options: gruvbox-dark | catppuccin-mocha | catppuccin-latte | dracula | tokyo-night | nord | projectious\n");
     out.push_str("[appearance]\n");
-    out.push_str(&format!("theme = \"{}\"\n", config.appearance.theme));
-    out.push_str(&format!(
-        "# Starship prompt preset. Options: default, plain, minimal, nerd-font, pastel, bracketed\n\
-         prompt = \"{}\"\n",
-        config.appearance.prompt
-    ));
+    out.push_str(&format!("theme  = \"{}\"\n", config.appearance.theme));
+    out.push_str("# Starship prompt preset.\n");
+    out.push_str("# Options: default | minimal | nerd-font | pastel | bracketed\n");
+    out.push_str(&format!("prompt = \"{}\"\n", config.appearance.prompt));
 
     // [audio] section
-    out.push_str("\n# Audio support for PulseAudio bridging (e.g., Claude Code voice).\n");
-    out.push_str("# Requires host-side PulseAudio setup: run `aibox audio setup`\n");
+    out.push('\n');
+    out.push_str(sep);
+    out.push_str("# [audio] — PulseAudio bridging for voice features (e.g., Claude Code voice)\n");
+    out.push_str(sep);
+    out.push_str("# Requires host-side setup: run `aibox audio setup` on the host first.\n");
     out.push_str("[audio]\n");
     out.push_str(&format!("enabled = {}\n", config.audio.enabled));
     if config.audio.enabled {
         out.push_str(&format!(
-            "pulse_server = \"{}\"\n",
+            "pulse_server = \"{}\"  # PulseAudio TCP endpoint (default port: 4714)\n",
             config.audio.pulse_server
         ));
     } else {
-        out.push_str("# pulse_server = \"tcp:host.docker.internal:4714\"\n");
+        out.push_str("# pulse_server = \"tcp:host.docker.internal:4714\"  # PulseAudio TCP endpoint (default port: 4714)\n");
     }
 
     out

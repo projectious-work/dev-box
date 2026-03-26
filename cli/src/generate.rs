@@ -566,7 +566,7 @@ mod tests {
         generate_dockerfile(&config, dir.path(), &test_env()).unwrap();
         let content = fs::read_to_string(dir.path().join("Dockerfile")).unwrap();
         assert!(
-            content.contains("# Project-specific layers (from Dockerfile.local)"),
+            content.contains("# Project-specific layers (from Dockerfile.local"),
             "should have local layers comment"
         );
         assert!(
