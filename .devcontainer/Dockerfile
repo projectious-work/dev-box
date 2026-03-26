@@ -187,7 +187,8 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
     --component clippy \
     --component rustfmt \
     && . "$HOME/.cargo/env" \
-    && rustup target add x86_64-unknown-linux-gnu
+    && rustup target add x86_64-unknown-linux-gnu \
+    && cargo install cargo-audit
 
 # Install code assistants and runtimes
 ENV PATH="/home/aibox/.cargo/bin:/home/aibox/.local/bin:/home/aibox/.bun/bin:${PATH}"

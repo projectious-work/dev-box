@@ -19,6 +19,10 @@ tools:
     default_enabled: true
     default_version: ""
     supported_versions: []
+  - name: cargo-audit
+    default_enabled: true
+    default_version: ""
+    supported_versions: []
 
 builder: |
   # ── Rust builder ─────────────────────────────────────────────────────
@@ -41,6 +45,8 @@ builder: |
       --component rustfmt{% endif %}
 
   ENV PATH="/home/aibox/.cargo/bin:${PATH}"
+
+  RUN . "$HOME/.cargo/env" && cargo install cargo-audit
 
 runtime: |
   # Addon: rust (runtime — copy from builder)
