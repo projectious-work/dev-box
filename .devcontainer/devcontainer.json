@@ -28,7 +28,10 @@
       }
     }
   },
-  "dockerComposeFile": "docker-compose.yml",
+  "dockerComposeFile": [
+    "docker-compose.yml",
+    "docker-compose.override.yml"
+  ],
   "name": "aibox-devcontainer",
   "overrideCommand": true,
   "portsAttributes": {
