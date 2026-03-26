@@ -1,6 +1,6 @@
 [package]
 name = "aibox"
-version = "0.12.0"
+version = "0.12.1"
 edition = "2024"
 description = "aibox — manage AI-ready development container environments"
 license = "MIT"
@@ -29,6 +29,11 @@ dirs = "6"
 anyhow = "1"
 chrono = "0.4"
 
+[features]
+default = []
+e2e = []
+
 [dev-dependencies]
 tempfile = "3"
 serial_test = "3"
+ntest = "0.9"

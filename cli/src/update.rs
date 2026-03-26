@@ -216,7 +216,17 @@ fn do_upgrade(config_path: &Option<String>, dry_run: bool) -> Result<()> {
 
     // Fetch latest image version from GHCR
     output::info("Fetching latest image version from registry...");
-    let latest = fetch_latest_image_version(&flavor)?;
+    let latest = match fetch_latest_image_version(&flavor) {
+        Ok(v) => v,
+        Err(e) => {
+            output::warn(&format!(
+                "Could not fetch latest image version from registry: {}\n\
+                 If the registry requires authentication, try: docker login ghcr.io",
+                e
+            ));
+            return Ok(());
+        }
+    };
     let current = semver::Version::parse(current_version)
         .unwrap_or_else(|_| semver::Version::new(0, 0, 0));
 

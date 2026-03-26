@@ -422,9 +422,10 @@ rules = [
 "#;
 
 /// Default yazi keymap.
-const DEFAULT_YAZI_KEYMAP: &str = r#"[manager]
+const DEFAULT_YAZI_KEYMAP: &str = r#"[mgr]
 prepend_keymap = [
-    { on = "<Enter>", run = "open", desc = "Open in editor pane" },
+    { on = "<Enter>", run = "open", desc = "Edit in-place" },
+    { on = "e", run = "shell 'open-in-editor \"$1\"'", desc = "Open in vim pane" },
     { on = "O", run = "open --interactive", desc = "Open interactively" },
 ]
 "#;

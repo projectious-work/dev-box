@@ -33,7 +33,7 @@ If you omit options, `aibox init` runs interactively and prompts for each value.
 
 ## What Gets Created
 
-After running `init` with `--process product`, your project looks like this:
+After running `init` with `--process full-product`, your project looks like this:
 
 ```
 my-app/
@@ -81,11 +81,11 @@ my-app/
 
 :::tip Context files vary by process
 
-The example above shows the `product` process (fullest). Other flavors scaffold less:
+The example above shows the `full-product` preset (fullest). Other presets scaffold less:
 
-- **minimal** — only `CLAUDE.md` and `.aibox-version`
-- **managed** — adds `BACKLOG.md`, `DECISIONS.md`, work-instructions
-- **research** — adds progress tracking, notes, research directory
+- **managed** — `BACKLOG.md`, `DECISIONS.md`, `STANDUPS.md`, session template
+- **software** — managed + `work-instructions/DEVELOPMENT.md` + code/architecture skills
+- **research-project** — managed + `PROGRESS.md`, research/, analysis/, experiments/
 
 See [Process Packages](../context/process-packages.md) for details.
 

@@ -5,54 +5,24 @@ title: "Process Packages"
 
 # Process Packages
 
-aibox provides four work process flavors that determine which context files are scaffolded for your project. Choose the one that matches your project's complexity and workflow.
+aibox uses a composable package system to determine which context files and skills are scaffolded for your project. **Presets** bundle multiple packages into sensible defaults; individual **packages** can be combined for custom setups.
 
-## Decision Matrix
+## Presets at a Glance
 
-| Factor | minimal | managed | research | product |
-|--------|---------|---------|----------|---------|
-| Project complexity | Low | Medium | Varies | High |
-| Team size | Solo | 1-3 | Solo/duo | Any |
-| Decision tracking | No | Yes | No | Yes |
-| Backlog management | No | Yes | No | Yes |
-| Progress tracking | No | Via standups | Dedicated | Via standups |
-| Work instructions | No | Yes | No | Yes |
+| Factor | managed | software | research-project | full-product |
+|--------|---------|----------|-----------------|--------------|
+| Project complexity | Low–Medium | Medium | Varies | High |
+| Decision tracking | Yes | Yes | Yes | Yes |
+| Backlog management | Yes | Yes | Yes | Yes |
+| Progress tracking | Via standups | Via standups | Via standups | Via standups |
+| Development conventions | No | Yes | No | Yes |
 | Research artifacts | No | No | Yes | Yes |
 | Product planning | No | No | No | Yes |
-| Process templates | No | Yes | Yes | Yes |
-
-## minimal
-
-The lightest option. Only `CLAUDE.md` at the project root.
-
-### Files Created
-
-```
-my-project/
-└── CLAUDE.md
-```
-
-### When to Use
-
-- Shell scripts and small utilities
-- Experiments and prototypes
-- Projects where you do not need to track decisions or progress
-- Quick throwaway work
-
-### What CLAUDE.md Contains
-
-The generated `CLAUDE.md` includes:
-
-- Project name and description placeholder
-- Reference to `OWNER.md` (if configured)
-- Basic coding conventions section
-- Space for project-specific instructions
-
----
+| Team/ops conventions | No | No | No | Yes |
 
 ## managed
 
-For projects that benefit from structured tracking without full product planning overhead.
+The recommended starting point. Structured tracking without product planning overhead. **Packages:** core + tracking + standups + handover.
 
 ### Files Created
 
@@ -63,14 +33,13 @@ my-project/
     ├── DECISIONS.md
     ├── BACKLOG.md
     ├── STANDUPS.md
+    ├── EVENTLOG.md
     ├── OWNER.md
-    ├── work-instructions/
-    │   └── GENERAL.md
-    └── processes/
-        ├── release.md
-        ├── code-review.md
-        ├── feature-development.md
-        └── bug-fix.md
+    ├── archive/
+    │   ├── BACKLOG.md
+    │   └── DECISIONS.md
+    └── project-notes/
+        └── session-template.md
 ```
 
 ### When to Use
@@ -82,7 +51,7 @@ my-project/
 
 ### File Purposes
 
-**DECISIONS.md** -- Record architectural and design decisions using a lightweight ADR (Architecture Decision Record) format:
+**DECISIONS.md** — Record architectural and design decisions using a lightweight ADR (Architecture Decision Record) format:
 
 ```markdown
 ## DEC-001: Use SQLite for local storage
@@ -93,7 +62,7 @@ my-project/
 - **Consequences:** No concurrent write support; acceptable for single-user app
 ```
 
-**BACKLOG.md** -- Prioritized list of work items:
+**BACKLOG.md** — Prioritized list of work items:
 
 ```markdown
 ## High Priority
@@ -103,12 +72,9 @@ my-project/
 ## Medium Priority
 - [ ] Write integration tests
 - [ ] Improve logging output
-
-## Low Priority
-- [ ] Add dark mode toggle
 ```
 
-**STANDUPS.md** -- Session-by-session progress log (newest first):
+**STANDUPS.md** — Session-by-session progress log (newest first):
 
 ```markdown
 ## 2026-03-16
@@ -117,51 +83,67 @@ my-project/
 - Next: write integration tests
 ```
 
-**work-instructions/GENERAL.md** -- Conventions and instructions that apply across the project. More detailed than `CLAUDE.md`, focused on workflow rather than coding style.
+**project-notes/session-template.md** — Template for session handover notes: what was done, open items, next steps.
 
 ---
 
-## research
+## software
 
-For learning, documentation, and academic projects where progress tracking and research artifacts matter more than backlogs.
+For software development projects. Adds development conventions and architecture skills on top of `managed`. **Packages:** core + tracking + standups + handover + code + architecture.
 
-### Files Created
+### Files Created (beyond managed)
 
 ```
 my-project/
-├── CLAUDE.md
+└── context/
+    └── work-instructions/
+        └── DEVELOPMENT.md
+```
+
+Plus additional skills: `code-review`, `testing-strategy`, `software-architecture`, `refactoring`, and others.
+
+### When to Use
+
+- Software projects with a recurring build/test/review cycle
+- Projects that benefit from documented coding conventions and architecture patterns
+- Any project where `managed` is a good fit and you write code
+
+---
+
+## research-project
+
+For learning, documentation, and academic projects. Adds research artifacts and documentation skills on top of `managed`. **Packages:** core + tracking + standups + handover + research + documentation.
+
+### Files Created (beyond managed)
+
+```
+my-project/
 ├── experiments/
 │   └── README.md
 └── context/
     ├── PROGRESS.md
-    ├── OWNER.md
     ├── research/
     │   └── _template.md
-    ├── analysis/
-    └── processes/
-        ├── release.md
-        ├── code-review.md
-        ├── feature-development.md
-        └── bug-fix.md
+    └── analysis/
 ```
+
+Plus additional skills: `data-science`, `data-visualization`, `feature-engineering`, and others.
 
 ### When to Use
 
 - LaTeX documents and academic papers
 - Learning projects and study materials
-- Cheatsheets and reference documents
 - Data analysis projects
 - Any project where the output is knowledge, not software
 
 ### File Purposes
 
-**PROGRESS.md** -- Track learning and research progress:
+**PROGRESS.md** — Track learning and research progress:
 
 ```markdown
 ## Chapter 3: Concurrency Patterns (In Progress)
 - Read through mutex and channel sections
 - Completed exercises 3.1-3.4
-- Struggling with: async lifetime issues
 - Next: re-read section on pinning
 
 ## Chapter 2: Ownership (Complete)
@@ -169,53 +151,23 @@ my-project/
 - Key insight: think of ownership as a compile-time garbage collector
 ```
 
-**research/** -- Directory for research notes, source summaries, literature reviews. Use `_template.md` as a starting point for new research notes:
+**research/** — Directory for research notes, source summaries, literature reviews. Use `_template.md` as a starting point.
 
-```
-research/
-├── _template.md              # Research note template (date, status, findings)
-├── paper-notes/
-│   ├── smith-2024-distributed-systems.md
-│   └── jones-2025-consensus-protocols.md
-└── topic-summaries/
-    └── raft-vs-paxos.md
-```
+**experiments/** — Top-level directory for hands-on prototypes, benchmarks, and technical evaluations.
 
-**experiments/** -- Top-level directory for hands-on prototypes, benchmarks, and technical evaluations. Each experiment lives in its own subdirectory:
-
-```
-experiments/
-├── README.md                 # Comparison table and run instructions
-├── approach-a/
-│   ├── README.md
-│   └── ...
-└── approach-b/
-    ├── README.md
-    └── ...
-```
-
-**analysis/** -- Directory for analysis artifacts, data exploration notes, methodology documents:
-
-```
-analysis/
-├── methodology.md
-├── dataset-description.md
-└── preliminary-results.md
-```
+**analysis/** — Directory for analysis artifacts, data exploration notes, methodology documents.
 
 ---
 
-## product
+## full-product
 
-The most comprehensive flavor. Everything from `managed` plus product planning tools.
+The most comprehensive preset. Everything from `managed` plus product planning, development conventions, and team/ops structure. **Packages:** core + tracking + standups + handover + code + architecture + design + product + security + operations.
 
 ### Files Created
 
 ```
 my-project/
 ├── CLAUDE.md
-├── experiments/
-│   └── README.md
 └── context/
     ├── DECISIONS.md
     ├── BACKLOG.md
@@ -224,30 +176,34 @@ my-project/
     ├── PRD.md
     ├── OWNER.md
     ├── work-instructions/
-    │   ├── GENERAL.md
     │   ├── DEVELOPMENT.md
     │   └── TEAM.md
+    ├── archive/
+    │   ├── BACKLOG.md
+    │   ├── DECISIONS.md
+    │   └── PROJECTS.md
     ├── project-notes/
-    ├── ideas/
-    ├── research/
-    │   └── _template.md
+    │   └── session-template.md
     └── processes/
+        ├── README.md
         ├── release.md
         ├── code-review.md
         ├── feature-development.md
         └── bug-fix.md
 ```
 
+Plus a comprehensive skill set covering code review, testing, architecture, security, CI/CD, and more.
+
 ### When to Use
 
 - Software products with users
 - Multi-component systems
 - Projects with multiple AI agents working in parallel
-- Any project that benefits from formal requirements and planning
+- Any project that benefits from formal requirements, security awareness, and team conventions
 
 ### Additional Files (beyond managed)
 
-**PROJECTS.md** -- Track multiple workstreams or sub-projects:
+**PROJECTS.md** — Track multiple workstreams or sub-projects:
 
 ```markdown
 ## Active Projects
@@ -257,13 +213,9 @@ my-project/
 - **Lead:** Claude (agent-1)
 - **Target:** v2.0 release
 - **Key files:** src/auth/, tests/auth/
-
-### API v2 Migration
-- **Status:** Planning
-- **Blocked by:** Authentication overhaul
 ```
 
-**PRD.md** -- Product Requirements Document:
+**PRD.md** — Product Requirements Document:
 
 ```markdown
 ## Product Vision
@@ -277,40 +229,48 @@ A CLI tool that manages AI-ready development containers.
 ### Must Have
 - Single config file (aibox.toml)
 - Container lifecycle management
-- Context scaffolding
-
-### Nice to Have
-- Auto-update mechanism
-- Plugin system
 ```
 
-**work-instructions/DEVELOPMENT.md** -- Development-specific conventions: branching strategy, testing requirements, release process.
+**work-instructions/DEVELOPMENT.md** — Development-specific conventions: branching strategy, testing requirements, release process.
 
-**work-instructions/TEAM.md** -- Team conventions for multi-agent or multi-developer work: who owns what, communication protocols, review processes.
-
-**project-notes/** -- Free-form directory for meeting notes, design sketches, and other project documentation that does not fit elsewhere.
-
-**ideas/** -- Parking lot for future ideas that are not yet backlog items.
+**work-instructions/TEAM.md** — Team conventions for multi-agent or multi-developer work: who owns what, communication protocols, review processes.
 
 ---
 
-## Changing Process Flavor
+## Individual Packages (Power Users)
 
-You can change the process flavor in `aibox.toml` at any time:
+Presets are the right choice for most projects. If you need a custom combination, you can specify individual packages directly via `--process <name>` on the CLI:
 
-```toml
-[aibox]
-process = "product"  # was "managed"
+**13 available packages:** `core`, `tracking`, `standups`, `handover`, `code`, `architecture`, `design`, `product`, `security`, `data`, `operations`, `research`, `documentation`
+
+```bash
+# Custom combination: managed tracking + code only, no standups/handover
+aibox init --process core --process tracking --process code
 ```
 
-However, changing the flavor does not automatically create or remove files. To reconcile:
+Individual packages are not shown in the interactive selection menu — pass them explicitly on the command line.
 
-1. Update the `process` field in `aibox.toml`
+---
+
+## Changing Process Packages
+
+You can change the process at any time by editing `aibox.toml`:
+
+```toml
+[process]
+packages = ["full-product"]  # was ["managed"]
+```
+
+Then run `aibox sync` to regenerate container files and deploy the new skill set.
+
+However, changing packages does **not** automatically create or remove context files. To reconcile:
+
+1. Update `packages` in the `[process]` section of `aibox.toml`
 2. Run `aibox doctor` to see what files are missing or extra
 3. Create missing files manually or re-run `aibox init` in a temporary directory and copy the templates
 
 :::warning Upgrading is additive
 
-Moving from `minimal` to `managed` means adding files. Moving from `product` to `minimal` does not delete files -- your existing context is preserved.
+Moving from `managed` to `full-product` means adding files. Moving from `full-product` to `managed` does not delete files — your existing context is preserved.
 
 :::

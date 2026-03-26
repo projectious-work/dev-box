@@ -23,33 +23,14 @@ pub struct InitParams {
 }
 
 /// Build process selection items for the interactive prompt.
-/// Shows presets first (with description), then individual packages.
+/// Shows presets only — individual package names are still accepted via --process on the CLI.
 fn process_selection_items() -> (Vec<String>, Vec<String>) {
     let presets = crate::process_registry::all_presets();
-    let packages = crate::process_registry::all_packages();
-
-    let mut labels = Vec::new();
-    let mut values = Vec::new();
-
-    // Presets first — these are the common choices
-    for p in presets {
-        labels.push(format!("{} — {}", p.name, p.description));
-        values.push(p.name.to_string());
-    }
-
-    // Then individual packages for power users
-    for p in packages {
-        if p.name == "core" {
-            continue; // core is always included, no need to show
-        }
-        // Skip if a preset already has this exact name
-        if presets.iter().any(|pr| pr.name == p.name) {
-            continue;
-        }
-        labels.push(format!("{} (package)", p.name));
-        values.push(p.name.to_string());
-    }
-
+    let labels = presets
+        .iter()
+        .map(|p| format!("{} — {}", p.name, p.description))
+        .collect();
+    let values = presets.iter().map(|p| p.name.to_string()).collect();
     (labels, values)
 }
 
@@ -474,7 +455,7 @@ pub fn cmd_init(config_path: &Option<String>, params: InitParams) -> Result<()> 
 }
 
 /// Sync command: force-seed theme-dependent files, seed missing configs, regenerate .devcontainer/.
-pub fn cmd_sync(config_path: &Option<String>, no_cache: bool) -> Result<()> {
+pub fn cmd_sync(config_path: &Option<String>, no_cache: bool, no_build: bool) -> Result<()> {
     // Check for version migration before any other sync steps
     crate::migration::check_and_generate_migration()?;
 
@@ -504,15 +485,19 @@ pub fn cmd_sync(config_path: &Option<String>, no_cache: bool) -> Result<()> {
     context::check_agent_entry_points(&config)?;
 
     // Build container image (if a container runtime is available)
-    match Runtime::detect() {
-        Ok(runtime) => {
-            output::info("Building container image...");
-            runtime.compose_build(crate::config::COMPOSE_FILE, no_cache)?;
-            output::ok("Sync complete — image built");
-        }
-        Err(_) => {
-            output::warn("No container runtime found — skipping image build");
-            output::ok("Sync complete (config files only)");
+    if no_build {
+        output::ok("Sync complete (build skipped)");
+    } else {
+        match Runtime::detect() {
+            Ok(runtime) => {
+                output::info("Building container image...");
+                runtime.compose_build(crate::config::COMPOSE_FILE, no_cache)?;
+                output::ok("Sync complete — image built");
+            }
+            Err(_) => {
+                output::warn("No container runtime found — skipping image build");
+                output::ok("Sync complete (config files only)");
+            }
         }
     }
 

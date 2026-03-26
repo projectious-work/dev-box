@@ -76,14 +76,14 @@ See [Migration](migration.md) for details on how upgrades work.
 
 ## Relationship to aibox.toml
 
-The `process` field in `[aibox]` determines which context files are scaffolded during `aibox init`:
+The `[process]` section in `aibox.toml` determines which context files are scaffolded during `aibox init`:
 
 ```toml
-[aibox]
-process = "product"
+[process]
+packages = ["managed"]
 ```
 
-Changing this field after initialization does not automatically add or remove files. Use `aibox doctor` to identify gaps and `aibox sync` to reconcile.
+Changing this after initialization does not automatically add or remove files. Use `aibox doctor` to identify gaps and `aibox sync` to reconcile.
 
 ## Process Templates
 

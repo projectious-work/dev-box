@@ -76,7 +76,9 @@ aibox init --name my-app --theme catppuccin-mocha
 
 ### Interactive Mode
 
-When `--name` or `--process` flags are omitted and the terminal is interactive, `aibox init` prompts for each missing value. This lets you explore the available options without memorizing flag values.
+When `--name` or `--process` flags are omitted and the terminal is interactive, `aibox init` prompts for each missing value.
+
+The `--process` prompt shows only the four convenience presets (`managed`, `software`, `research-project`, `full-product`). To use an individual package instead, pass `--process <name>` explicitly on the command line.
 
 In non-interactive environments (scripts, CI pipelines), omitted flags silently use defaults: the current directory name for `--name`, `debian` for `--base`, and `core` for `--process`.
 
@@ -625,6 +627,8 @@ Checks the current version against the latest available release. Without flags, 
 - **`--check`** — Queries GHCR for the latest image tag and GitHub Releases for the latest CLI version. Reports whether updates are available without changing anything.
 - **No flags** — Fetches the latest image version, updates `version` in `aibox.toml`, regenerates `.devcontainer/` files, and updates `.aibox-version`. You still need to rebuild the container to apply changes.
 - **`--dry-run`** — Shows what would change without writing any files.
+
+If the registry is unreachable or returns an authentication error, `aibox update` prints a warning and exits cleanly (exit code 0) rather than failing. Run `docker login ghcr.io` if you receive repeated authentication errors.
 
 ### Examples
 
