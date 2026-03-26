@@ -122,7 +122,7 @@ RUN mkdir -p /run/sshd \
     && sed -i 's/#PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config \
     && sed -i 's/#PubkeyAuthentication.*/PubkeyAuthentication yes/' /etc/ssh/sshd_config \
     && sed -i 's/#PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config \
-    && sed -i 's/^AcceptEnv.*/AcceptEnv/' /etc/ssh/sshd_config
+    && sed -i 's/^AcceptEnv.*/#AcceptEnv/' /etc/ssh/sshd_config
 
 # ── Test user ─────────────────────────────────────────────────────────────────
 RUN groupadd --gid 1000 testuser \

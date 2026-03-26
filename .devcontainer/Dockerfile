@@ -17,11 +17,11 @@ FROM ghcr.io/projectious-work/aibox:base-debian-v0.13.1 AS aibox
 LABEL aibox.version="0.13.1"
 
 # Addon: ai-claude
-# Install Claude Code CLI via the native installer (recommended by Anthropic).
-# npm installation is deprecated — the native installer is faster, requires
-# no Node dependency, and supports version pinning via: bash -s <version>.
-# To pin a version: set [addons.ai-claude.tools.claude] version in aibox.toml
-# Ref: https://code.claude.com/docs/en/setup#install-a-specific-version
+# Install Claude Code CLI via npm (pinned version, reproducible).
+# The native installer (curl|bash) is the interactive default but is not
+# suitable for Dockerfiles — npm install with an explicit version is the
+# approach used in Anthropic's own devcontainer.
+# Update the version pin by checking: https://www.npmjs.com/package/@anthropic-ai/claude-code
 USER aibox
 RUN curl -fsSL https://claude.ai/install.sh | bash
 USER root
@@ -89,5 +89,4 @@ RUN curl -fsSL https://bun.sh/install | bash
 RUN uv tool install asciinema
 
 # Record image version inside container for runtime checks
-USER root
-RUN echo "0.13.1" > /etc/aibox-version
+# RUN echo "0.13.1" > /etc/aibox-version
