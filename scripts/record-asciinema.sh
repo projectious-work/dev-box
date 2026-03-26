@@ -10,6 +10,7 @@
 #   - asciinema (pip/uv: asciinema)
 #   - agg (cargo install --git https://github.com/asciinema/agg) — optional, for GIF export
 #   - zellij (for layout recordings)
+#   - A running aibox container with zellij + starship installed (for prompt recordings)
 #
 # Usage:
 #   ./scripts/record-asciinema.sh              # record all (layouts + themes + demos)
@@ -18,6 +19,15 @@
 #   ./scripts/record-asciinema.sh demos        # only CLI demo recordings
 #   ./scripts/record-asciinema.sh gif          # generate GIFs via agg
 #   ./scripts/record-asciinema.sh readme       # generate README animated GIF
+#
+# TODO (BACK-062): Add a `prompts` mode that records each Starship prompt preset.
+# Each recording should show the prompt in a shell session inside an aibox container:
+#   - Spin up a container with the given preset (aibox init --prompt <preset> && aibox start)
+#   - Run a short scripted session: cd to a git repo, run a failing command, show the prompt
+#   - Output files: prompt-default.cast, prompt-plain.cast, prompt-minimal.cast,
+#                   prompt-nerd-font.cast, prompt-pastel.cast, prompt-bracketed.cast, prompt-arrow.cast
+# This requires a running container environment so cannot be done in the dev-container build step.
+# Docs placeholders: see docs-site/docs/customization/prompts.md (<!-- recording pending --> comments)
 
 set -euo pipefail
 

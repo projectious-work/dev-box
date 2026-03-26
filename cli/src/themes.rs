@@ -550,5 +550,70 @@ format = "[\\[$duration\\]](fg:#928374) "
 success_symbol = "[❯](bold fg:{green})"
 error_symbol = "[❯](bold fg:red)"
 "#),
+
+        StarshipPreset::Arrow => format!(
+r#"# aibox starship config — arrow preset (powerline chevron/airline style)
+# Requires a Nerd Font or Powerline-patched font for the arrow separators (e0b0/e0b2).
+palette = "aibox"
+
+format = """
+[](fg:{accent})\
+$directory\
+[](fg:{accent} bg:{green})\
+$git_branch\
+$git_status\
+[](fg:{green} bg:{bg})\
+ $cmd_duration\
+$line_break\
+$character"""
+
+[directory]
+style = "bold bg:{accent} fg:{bg}"
+format = "[ $path ]($style)"
+truncation_length = 3
+truncate_to_repo = true
+
+[git_branch]
+style = "bg:{green} fg:{bg}"
+symbol = " "
+format = "[ $symbol$branch ]($style)"
+
+[git_status]
+style = "bg:{green} fg:{bg}"
+format = "[$all_status$ahead_behind]($style)"
+ahead = "⇡$count"
+behind = "⇣$count"
+diverged = "⇕⇡$ahead_count⇣$behind_count"
+modified = "!$count"
+staged = "+$count"
+untracked = "?$count"
+
+[cmd_duration]
+style = "fg:#928374"
+min_time = 2_000
+format = "[ $duration]($style)"
+
+[character]
+success_symbol = "[❯](bold fg:{accent})"
+error_symbol = "[❯](bold fg:red)"
+
+[python]
+style = "fg:#D79921"
+format = "[$symbol$version]($style) "
+[rust]
+style = "fg:#D65D0E"
+format = "[$symbol$version]($style) "
+[nodejs]
+style = "fg:#98971A"
+format = "[$symbol$version]($style) "
+[golang]
+style = "fg:#689D6A"
+format = "[$symbol$version]($style) "
+
+[palettes.aibox]
+bg = "{bg}"
+fg = "{fg}"
+accent = "{accent}"
+"#),
     }
 }
