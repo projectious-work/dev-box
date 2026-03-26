@@ -128,7 +128,9 @@ RUN ARCH=$(uname -m) && \
       chmod +x /usr/local/bin/resvg && \
       rm /tmp/resvg.tar.gz; \
     else \
-      echo "resvg: no upstream Linux binary for ${ARCH}, skipping (svg.yazi falls back gracefully)"; \
+      printf '#!/bin/sh\necho "resvg: no upstream binary for %s (svg.yazi uses chafa fallback)" "$ARCH" >&2\nexit 1\n' "$ARCH" \
+        > /usr/local/bin/resvg && \
+      chmod +x /usr/local/bin/resvg; \
     fi
 
 # ── Vim colorschemes ─────────────────────────────────────────────────────────
