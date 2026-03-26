@@ -12,4 +12,5 @@ builder: null
 
 runtime: |
   # Addon: ai-gemini
-  RUN npm install -g @google/generative-ai-cli || pip install google-generativeai
+  # Official Google Gemini CLI: https://github.com/google-gemini/gemini-cli
+  RUN npm install -g @google/gemini-cli

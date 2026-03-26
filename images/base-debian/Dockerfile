@@ -111,26 +111,25 @@ RUN ARCH=$(uname -m) && \
       | tar -xz -C /usr/local/bin && \
     chmod +x /usr/local/bin/starship
 
-# ── resvg (SVG renderer — musl static binary, no apt package) ────────────────
-# Source: https://github.com/oSoWoSo/resvg-musl/releases
-# NEEDS VERIFICATION: pin a real release tag and sha256 before shipping.
-# The oSoWoSo/resvg-musl repo publishes x86_64 and aarch64 musl binaries.
+# ── resvg (SVG renderer — static binary, no apt package) ─────────────────────
+# Source: https://github.com/linebender/resvg/releases (official)
+# Only x86_64 Linux binary is published upstream; aarch64 is skipped
+# gracefully (svg.yazi plugin handles missing resvg by falling back).
 FROM fetch-base AS fetch-resvg
-ARG RESVG_VERSION=0.44.0
-# sha256 values below are PLACEHOLDERS — replace with real checksums from the
-# GitHub release page before building this image.
+ARG RESVG_VERSION=0.47.0
+ARG RESVG_SHA256_X86_64=5c84dcbcd032fe7e8d96e616fd6807a2f9df6561d2e6582b37e91e63c6cb4fe7
 RUN ARCH=$(uname -m) && \
-    RESVG_SHA256=$(case $ARCH in \
-        x86_64)  echo "NEEDS_VERIFICATION_x86_64_sha256" ;; \
-        aarch64) echo "NEEDS_VERIFICATION_aarch64_sha256" ;; \
-    esac) && \
-    curl -fsSL \
-      "https://github.com/oSoWoSo/resvg-musl/releases/download/v${RESVG_VERSION}/resvg-linux-${ARCH}.tar.gz" \
-      -o /tmp/resvg.tar.gz && \
-    echo "${RESVG_SHA256}  /tmp/resvg.tar.gz" | sha256sum -c - && \
-    tar -xz -C /usr/local/bin -f /tmp/resvg.tar.gz resvg && \
-    chmod +x /usr/local/bin/resvg && \
-    rm /tmp/resvg.tar.gz
+    if [ "$ARCH" = "x86_64" ]; then \
+      curl -fsSL \
+        "https://github.com/linebender/resvg/releases/download/v${RESVG_VERSION}/resvg-linux-${ARCH}.tar.gz" \
+        -o /tmp/resvg.tar.gz && \
+      echo "${RESVG_SHA256_X86_64}  /tmp/resvg.tar.gz" | sha256sum -c - && \
+      tar -xz -C /usr/local/bin -f /tmp/resvg.tar.gz resvg && \
+      chmod +x /usr/local/bin/resvg && \
+      rm /tmp/resvg.tar.gz; \
+    else \
+      echo "resvg: no upstream Linux binary for ${ARCH}, skipping (svg.yazi falls back gracefully)"; \
+    fi
 
 # ── Vim colorschemes ─────────────────────────────────────────────────────────
 # Separate stage keeps network fetches out of the runtime build graph.

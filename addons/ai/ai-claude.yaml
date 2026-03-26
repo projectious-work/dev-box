@@ -12,6 +12,11 @@ builder: null
 
 runtime: |
   # Addon: ai-claude
+  # Install Claude Code CLI via npm (pinned version, reproducible).
+  # The native installer (curl|bash) is the interactive default but is not
+  # suitable for Dockerfiles — npm install with an explicit version is the
+  # approach used in Anthropic's own devcontainer.
+  # Update the version pin by checking: https://www.npmjs.com/package/@anthropic-ai/claude-code
   USER aibox
-  RUN curl -fsSL https://claude.ai/install.sh | bash
+  RUN npm install -g @anthropic-ai/claude-code
   USER root
