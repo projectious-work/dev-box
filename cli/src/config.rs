@@ -358,6 +358,7 @@ pub enum StarshipPreset {
     NerdFont,      // Full Nerd Font symbols
     Pastel,        // Soft powerline segments
     Bracketed,     // [segments] in brackets
+    Arrow,         // Powerline-style chevron/arrow segments (airline-style)
 }
 
 impl std::fmt::Display for StarshipPreset {
@@ -369,6 +370,7 @@ impl std::fmt::Display for StarshipPreset {
             StarshipPreset::NerdFont => write!(f, "nerd-font"),
             StarshipPreset::Pastel => write!(f, "pastel"),
             StarshipPreset::Bracketed => write!(f, "bracketed"),
+            StarshipPreset::Arrow => write!(f, "arrow"),
         }
     }
 }

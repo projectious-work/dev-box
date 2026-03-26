@@ -325,6 +325,7 @@ fn all_prompts_render_without_error() {
         "nerd-font",
         "pastel",
         "bracketed",
+        "arrow",
     ];
 
     for preset in &presets {
