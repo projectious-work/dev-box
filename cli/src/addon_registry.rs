@@ -287,6 +287,14 @@ mod tests {
         ensure_loaded();
         let tools = tc(&[("claude", true, "")]);
         let cmds = generate_runtime_commands("ai-claude", &tools);
-        assert!(cmds.contains("claude-code"), "should install Claude: {cmds}");
+        assert!(cmds.contains("claude.ai/install.sh"), "should use native installer: {cmds}");
+    }
+
+    #[test]
+    fn ai_claude_runtime_pins_version_when_set() {
+        ensure_loaded();
+        let tools = tc(&[("claude", true, "1.0.58")]);
+        let cmds = generate_runtime_commands("ai-claude", &tools);
+        assert!(cmds.contains("bash -s 1.0.58"), "should pin version: {cmds}");
     }
 }
