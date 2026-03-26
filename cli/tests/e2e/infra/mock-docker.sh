@@ -6,9 +6,10 @@
 # Place on PATH before the real docker binary to intercept calls.
 #
 # Environment variables:
-#   MOCK_LOG_FILE        — Path to log file (required)
-#   MOCK_FAIL_COMMAND    — If set, fail when this subcommand is invoked
-#   MOCK_CONTAINER_STATE — State to return for inspect (default: "running")
+#   MOCK_LOG_FILE          — Path to log file (required)
+#   MOCK_FAIL_COMMAND      — If set, fail when this subcommand is invoked
+#   MOCK_CONTAINER_STATE   — State to return for status inspect (default: "running")
+#   MOCK_CONTAINER_VERSION — Value to return for aibox.version label inspect (default: "")
 # =============================================================================
 
 set -euo pipefail
@@ -37,16 +38,37 @@ case "${1:-}" in
         exit 0
         ;;
     inspect)
-        # Return container state
         shift
-        # Skip flags
-        while [[ "${1:-}" == --* ]]; do shift; done
-        CONTAINER="${1:-unknown}"
+        # Parse --format <value> properly so we can route by format string.
+        FORMAT=""
+        while [[ $# -gt 0 ]]; do
+            case "${1:-}" in
+                --format)
+                    FORMAT="${2:-}"
+                    shift 2
+                    ;;
+                --*)
+                    shift
+                    ;;
+                *)
+                    # Container name — mock ignores it (responds to all names)
+                    shift
+                    ;;
+            esac
+        done
+
         if [[ "$STATE" == "missing" ]]; then
-            echo "Error: No such object: $CONTAINER" >&2
+            echo "Error: No such object: unknown" >&2
             exit 1
         fi
-        echo "$STATE"
+
+        # Route by format: label queries return MOCK_CONTAINER_VERSION;
+        # state queries return MOCK_CONTAINER_STATE.
+        if [[ "$FORMAT" == *"Labels"* ]]; then
+            echo "${MOCK_CONTAINER_VERSION:-}"
+        else
+            echo "$STATE"
+        fi
         exit 0
         ;;
     compose)

@@ -10,6 +10,7 @@ pub mod runner;
 mod appearance;
 mod config_coverage;
 mod preview;
+mod version_upgrade;
 
 // Tier 2 tests (require e2e-runner companion container)
 #[cfg(feature = "e2e")]
