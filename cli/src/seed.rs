@@ -405,6 +405,23 @@ show_symlink = true
 [preview]
 max_width = 600
 max_height = 900
+image_delay = 30
+image_filter = "nearest"
+
+[plugin]
+prepend_previewers = [
+    { name = "*.svg",  run = "svg" },
+    { name = "*.eps",  run = "eps" },
+    { name = "*.jpg",  run = "image" },
+    { name = "*.jpeg", run = "image" },
+    { name = "*.png",  run = "image" },
+    { name = "*.gif",  run = "image" },
+    { name = "*.webp", run = "image" },
+    { name = "*.bmp",  run = "image" },
+    { name = "*.tiff", run = "image" },
+    { name = "*.tif",  run = "image" },
+    { name = "*.pdf",  run = "pdf" },
+]
 
 [opener]
 edit = [
@@ -419,6 +436,93 @@ rules = [
     { mime = "text/*", use = "edit" },
     { name = "*", use = "edit" },
 ]
+"#;
+
+/// EPS previewer plugin — converts EPS to PNG via ghostscript.
+const DEFAULT_YAZI_PLUGIN_EPS: &str = r#"-- eps.yazi — EPS previewer for yazi
+-- Converts EPS to PNG using ghostscript, then renders via the built-in image previewer.
+-- Requires: ghostscript (gs) in PATH.
+
+local function fail(msg)
+	return Err(msg)
+end
+
+return {
+	entry = function(self, job)
+		local cache = ya.file_cache(job)
+		if not cache then
+			return fail("No cache path")
+		end
+
+		if cache:exists() then
+			return Image:new(job, cache):show()
+		end
+
+		local ok, err, code = Command("gs")
+			:args({
+				"-q",
+				"-dNOPAUSE",
+				"-dBATCH",
+				"-dSAFER",
+				"-sDEVICE=png16m",
+				"-r150",
+				"-dEPSCrop",
+				"-sOutputFile=" .. tostring(cache),
+				tostring(job.file.url),
+			})
+			:stdout(Command.NULL)
+			:stderr(Command.NULL)
+			:status()
+
+		if not ok then
+			return fail("gs not found or failed (code " .. tostring(code) .. "): " .. tostring(err))
+		end
+
+		return Image:new(job, cache):show()
+	end,
+}
+"#;
+
+/// SVG previewer plugin — converts SVG to PNG via resvg.
+const DEFAULT_YAZI_PLUGIN_SVG: &str = r#"-- svg.yazi — SVG previewer for yazi
+-- Converts SVG to PNG using resvg, then renders via the built-in image previewer.
+-- Requires: resvg in PATH.
+
+local function fail(msg)
+	return Err(msg)
+end
+
+return {
+	entry = function(self, job)
+		local cache = ya.file_cache(job)
+		if not cache then
+			return fail("No cache path")
+		end
+
+		if cache:exists() then
+			return Image:new(job, cache):show()
+		end
+
+		local ok, err, code = Command("resvg")
+			:args({
+				"--width",
+				tostring(job.area.w * 4),
+				"--height",
+				tostring(job.area.h * 4),
+				tostring(job.file.url),
+				tostring(cache),
+			})
+			:stdout(Command.NULL)
+			:stderr(Command.NULL)
+			:status()
+
+		if not ok then
+			return fail("resvg not found or failed (code " .. tostring(code) .. "): " .. tostring(err))
+		end
+
+		return Image:new(job, cache):show()
+	end,
+}
 "#;
 
 /// Default yazi keymap.
@@ -474,6 +578,8 @@ pub fn seed_root_dir(config: &AiboxConfig) -> Result<()> {
         root.join(".config").join("zellij").join("themes"),
         root.join(".config").join("zellij").join("layouts"),
         root.join(".config").join("yazi"),
+        root.join(".config").join("yazi").join("plugins").join("eps.yazi"),
+        root.join(".config").join("yazi").join("plugins").join("svg.yazi"),
         root.join(".config").join("git"),
         root.join(".config").join("lazygit"),
     ];
@@ -571,6 +677,25 @@ pub fn seed_root_dir(config: &AiboxConfig) -> Result<()> {
     seed_file(
         &root.join(".config").join("yazi").join("theme.toml"),
         crate::themes::yazi_theme(theme),
+    )?;
+    // Yazi plugins — custom previewers for EPS and SVG
+    seed_file(
+        &root
+            .join(".config")
+            .join("yazi")
+            .join("plugins")
+            .join("eps.yazi")
+            .join("init.lua"),
+        DEFAULT_YAZI_PLUGIN_EPS,
+    )?;
+    seed_file(
+        &root
+            .join(".config")
+            .join("yazi")
+            .join("plugins")
+            .join("svg.yazi")
+            .join("init.lua"),
+        DEFAULT_YAZI_PLUGIN_SVG,
     )?;
 
     // Cheatsheet

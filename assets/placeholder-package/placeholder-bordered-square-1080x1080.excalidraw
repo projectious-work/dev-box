@@ -1,0 +1,114 @@
+{
+  "type": "excalidraw",
+  "version": 2,
+  "source": "placeholder-generator",
+  "elements": [
+    {
+      "id": "frame",
+      "type": "rectangle",
+      "fillStyle": "solid",
+      "strokeWidth": 17,
+      "roughness": 0,
+      "opacity": 100,
+      "angle": 0,
+      "strokeStyle": "solid",
+      "seed": 1,
+      "version": 1,
+      "isDeleted": false,
+      "boundElements": null,
+      "link": null,
+      "locked": false,
+      "groupIds": [],
+      "roundness": {
+        "type": 3,
+        "value": 38
+      },
+      "x": 0,
+      "y": 0,
+      "width": 1080,
+      "height": 1080,
+      "strokeColor": "#d0d0d0",
+      "backgroundColor": "#ffffff"
+    },
+    {
+      "id": "mountain",
+      "type": "line",
+      "fillStyle": "solid",
+      "strokeWidth": 0,
+      "roughness": 0,
+      "opacity": 100,
+      "angle": 0,
+      "strokeStyle": "solid",
+      "seed": 1,
+      "version": 1,
+      "isDeleted": false,
+      "boundElements": null,
+      "link": null,
+      "locked": false,
+      "groupIds": [],
+      "roundness": null,
+      "x": 631.5906388228964,
+      "y": 472.6434824838883,
+      "width": 874.0,
+      "height": 345.40362529040397,
+      "points": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          -196.44838358250104,
+          196.44838358250115
+        ],
+        [
+          -288.0390224053973,
+          104.85774475960477
+        ],
+        [
+          -528.5906388228964,
+          345.40362529040397
+        ],
+        [
+          345.4093611771036,
+          345.40362529040397
+        ]
+      ],
+      "strokeColor": "#d0d0d0",
+      "backgroundColor": "#d0d0d0",
+      "lastCommittedPoint": null,
+      "startBinding": null,
+      "endBinding": null,
+      "startArrowhead": null,
+      "endArrowhead": null
+    },
+    {
+      "id": "sun",
+      "type": "ellipse",
+      "fillStyle": "solid",
+      "strokeWidth": 0,
+      "roughness": 0,
+      "opacity": 100,
+      "angle": 0,
+      "strokeStyle": "solid",
+      "seed": 1,
+      "version": 1,
+      "isDeleted": false,
+      "boundElements": null,
+      "link": null,
+      "locked": false,
+      "groupIds": [],
+      "roundness": null,
+      "x": 218.24543557299796,
+      "y": 261.9528922257078,
+      "width": 135.05718823421319,
+      "height": 135.05718823421319,
+      "strokeColor": "#d0d0d0",
+      "backgroundColor": "#d0d0d0"
+    }
+  ],
+  "appState": {
+    "viewBackgroundColor": "transparent",
+    "gridSize": null
+  },
+  "files": {}
+}

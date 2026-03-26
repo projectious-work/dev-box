@@ -14,7 +14,47 @@ show_symlink = true
 [preview]
 max_width = 600
 max_height = 900
-image_delay = 100
+# Reduced from 100ms → 30ms render delay; also reduces Zellij Sixel artifacts
+# by letting the terminal settle before committing pixels.
+image_delay = 30
+# Prefer chafa halfblock inside Zellij (Sixel can cause ghost artifacts in
+# Zellij's rendering pipeline). Falls back automatically if chafa is absent.
+image_filter = "nearest"
+
+# =============================================================================
+# Plugin — file previewers
+# =============================================================================
+# prepend_previewers runs before yazi's built-in previewers, so these rules
+# take precedence. Supported built-in run values: image, pdf, video, archive.
+# Custom plugins live in ~/.config/yazi/plugins/<name>.yazi/init.lua.
+#
+# Format coverage:
+#   Raster (JPG/PNG/GIF/WebP/BMP/TIFF) — chafa handles all natively; yazi's
+#     built-in "image" previewer calls chafa automatically when available.
+#   SVG — resvg converts to PNG; yazi's "image" previewer renders the result.
+#   PDF — yazi's built-in "pdf" previewer calls pdftoppm (poppler-utils).
+#   EPS  — custom lua plugin (eps.yazi) converts via ghostscript then "image".
+#   .excalidraw — JSON-based design files; no TUI preview possible. Yazi falls
+#     back to text preview automatically (known limitation: raw JSON is shown).
+[plugin]
+prepend_previewers = [
+    # SVG: convert to raster with resvg, then display as image
+    { name = "*.svg", run = "svg" },
+    # EPS: convert to PNG with ghostscript, then display as image
+    { name = "*.eps", run = "eps" },
+    # Raster images — explicit name rules ensure all extensions are covered
+    # even if MIME detection fails (e.g. for BMP/TIFF without magic bytes).
+    { name = "*.jpg",  run = "image" },
+    { name = "*.jpeg", run = "image" },
+    { name = "*.png",  run = "image" },
+    { name = "*.gif",  run = "image" },
+    { name = "*.webp", run = "image" },
+    { name = "*.bmp",  run = "image" },
+    { name = "*.tiff", run = "image" },
+    { name = "*.tif",  run = "image" },
+    # PDF
+    { name = "*.pdf",  run = "pdf" },
+]
 
 [opener]
 # Enter: open in vim in-place (suspends yazi, returns on :q)

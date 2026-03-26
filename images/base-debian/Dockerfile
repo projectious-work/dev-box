@@ -111,6 +111,27 @@ RUN ARCH=$(uname -m) && \
       | tar -xz -C /usr/local/bin && \
     chmod +x /usr/local/bin/starship
 
+# ── resvg (SVG renderer — musl static binary, no apt package) ────────────────
+# Source: https://github.com/oSoWoSo/resvg-musl/releases
+# NEEDS VERIFICATION: pin a real release tag and sha256 before shipping.
+# The oSoWoSo/resvg-musl repo publishes x86_64 and aarch64 musl binaries.
+FROM fetch-base AS fetch-resvg
+ARG RESVG_VERSION=0.44.0
+# sha256 values below are PLACEHOLDERS — replace with real checksums from the
+# GitHub release page before building this image.
+RUN ARCH=$(uname -m) && \
+    RESVG_SHA256=$(case $ARCH in \
+        x86_64)  echo "NEEDS_VERIFICATION_x86_64_sha256" ;; \
+        aarch64) echo "NEEDS_VERIFICATION_aarch64_sha256" ;; \
+    esac) && \
+    curl -fsSL \
+      "https://github.com/oSoWoSo/resvg-musl/releases/download/v${RESVG_VERSION}/resvg-linux-${ARCH}.tar.gz" \
+      -o /tmp/resvg.tar.gz && \
+    echo "${RESVG_SHA256}  /tmp/resvg.tar.gz" | sha256sum -c - && \
+    tar -xz -C /usr/local/bin -f /tmp/resvg.tar.gz resvg && \
+    chmod +x /usr/local/bin/resvg && \
+    rm /tmp/resvg.tar.gz
+
 # ── Vim colorschemes ─────────────────────────────────────────────────────────
 # Separate stage keeps network fetches out of the runtime build graph.
 # Uses curl for dracula instead of git clone (~4 MB savings).
@@ -139,9 +160,9 @@ RUN mkdir -p /vim-colors/colors \
 # Estimated layer sizes (arm64, approximate):
 #   debian:trixie-slim base .............. ~75 MB
 #   Core apt (curl, git, vim, etc.) ...... ~120 MB
-#   Preview deps (ffmpeg, imagemagick) ... ~150 MB
+#   Preview deps (ffmpeg, imagemagick, ghostscript, timg, mupdf-tools, entr) ~175 MB
 #   Audio (sox, pulseaudio) .............. ~25 MB
-#   Static binaries (10 tools) ........... ~95 MB
+#   Static binaries (11 tools) ........... ~97 MB
 #   Vim colorschemes ..................... ~0.1 MB
 #   Config files ......................... ~0.1 MB
 #   ─────────────────────────────────────────────
@@ -194,6 +215,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     poppler-utils \
     ffmpeg \
     imagemagick \
+    ghostscript \
+    timg \
+    mupdf-tools \
+    entr \
     # ── Audio support for Claude Code voice (~25 MB) ──
     sox \
     libsox-fmt-pulse \
@@ -230,6 +255,7 @@ COPY --from=fetch-zoxide   /usr/local/bin/zoxide   /usr/local/bin/
 COPY --from=fetch-fzf      /usr/local/bin/fzf      /usr/local/bin/
 COPY --from=fetch-delta    /usr/local/bin/delta    /usr/local/bin/
 COPY --from=fetch-starship /usr/local/bin/starship /usr/local/bin/
+COPY --from=fetch-resvg    /usr/local/bin/resvg    /usr/local/bin/
 
 # ── Bake default configs into the image ───────────────────────────────────────
 # These act as fallback defaults when no host directory is mounted.
@@ -246,7 +272,7 @@ COPY config/vimrc /home/aibox/.vim/vimrc
 
 # Create config directories in a single layer
 RUN mkdir -p /home/aibox/.config/zellij/themes /home/aibox/.config/zellij/layouts \
-             /home/aibox/.config/yazi \
+             /home/aibox/.config/yazi/plugins \
              /home/aibox/.config/git
 
 # Zellij
@@ -261,6 +287,7 @@ COPY config/yazi/yazi.toml             /home/aibox/.config/yazi/yazi.toml
 COPY config/yazi/keymap.toml           /home/aibox/.config/yazi/keymap.toml
 COPY config/yazi/theme.toml            /home/aibox/.config/yazi/theme.toml
 COPY config/yazi/themes/               /home/aibox/.config/yazi/themes/
+COPY config/yazi/plugins/              /home/aibox/.config/yazi/plugins/
 
 # Helper scripts (chmod via COPY --chmod to avoid extra layer)
 COPY --chmod=755 config/bin/open-in-editor.sh /usr/local/bin/open-in-editor

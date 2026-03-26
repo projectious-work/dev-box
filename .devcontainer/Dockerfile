@@ -70,6 +70,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     bash-completion \
     # GitHub CLI
     gh \
+    # SSH client (for E2E test companion container access)
+    openssh-client \
     # Audio support (for Claude Code voice)
     sox \
     libsox-fmt-pulse \
@@ -82,6 +84,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # Cross-compilation for x86_64 Linux binary from aarch64 host
     gcc-x86-64-linux-gnu \
     libc6-dev-amd64-cross \
+    # Yazi preview dependencies
+    chafa \
+    poppler-utils \
+    ffmpeg \
+    imagemagick \
+    ghostscript \
+    timg \
+    mupdf-tools \
+    entr \
     # Python
     python3 \
     python3-pip \
@@ -137,10 +148,11 @@ COPY config/zellij/layouts/dev.kdl     /home/aibox/.config/zellij/layouts/dev.kd
 COPY config/zellij/layouts/focus.kdl   /home/aibox/.config/zellij/layouts/focus.kdl
 
 # Yazi
-RUN mkdir -p /home/aibox/.config/yazi
+RUN mkdir -p /home/aibox/.config/yazi/plugins
 COPY config/yazi/yazi.toml             /home/aibox/.config/yazi/yazi.toml
 COPY config/yazi/keymap.toml           /home/aibox/.config/yazi/keymap.toml
 COPY config/yazi/theme.toml            /home/aibox/.config/yazi/theme.toml
+COPY config/yazi/plugins/              /home/aibox/.config/yazi/plugins/
 
 # Helper scripts
 COPY config/bin/open-in-editor.sh      /usr/local/bin/open-in-editor
