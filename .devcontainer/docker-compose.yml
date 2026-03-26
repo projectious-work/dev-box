@@ -1,11 +1,11 @@
 services:
-  devcontainer:
+  aibox-devcontainer:
     build:
       context: .
       dockerfile: Dockerfile
       target: runtime
-    image: localhost/devcontainer:latest
-    container_name: devcontainer
+    image: localhost/aibox-devcontainer:latest
+    container_name: aibox-devcontainer
     hostname: aibox
     stdin_open: true
     tty: true
@@ -65,5 +65,29 @@ services:
       # Tell git to look for its config in XDG location (matches mount above)
       - GIT_CONFIG_GLOBAL=/home/aibox/.config/git/config
     working_dir: /workspace
+
+  # ── E2E Test Companion Container ───────────────────────────────────────────
+  # Simulates a user's host machine for end-to-end testing of the aibox CLI.
+  # No shared volumes — the test harness SCPs the aibox binary + addons into
+  # the companion, making it a realistic simulation of a user's host machine.
+  # Accessible from aibox-devcontainer via: ssh -i /workspace/.devcontainer/ssh-e2e/id_ed25519 testuser@aibox-e2e-testrunner
+  aibox-e2e-testrunner:
+    build:
+      context: .
+      dockerfile: Dockerfile.e2e
+    container_name: aibox-e2e-testrunner
+    hostname: aibox-e2e-testrunner
+    # Podman rootless inside a container needs:
+    #   seccomp=unconfined  — allows syscalls used by user-namespace creation
+    #   SYS_ADMIN           — allows newuidmap to write /proc/PID/uid_map
+    # Safe here because the container has NO host mounts, NO host network,
+    # and NO exposed ports — the capability is scoped to its own namespaces.
+    security_opt:
+      - seccomp=unconfined
+    cap_add:
+      - SYS_ADMIN
+    tmpfs:
+      - /tmp
+      - /run
 
 volumes: {}

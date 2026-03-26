@@ -35,10 +35,67 @@ cd cli && cargo build --release # Release build
 ## Testing
 
 ```bash
-cd cli && cargo test                          # All tests (unit + integration)
+cd cli && cargo test                          # All tests (unit + integration + E2E tier 1)
+cd cli && cargo test --features e2e           # Include E2E tier 2 (requires aibox-e2e-testrunner)
 cd cli && cargo clippy -- -D warnings         # Lint check
 cd cli && cargo fmt -- --check                # Format check
 ```
+
+### E2E Test Architecture
+
+Two-tier E2E testing (`cli/tests/e2e/`):
+
+- **Tier 1** (always run): Config coverage tests and appearance tests that verify
+  `aibox init` + `aibox sync` produce correct generated files. No container needed.
+- **Tier 2** (`--features e2e`): Full lifecycle tests that run on the `aibox-e2e-testrunner`
+  companion container via SSH. Tests init→sync→start→stop→remove, reset/backup,
+  migration, addon management, and application smoke tests.
+
+The `aibox-e2e-testrunner` service is defined in `.devcontainer/docker-compose.yml` and starts
+alongside the dev-container. It runs podman (rootless) for container operations and
+sshd for remote test execution. No shared volumes — the test harness deploys
+artifacts via SCP, making the companion a realistic simulation of a user's machine.
+
+### Running E2E Tier 2 Tests (step by step)
+
+Prerequisites: dev-container must be rebuilt so the `aibox-e2e-testrunner` companion service
+is running alongside it. This only needs to happen once (or when `Dockerfile.e2e`
+changes).
+
+```bash
+# 1. Build the CLI binary (inside the dev-container)
+cd /workspace/cli && cargo build
+
+# 2. Run E2E Tier 2 tests
+#    On first invocation, the test harness automatically:
+#    - SCPs cli/target/debug/aibox → aibox-e2e-testrunner:/usr/local/bin/aibox
+#    - SCPs addons/ → aibox-e2e-testrunner:/opt/aibox/addons/
+#    - Verifies the deployed binary runs on the companion
+#    Then executes all Tier 2 tests over SSH.
+cd /workspace/cli && cargo test --features e2e
+
+# To run a specific E2E test:
+cd /workspace/cli && cargo test --features e2e -- lifecycle
+```
+
+The deploy step is guarded by `std::sync::Once` — it runs exactly once per
+`cargo test` invocation, so re-running tests is fast. If you change the CLI
+code, just `cargo build` again and re-run; the next `cargo test --features e2e`
+will SCP the updated binary.
+
+### Key Files
+
+- `.devcontainer/Dockerfile.e2e` — Companion container image (debian + podman + sshd)
+- `.devcontainer/ssh-e2e/` — Pre-seeded ed25519 test SSH keys
+- `cli/tests/e2e/runner.rs` — SSH+SCP test harness (`E2eRunner`)
+- `cli/tests/e2e/mock_runtime.rs` — Mock docker/podman for command validation
+- `cli/tests/e2e/infra/mock-docker.sh` / `mock-podman.sh` — Mock runtime scripts
+- `cli/tests/e2e/lifecycle.rs` — Container lifecycle tests
+- `cli/tests/e2e/reset.rs` — Reset/backup tests
+- `cli/tests/e2e/addon.rs` — Addon management tests
+- `cli/tests/e2e/smoke.rs` — Application smoke tests (podman validation)
+- `cli/tests/e2e/appearance.rs` — Theme/prompt rendering tests (Tier 1)
+- `cli/tests/e2e/config_coverage.rs` — aibox.toml settings coverage (Tier 1)
 
 ## Config Spec — aibox.toml
 
