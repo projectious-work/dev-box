@@ -88,9 +88,6 @@ RUN curl -fsSL https://bun.sh/install | bash
 # asciinema for terminal recordings
 RUN uv tool install asciinema
 
-# Switch back to root so the generated version stamp (appended after this)
-# can write to /etc/aibox-version
-USER root
-
 # Record image version inside container for runtime checks
+USER root
 RUN echo "0.13.1" > /etc/aibox-version

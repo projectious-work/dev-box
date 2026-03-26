@@ -38,6 +38,9 @@ builder: |
       curl \
       && rm -rf /var/lib/apt/lists/*
 
+  # Install to /home/aibox paths regardless of builder HOME (which is /root)
+  ENV CARGO_HOME=/home/aibox/.cargo RUSTUP_HOME=/home/aibox/.rustup
+
   RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
       sh -s -- -y \
       --default-toolchain {{ tools.rustc.version }}{% if tools.clippy.enabled %} \
@@ -46,7 +49,7 @@ builder: |
 
   ENV PATH="/home/aibox/.cargo/bin:${PATH}"
 
-  RUN . "$HOME/.cargo/env" && cargo install cargo-audit
+  RUN cargo install cargo-audit
 
 runtime: |
   # Addon: rust (runtime — copy from builder)

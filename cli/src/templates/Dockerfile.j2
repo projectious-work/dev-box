@@ -41,4 +41,5 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 {% endif %}
 
 # Record image version inside container for runtime checks
+USER root
 RUN echo "{{ version }}" > /etc/aibox-version

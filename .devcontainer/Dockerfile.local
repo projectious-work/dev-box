@@ -30,7 +30,3 @@ RUN curl -fsSL https://bun.sh/install | bash
 
 # asciinema for terminal recordings
 RUN uv tool install asciinema
-
-# Switch back to root so the generated version stamp (appended after this)
-# can write to /etc/aibox-version
-USER root
