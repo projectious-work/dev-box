@@ -1,6 +1,7 @@
 use anyhow::{bail, Context, Result};
 use std::path::PathBuf;
 
+use crate::addon_loader;
 use crate::addon_registry;
 use crate::config::AiboxConfig;
 use crate::output;
@@ -153,6 +154,14 @@ pub fn cmd_addon_info(name: &str) -> Result<()> {
 
     println!("Add-on: {}", addon_def.name);
     println!("Recipe version: {}", addon_def.addon_version);
+
+    // Show requires if present (sourced from loader which retains the full data).
+    if let Some(loaded) = addon_loader::get_addon(name)
+        && !loaded.requires.is_empty()
+    {
+        println!("Requires: {}", loaded.requires.join(", "));
+    }
+
     println!();
 
     if addon_def.tools.is_empty() {

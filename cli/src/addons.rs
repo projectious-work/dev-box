@@ -404,4 +404,34 @@ mod tests {
         let err = result.unwrap_err().to_string();
         assert!(err.contains("Circular"), "error: {}", err);
     }
+
+    #[test]
+    fn topo_sort_self_referential_dependency_errors() {
+        // A requires A — the simplest possible cycle.
+        let names = vec!["a".to_string()];
+        let result = topological_sort(&names, |name| match name {
+            "a" => vec!["a".to_string()],
+            _ => vec![],
+        });
+        assert!(result.is_err());
+        let err = result.unwrap_err().to_string();
+        // A self-loop means in_degree["a"] stays > 0 and the sorted list never
+        // reaches length 1, so Kahn's algorithm reports "Circular dependency".
+        assert!(err.contains("Circular"), "error: {}", err);
+    }
+
+    #[test]
+    fn topo_sort_three_node_cycle_errors() {
+        // A → B → C → A
+        let names = vec!["a".to_string(), "b".to_string(), "c".to_string()];
+        let result = topological_sort(&names, |name| match name {
+            "a" => vec!["b".to_string()],
+            "b" => vec!["c".to_string()],
+            "c" => vec!["a".to_string()],
+            _ => vec![],
+        });
+        assert!(result.is_err());
+        let err = result.unwrap_err().to_string();
+        assert!(err.contains("Circular"), "error: {}", err);
+    }
 }
