@@ -63,3 +63,27 @@ Completed, merged, and archived items. Active backlog: [../BACKLOG.md](../BACKLO
 | — | Vim colorscheme fix | done | — | Granular .vim mounts so image colors survive |
 | — | Remove mkdocs.yml | done | — | Fully migrated to zensical.toml |
 | — | Dogfood product process | done | — | Adopt own product template, migrate GitHub issues |
+| BACK-011 | Remote development | done | — | Research complete: `context/research/remote-development-2026-03.md`. Review → BACK-079. |
+| BACK-025 | Skills gap analysis — internet research | done | — | Research complete: `context/research/skills-gap-analysis-2026-03.md`. Review → BACK-083. |
+| BACK-026 | Existing skills quality review | done | — | Audit complete: `context/research/skills-quality-audit-2026-03.md`. Review → BACK-089. |
+| BACK-027 | Three-level document structure audit | done | — | Audit complete: `context/research/document-structure-audit-2026-03.md`. Review → BACK-090. |
+| BACK-043 | Research additional AI provider integrations | done | — | Research complete: `context/research/ai-provider-integrations-2026-03.md`. Review → BACK-105. Implementation → BACK-064. |
+| BACK-044 | Evaluate Mozilla cq integration | done | — | Research complete: `context/research/mozilla-cq-evaluation-2026-03.md`. Review → BACK-084. Recommendation: skip for now, reassess Q3 2026. |
+| BACK-046 | Issue handling skill + agent architecture | done | — | Design complete: `context/research/issue-handling-design-2026-03.md`. Review → BACK-091. |
+| BACK-047 | Investigate Docusaurus addon improvements | done | — | Research complete: `context/research/docusaurus-addon-improvements-2026-03.md`. Review → BACK-103. |
+| BACK-050 | Addon-skill mapping completeness + orphan skill audit | done | — | Audit complete: `context/research/addon-skill-mapping-audit-2026-03.md`. 31 orphans found. Review → BACK-092. |
+| BACK-051 | Organizational learning via skill customization | done | — | Design complete: `context/research/skill-customization-design-2026-03.md`. Review → BACK-080. |
+| BACK-054 | Research VS Code themes for aibox | done | — | Research complete: `context/research/vscode-themes-2026-03.md`. Recommends Rose Pine, Everforest, Kanagawa. Review → BACK-085. |
+| BACK-060 | Investigate aibox version upgrade flows | done | — | Design complete: `context/research/version-upgrade-flows-2026-03.md`. Proposes `aibox migrate` command. Review → BACK-086. |
+| BACK-067 | New zellij layout: yazi-focused with large preview | done | — | "browse" layout implemented in v0.14.0. |
+| BACK-068 | Kubernetes deployment: scaffold Helm charts | done | — | Research complete: `context/research/kubernetes-deployment-2026-03.md`. Review → BACK-081. |
+| BACK-069 | Skill definition versioning and status metadata | done | — | Design complete: `context/research/skill-versioning-design-2026-03.md`. Review → BACK-098. |
+| BACK-070 | AI-provider-independent scheduled tasks | done | — | Research complete: `context/research/scheduled-tasks-2026-03.md`. Review → BACK-087. |
+| BACK-073 | Event log in ./context + event logging skill | done | — | Design complete: `context/research/event-log-design-2026-03.md`. Review → BACK-082. |
+| BACK-074 | Bug: Rust addon builder HOME path mismatch | done | — | Fixed in v0.13.2. |
+| BACK-075 | Bug: Dockerfile template writes /etc/aibox-version without root | done | — | Fixed in v0.13.2. |
+| BACK-088 | Research: RAG layer over ./context for semantic search | done | — | Research complete: `context/research/rag-context-layer-2026-03.md`. Recommends fastembed+sqlite-vec. Review → BACK-099. |
+| BACK-093 | New skill category: Brand & Design | done | — | Research complete: `context/research/brand-design-skills-2026-03.md`. Review → BACK-100. |
+| BACK-094 | Research: self-hosted AI models and GPU providers | done | — | Research complete: `context/research/self-hosted-ai-models-2026-03.md`. Review → BACK-101. |
+| BACK-095 | Research: owner profiling skill | done | — | Design complete: `context/research/owner-profiling-skill-2026-03.md`. Review → BACK-102. |
+| BACK-096 | Research: infrastructure provisioning | done | — | Research complete: `context/research/infrastructure-provisioning-2026-03.md`. Review → BACK-104. |
