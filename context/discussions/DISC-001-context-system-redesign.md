@@ -13,6 +13,9 @@ research:
   - context/research/event-log-design-2026-03.md
   - context/research/document-structure-audit-2026-03.md
   - context/research/issue-handling-design-2026-03.md
+  - context/research/file-per-entity-scaling-2026-03.md
+  - context/research/competitive-landscape-2026-03.md
+  - context/research/competitive-tools-2026-03.md
 ---
 
 # DISC-001: Context System Redesign
@@ -67,6 +70,9 @@ universal schema.
 
 **Question:** Should structured data move from markdown tables to a database?
 
+**Owner's core principle:** Data must have ONE source of truth. Dual-master never works —
+it leads to divergence, contradictions, merge conflicts, and becomes impossible to manage.
+
 **Arguments for database (SQLite):**
 - Efficient queries (SQL vs parsing markdown)
 - RAG integration (vector embeddings in same storage)
@@ -81,6 +87,12 @@ universal schema.
 - Git delta compression doesn't work well for SQLite (page-based format)
 - Size estimate: even small project database could reach 5-50MB per commit
 
+**Git and binary files — the facts** (from `context-database-architecture-2026-03.md`):
+Git does NOT delta-compress binary files efficiently in loose object storage. Packfiles
+do apply binary delta compression, but SQLite's page-based format means even small changes
+shuffle many pages — deltas are large. A 5MB SQLite file changed 100 times could consume
+200-500MB of git history. SQLite as committed source of truth is not viable.
+
 **Arguments for markdown+frontmatter (file-per-entity):**
 - Git-native (perfect diffs, blame, merge)
 - Human-readable
@@ -89,9 +101,31 @@ universal schema.
 - Each entity = own file → minimal merge conflicts
 - Single source of truth = the .md file
 
+**NoSQL / document store exploration** (owner-initiated):
+Owner asked: would NoSQL be better than SQL for flexible schemas (user-defined fields)?
+Jira uses EAV (Entity-Attribute-Value) for custom fields — flexible but notoriously slow
+at scale. Options researched:
+- JSON-per-entity files (git-native, but less readable than markdown)
+- TinyDB, LowDB, UnQLite (embedded document stores — not git-native)
+- SurrealDB embedded (multi-model, Rust-native — promising but immature)
+- SQLite with JSON columns (SQL + flexible fields — good query, bad git)
+- Markdown+frontmatter with `custom:` map (best of all worlds)
+
+**Jira comparison:** Jira's power is per-issue-type field configuration and configurable
+workflows (state machines). Its pain is vendor lock-in and performance at scale. Linear
+solved this by being opinionated with fewer custom fields but faster queries. Our
+markdown+frontmatter approach gets Jira's flexibility via the `custom:` YAML map without
+the EAV performance tax.
+
 **Resolution:** Markdown+frontmatter as source of truth, SQLite as DERIVED runtime
 index (gitignored). Rebuilt on `aibox sync`. This gives git-native storage + fast
 queries without dual-master problems.
+
+**Two kinds of content identified:**
+- **Narrative content** stays as markdown body: research reports, decision rationale,
+  work instructions, session notes, SKILL.md instructions
+- **Structured records** get YAML frontmatter: IDs, states, priorities, dates, categories,
+  cross-references, custom fields
 
 ### 2.4 Scaling concerns
 
@@ -167,6 +201,10 @@ Research (`file-per-entity-scaling-2026-03.md`) resolved the scaling concern:
 **kaits boundary:** Repo-per-project. Each simulated company project = own git repo
 with own aibox context (max ~50K active files). kaits orchestrates across repos and
 maintains a cross-project database for analytics. aibox markdown = interchange format.
+
+**Ultimate mitigation (owner):** The underlying filesystem can be changed from disk-based
+to RAM-based (tmpfs/ramfs). This eliminates all I/O bottlenecks but is the nuclear option
+— only for extreme performance-critical scenarios.
 
 **Decision (tentative):** File-per-entity with sharding + sparse checkout + hot/cold
 archiving. Scales to 100K+ items per project. kaits scales beyond via repo-per-project.
