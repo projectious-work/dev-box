@@ -2,7 +2,7 @@
 id: DISC-001
 title: Context System Redesign — Process Ontology, Storage Architecture, Scaling
 status: active
-date: 2026-03-27
+date: 2026-03-28
 participants: [owner, claude]
 related: [BACK-097, BACK-082, BACK-090, BACK-091, BACK-099]
 research:
@@ -24,6 +24,7 @@ research:
   - context/research/ai-provider-audit-logging-2026-03.md
   - context/research/software-dev-process-deep-dive-2026-03.md
   - context/research/ai-provider-identity-scheduling-2026-03.md
+  - context/research/aiadm-aictl-architecture-2026-03.md
 ---
 
 # DISC-001: Context System Redesign
@@ -1056,40 +1057,165 @@ Issues found across scenarios:
 - Migration prompts must be agent-agnostic (medium)
 - `aibox id generate --count N` batch mode for kaits (medium)
 
-## 3. Open Questions
+### 2.50 aiadm/aictl architectural proposal (session 2026-03-28)
 
-10 scenarios to walk through and validate the design:
-1. Solo dev starts new project (`aibox init`)
-2. User has an idea for a feature (work item creation)
-3. User asks "what am I working on?" (query/status)
-4. Work item lifecycle across multiple sessions (handover)
-5. Two humans collaborate with RBAC
-6. Design discussion → decision
-7. Setting up a weekly cadence
-8. aibox v1→v2 schema migration
-9. Project grows to 5,000 items (scaling)
-10. kaits spins up a simulated company project
+Owner identified that the purely probabilistic RBAC model (Decision 19) is insufficient
+for enterprise: CIOs and security responsibles need deterministic enforcement and
+tamper-proof audit logs, not agent goodwill.
 
-## 3. Open Questions (for continued discussion)
+**Proposed solution (Kubernetes-inspired):**
+- Rename `aibox` -> `aiadm` (like kubeadm): infrastructure setup, images, containers, schema
+- New CLI `aictl` (like kubectl): ALL context operations (create/get/describe/delete/edit/apply)
+- Certificate-based authentication: each user/agent has a cert signed by project CA
+- OS-level file lockdown: context/ writable only by aictl process
+- Deterministic audit log: every aictl command logged automatically
+- RBAC mechanically enforced: no certificate = no access
 
-1. ~~**Scaling**: resolved — see §2.7~~
-2. ~~**Primitive mapping**: resolved — see §2.10~~
+**Research conducted** (`context/research/aiadm-aictl-architecture-2026-03.md`):
+
+1. **OS-level lockdown:** Assessed 5 mechanisms (DAC, SELinux/AppArmor, capabilities,
+   container isolation, FUSE). Key finding: no intra-container mechanism is absolute
+   against root shell access. Host-applied AppArmor is strongest. Recommended layered
+   approach: DAC + cryptographic signing + FUSE when budget allows.
+
+2. **kubectl->aictl mapping:** 24 commands map 1:1, 4 adapted semantically, 12 new
+   aictl-specific commands (transition, lint, sync, search, board, tree, etc.), 16
+   kubectl commands moved to aiadm. Total ~40 aictl commands.
+
+3. **Decision impact:** Of 50 decisions: 14 unchanged, 17 modified, 7 superseded, 12
+   strengthened. Superseded cluster around identity/RBAC (19, 43, 47, 48) and execution
+   model (9, 20, 21, 35). Key boundary shift: aiadm=infrastructure, aictl=tooling,
+   agents=judgment.
+
+4. **K8s certificate flow:** Detailed analysis of CA creation, CSR workflow, kubeconfig,
+   service accounts, RBAC mechanics. Key insight: enforcement works because API server is
+   the single choke point to etcd. For aictl: signed files + git hook enforcement is
+   the practical equivalent.
+
+**Key architectural insight:** The probabilistic paradigm survives as a LAYER on top of
+a deterministic base. aictl handles mechanical correctness (auth, RBAC, schema, logging);
+agents handle judgment (what to create, when to transition, how to interpret guards).
+Skills shrink by 60-70% because cross-cutting concerns become automatic.
+
+**Open questions for owner:** (1) Does aictl govern all context/ files or only entities
+with frontmatter? (2) Guard evaluation: trust agent assertion or evaluate mechanically?
+(3) Solo dev certificate complexity — is `--no-auth` mode sufficient? (4) Rename timing.
+(5) Structured vs plain-English permissions. (6) Daemon vs CLI-only.
+
+## 3. Current State (as of 2026-03-29)
+
+### 3.1 Where we are
+
+DISC-001 has progressed through two major phases:
+
+**Phase 1 (§2.1–§2.49): Context system design.** Complete. 17 primitives identified and
+mapped to storage. File-per-entity markdown+frontmatter as source of truth, SQLite as
+derived index. Word-based IDs via petname. Kubernetes-inspired object model (apiVersion/
+kind/metadata/spec). 17 skills mapped to 17 primitives. 7 process packages defined.
+6 personas validated across 10 scenarios. 50 tentative decisions recorded.
+
+**Phase 2 (§2.50): aiadm/aictl proposal.** Research complete, awaiting owner review.
+The purely probabilistic RBAC model (Decision 19) was identified as insufficient for
+enterprise users who need deterministic enforcement and tamper-proof audit logs. Research
+covered OS-level lockdown mechanisms, kubectl-to-aictl command mapping, impact on all 50
+decisions, and Kubernetes certificate/RBAC mechanics.
+
+Key research finding: the proposal is architecturally sound. Of 50 decisions, 14 are
+unchanged, 17 need modification, 7 are superseded (clustered around identity/RBAC and
+the execution model), and 12 are strengthened. The probabilistic paradigm survives as a
+LAYER on top of a deterministic base — aictl handles mechanical correctness while agents
+retain judgment authority. Skills would shrink by 60-70%.
+
+Full research: `context/research/aiadm-aictl-architecture-2026-03.md`
+
+### 3.2 Open questions — aiadm/aictl proposal (need owner input)
+
+**Q-A: Scope of aictl governance.** Does aictl govern ALL files in `context/`, or only
+entity files with YAML frontmatter? Research reports, work instructions, and PRD are
+"narrative content" — some have frontmatter, some don't. If aictl governs everything,
+agents cannot create/edit research reports without going through aictl. If aictl governs
+only entities, narrative content remains unprotected but also unrestricted. The boundary
+needs to be explicit: which files does the RBAC model cover?
+
+**Q-B: Guard evaluation model.** When an agent calls `aictl transition BACK-xxx --to
+in-review`, how does aictl handle the plain English guard ("all blocking items must be
+resolved")? Two options:
+- **(a) Trust the agent's assertion.** The agent says "I've checked the guards," aictl
+  records the transition with a note that guards were self-attested. The guard text is
+  logged for audit but not mechanically evaluated. Preserves the probabilistic philosophy.
+- **(b) Evaluate mechanically.** aictl parses the guard into checkable conditions and
+  blocks the transition if they fail. Requires a guard expression language (contradicts
+  the "plain English, not minijinja" decision).
+- **(c) Hybrid.** Some guards are tagged as `enforceable: true` with structured criteria
+  alongside the plain English. aictl enforces the structured part, logs the English part.
+
+**Q-C: Solo developer certificate complexity.** The Alex persona (solo dev, weekend
+projects) does not need certificate-based auth. Options:
+- `--no-auth` mode where aictl skips authentication entirely (simplest, no enforcement)
+- Auto-generated self-signed cert on `aiadm init` (transparent to user, but adds files)
+- Passphrase-based local auth (simpler than certificates, but weaker)
+- Tiered: solo mode = no auth, team mode = certificates enabled via `aiadm auth init`
+
+**Q-D: Rename timing.** The rename from `aibox` to `aiadm` is a breaking change affecting
+all documentation, CLAUDE.md templates, skill references, CLI binary name, GHCR paths,
+and user muscle memory. Options:
+- Rename now (before v1, while user base is small — clean break)
+- Rename at v1 release (bigger impact but bigger audience)
+- Keep `aibox` as the umbrella brand, `aiadm`/`aictl` as subcommands (`aibox adm init`,
+  `aibox ctl create workitem`) — avoids shipping two separate binaries
+
+**Q-E: Structured vs plain-English permissions.** Decision 19 uses plain English for
+role permissions. The aiadm/aictl model needs something machine-evaluable. Options:
+- **(a) Structured only.** Role files use verb+kind rules (like K8s RBAC). Machine-
+  enforceable but less flexible, harder for non-technical users to write.
+  ```yaml
+  permissions:
+    - action: [create, edit] kinds: [WorkItem, Decision]
+  ```
+- **(b) Plain English only, parsed by aictl.** aictl uses an LLM or rule engine to
+  interpret natural language permissions. Flexible but non-deterministic.
+- **(c) Hybrid.** Structured rules for enforcement + plain English as documentation.
+  The structured rules are the source of truth; the English is a human-readable gloss.
+  ```yaml
+  permissions:
+    - action: [create, edit]
+      kinds: [WorkItem, Decision]
+      description: "Can create and edit work items and decisions"
+  ```
+
+**Q-F: Daemon vs CLI-only.** Should aictl be a long-lived background daemon or a
+stateless CLI invoked per-command?
+- **CLI-only:** Simpler, no process management, familiar UX. Each invocation reads certs,
+  validates, writes, exits. Overhead ~5-20ms per command (negligible vs LLM inference).
+  No real-time watch/subscribe capability.
+- **Daemon:** Enables `aictl watch` (real-time entity change notifications), persistent
+  auth session (verify cert once), incremental index updates (no `aictl sync` needed),
+  file locking (prevent concurrent writes). More complex to manage but more capable.
+- **Hybrid:** CLI by default, optional `aictl daemon start` for advanced scenarios
+  (kaits, team environments). CLI commands connect to daemon if running, fall back to
+  direct file access if not.
+
+### 3.3 Open questions — earlier (still open)
+
 3. **Directory structure**: Design the new `context/` layout with sharding. (Partially
    addressed in mapping exercise, needs finalization.)
 4. **Migration plan**: Concrete steps to migrate from current format to file-per-entity.
    All IDs migrate, all files restructure. Need a migration script/command.
-5. ~~**Event log**: resolved — JSONL, see §2.11 Q3~~
-6. ~~**Narrative vs structured**: resolved — content-primary vs metadata-primary, see §2.11 Q4~~
-7. ~~**Process templates**: resolved — packages are primitive activation tiers, not framework
-   choices. Micro-processes in aibox, macro-frameworks in kaits. See §2.38~~
 8. **Git repo as a primitive**: Owner noted that taking a git repository as granted is
    itself a precondition/primitive. Accepted for now to keep things simple.
-9. ~~**Wordlist curation**: resolved — use `petname` crate with custom filtered list from
-   large wordlist, 3-8 char words, ~5K adj x ~4K nouns = 20M combos. See §2.21~~
 10. **Archive indexing depth**: How deep does the SQLite index go into archived content?
     Metadata always indexed, full payload requires extraction. Need to define the boundary.
 11. **INDEX.md generation**: What exactly goes into auto-generated directory index files?
     How does human override work? When does `aibox sync` regenerate them?
+
+### 3.4 Resolved questions (for reference)
+
+- ~~**Scaling**: resolved — see §2.7~~
+- ~~**Primitive mapping**: resolved — see §2.10~~
+- ~~**Event log**: resolved — JSONL, see §2.11 Q3~~
+- ~~**Narrative vs structured**: resolved — content-primary vs metadata-primary, see §2.11 Q4~~
+- ~~**Process templates**: resolved — packages are primitive activation tiers. See §2.38~~
+- ~~**Wordlist curation**: resolved — petname crate, 3-8 char words, ~20M combos. See §2.21~~
 
 ## 4. Decisions Made (tentative, pending formal DEC-NNN)
 
@@ -1195,10 +1321,11 @@ Issues found across scenarios:
 50. **`aibox auth whoami`**: Displays resolved identity, matched Actor, roles,
     permissions, restrictions, active provider. Inspired by kubectl auth whoami.
 
-**NOTE (pending revisit):** The current RBAC model is purely probabilistic — agents
-interpret permissions but nothing mechanically prevents unauthorized actions. This needs
-revisiting for enterprise/security-conscious users. See session handover 2026-03-28 for
-the aiadm/aictl proposal inspired by Kubernetes certificate-based auth.
+**NOTE:** Decisions 9, 19, 20, 21, 35, 43, 47, 48 are **superseded** by the aiadm/aictl
+proposal (§2.50). They remain listed here for historical context. The proposal introduces
+certificate-based auth, mechanical RBAC enforcement, and deterministic audit logging.
+Full impact analysis: `context/research/aiadm-aictl-architecture-2026-03.md`.
+Awaiting owner review — see §3.2 for the 6 open questions.
 11. **Three-level rule**: All entity .md files follow Level 1 (intro) → Level 2 (overview) →
     Level 3 (details). Directory INDEX.md files provide Level 0.
 12. **Filename conventions**: Inverse date prefix for temporal files + content slug for human
@@ -1219,6 +1346,9 @@ the aiadm/aictl proposal inspired by Kubernetes certificate-based auth.
 - [x] Resolve Actor multi-fill, word-ID sizing, guard execution, override materialization — **done** (§2.20-2.23)
 - [x] Establish infrastructure/application boundary — **done** (§2.24-2.28)
 - [x] Map primitives to skills — **done** (`context/research/primitive-skills-mapping-2026-03.md`)
+- [x] Research aiadm/aictl proposal — **done** (`context/research/aiadm-aictl-architecture-2026-03.md`)
+- [ ] **Owner review: aiadm/aictl proposal** — 6 open questions need owner input (§2.50)
+- [ ] Re-walk 10 validation scenarios under aiadm/aictl model
 - [ ] Update mapping exercise document with all accumulated decisions
 - [ ] Design new `context/` directory layout with sharding
 - [ ] Design YAML frontmatter schemas per primitive type (now with apiVersion/kind/metadata/spec)
