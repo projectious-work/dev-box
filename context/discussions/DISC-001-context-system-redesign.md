@@ -1102,11 +1102,231 @@ with frontmatter? (2) Guard evaluation: trust agent assertion or evaluate mechan
 (3) Solo dev certificate complexity — is `--no-auth` mode sufficient? (4) Rename timing.
 (5) Structured vs plain-English permissions. (6) Daemon vs CLI-only.
 
-## 3. Current State (as of 2026-03-29)
+### 2.51 Authorization design — process protection (session 2026-04-01)
+
+Owner review of aiadm/aictl proposal identified a critical attack vector: a developer
+modifies process definitions locally (e.g., `process/release.md` → "no approvals needed"),
+the AI agent reads the modified process and executes accordingly, then the developer
+reverts the process files. Git history looks clean. Filesystem write-blocking would
+prevent this, but the research showed that intra-container filesystem protection is
+fundamentally limited against agents with root shell access.
+
+**Key realization:** In the classic world, process documents (wiki pages, Confluence)
+never enforced anything. Enforcement came from CI/CD pipelines (compiled logic),
+branch protection (server-side), required approvals (server-side state), and deployment
+keys (held by the pipeline). The process document was documentation of what the pipeline
+enforces, not the enforcement itself.
+
+**The root problem in aibox:** Process definitions (markdown) and enforcement mechanism
+(agent reading that markdown) live in the same trust domain. The agent reads its
+instructions from a location the governed party can edit. This is like letting the CI/CD
+pipeline download its rules from a wiki page the developer can edit mid-run.
+
+**Resolution — signed process definitions + hash pinning:**
+
+Process definitions remain markdown in git (human-readable, versioned, recoverable).
+But they are consumed through a verification layer, not trusted raw.
+
+| Layer | Mechanism | Purpose |
+|-------|-----------|---------|
+| Signing | `aibox process sign release.md` | Process-admin signs with their cert |
+| Pinning | `.aibox/process-pins.toml` (signed) | Records expected hash per process file |
+| Verification | `aibox release start` | Verifies process file hash against pin |
+| Audit | Event log | Records which process hash was used at execution time |
+
+The local-modify-then-revert attack fails because the modified file's hash doesn't
+match the signed pin. `aibox` refuses to execute against an unsigned or hash-mismatched
+process definition. The developer CAN modify the file locally — aibox just won't trust it.
+
+**Separation aligns with volume classification (Decision 40):**
+
+| Category | Entities | Authorization |
+|----------|----------|---------------|
+| Governance (low-volume) | Process, Role, Gate, Constraint, Scope | Signed by process-admin, pinned hash |
+| Governed (high-volume) | WorkItem, Decision, Discussion, Artifact | Normal RBAC (create/edit/delete per role) |
+| Audit (append-only) | Event log entries | Append only, signed, hash-chained |
+
+The low-volume/high-volume distinction already made for naming conventions (Decision 40)
+turns out to be the same distinction needed for the trust model.
+
+**Git submodules as escalation path:** For teams, governance files (processes, roles,
+gates, constraints) can live in a separate repo with different push permissions. The
+submodule pin (commit hash) is the version reference. Updating the pin requires a visible
+commit. This is the natural Tier 1→2 scaling step (see §2.52).
+
+### 2.52 Event log scaling — tiered architecture (session 2026-04-01)
+
+Owner challenged the git-based event log design at scale. With 10 developers generating
+events concurrently, the push-pull cycle creates cascade failures:
+
+```
+Developer A pushes → success
+Developer B pushes → rejected (not fast-forward)
+Developer B pulls, rebases, pushes → rejected (C pushed)
+Developer C pushes → rejected (B just pushed)
+... cascade of rebase-push-retry
+```
+
+Even per-actor JSONL sharding (each actor appends to their own file) doesn't solve this:
+the push frequency problem remains for all shared files. Git was designed for
+collaborative authoring (low-frequency edits to existing content), not event streaming
+(high-frequency appends of new content).
+
+**Principle reframe:** The actual principle is "everything is auditable and recoverable,"
+not "everything is in git." Git is the zero-infrastructure default implementation that
+provides auditability for free. A properly configured database with WAL archiving,
+replication, and access controls provides the same five properties:
+
+1. Auditable — every mutation attributable and immutable
+2. Recoverable — nothing permanently lost
+3. Versionable — can see what changed and roll back
+4. Human-readable — exportable to readable format
+5. Portable — no vendor lock-in, no mandatory infrastructure
+
+**Tiered architecture:**
+
+| Tier | Target | Event storage | Governance | Artifacts | CLI |
+|------|--------|---------------|------------|-----------|-----|
+| 0 (Solo) | Alex persona | JSONL in git (per-actor) | Same repo | Same repo | `aibox` |
+| 1 (Small team) | Maria persona | JSONL in git (per-actor) | Separate repo (submodule/pin) | Project repo | `aibox` |
+| 2 (Medium team) | Growing company | External store (Redis/Postgres/ClickHouse) | Governance repo | Project repo | `aibox` |
+| 3 (Enterprise/kaits) | CIO persona | Full event infrastructure | Company-wide governance repo | Per-team repos | `aibox` + kaits |
+
+**The "everything in git" principle bends at Tier 2.** But it bends at exactly the point
+where git's write pattern stops matching the data's write pattern. Governance and artifacts
+are low-frequency, high-semantic — git is ideal. Events are high-frequency, low-semantic —
+git is the wrong tool.
+
+**Append-only in git (Tiers 0-1):**
+
+Per-actor JSONL sharding avoids merge conflicts:
+```
+context/events/
+  actor-alice.jsonl     ← Alice's agent only appends here
+  actor-bob.jsonl       ← Bob's agent only appends here
+  infrastructure.jsonl  ← aibox system events
+```
+
+Server-side pre-receive hooks enforce: lines can only be appended, never removed
+(diff must be pure additions). Each line signed. Works for up to ~10 concurrent actors.
+
+### 2.53 Responsibility boundaries — pluggable backends (session 2026-04-01)
+
+Owner question: if event logs move to a database at Tier 2, does that break aibox's
+design? Resolution: aibox defines interfaces, backends are pluggable.
+
+**aibox's responsibility:** Define schemas, provide git-based defaults, define the
+interface that alternative backends must implement, provide skills that work against
+the interface (not the backend).
+
+**Derived project's responsibility:** Choose which backends to use, configure
+infrastructure. A skill says `aibox event create ...` and aibox routes to the
+configured backend.
+
+```toml
+# aibox.toml
+[events]
+backend = "git"                     # default: JSONL in git
+# backend = "redis"                 # scaled: Redis Streams
+# backend = "postgres"              # alternative
+
+[search]
+backend = "sqlite"                  # default: local SQLite FTS
+# backend = "meilisearch"           # scaled
+
+[identity]
+backend = "local"                   # default: auto-generated cert
+# backend = "ca"                    # team: project CA
+# backend = "oidc"                  # enterprise: SSO
+```
+
+**Critical property:** Skills don't change between tiers. A skill says "log this event"
+— whether it lands in JSONL or Redis is a deployment concern, not a process concern.
+This means process definitions remain portable across all tiers.
+
+### 2.54 CLI tool count — one binary (session 2026-04-01)
+
+The aiadm/aictl split was modeled on kubeadm/kubectl, but the Kubernetes split exists
+because the admin and the user are typically different people on different machines. In
+aibox Tier 0-1, they're the same person on the same machine.
+
+**Resolution:** One CLI binary (`aibox`) with subcommand grouping. No rename.
+
+```
+aibox init             ← project scaffolding
+aibox admin cert       ← certificate management (was aiadm cert)
+aibox admin image      ← container management (was aiadm image)
+aibox create           ← CRUD operations (was aictl create)
+aibox transition       ← state machine (was aictl transition)
+aibox auth             ← identity/RBAC (was aictl auth)
+aibox events           ← event queries
+aibox lint             ← validation
+aibox config           ← backend configuration
+```
+
+If enterprise needs warrant it later, `aibox admin` can be extracted into a separate
+binary — but that's a packaging decision, not an architectural one.
+
+**Impact on aiadm/aictl research:** The command mapping (§2.50 research section 2) remains
+valid — the commands are the same, just grouped under one binary instead of two. The
+40 aictl commands become `aibox <command>`, the aiadm commands become `aibox admin <command>`.
+
+### 2.55 kaits relationship clarified (session 2026-04-01)
+
+kaits enters at Tier 3 as:
+
+- **Multi-project orchestrator** (backend): manages governance across repos, provisions
+  shared infrastructure (event store, search, CA), schedules agents across projects
+- **Dashboard** (frontend): visualizes processes, events, metrics across projects.
+  Could also serve as a GUI for process configuration ("this is how logging is done" =
+  defining the event backend, configuring the MCP server)
+
+kaits does not replace aibox — it's the layer above. Each project still has aibox.
+kaits coordinates between them and provides the shared infrastructure that individual
+projects connect to via pluggable backends (§2.53).
+
+**Boundary clarification:**
+
+| Concern | aibox | kaits |
+|---------|-------|-------|
+| Single-project context management | Yes | No |
+| Process definition authoring | Yes (markdown + signing) | GUI for viewing/editing |
+| Event logging interface | Yes (defines schema + skill) | Provides scaled backend |
+| Agent orchestration | No (single agent) | Yes (multi-agent scheduling) |
+| Cross-project queries | No | Yes |
+| Infrastructure provisioning | Container images only | Full stack (DB, search, CA) |
+
+### 2.56 Owner answers to §3.2 open questions (session 2026-04-01)
+
+**Q-A (Scope of governance):** Entity files with frontmatter go through aibox RBAC.
+Narrative content (research, work instructions) can be directly edited — they're authored
+content, not process state. The boundary: does this file represent a state machine entity?
+If yes, aibox governs it. If no, it's unrestricted.
+
+**Q-B (Guard evaluation):** Option (a) — trust the agent's assertion. Guards are the
+probabilistic layer. The deterministic layer is: "did an authorized actor invoke this
+transition through aibox?" not "are the guards actually satisfied?"
+
+**Q-C (Solo dev certificates):** Auto-generated self-signed cert at `aibox init`. No CSR
+workflow, no CA management. The user never thinks about certs — it's `git commit
+--gpg-sign` under the hood. `--no-auth` mode available for truly zero-friction use.
+
+**Q-D (Rename timing):** No rename. Keep `aibox` as the single binary. Subcommand
+grouping (`aibox admin ...`) instead of binary splitting. See §2.54.
+
+**Q-E (Structured vs plain-English permissions):** Hybrid — structured rules for
+enforcement + plain English as documentation. The structured rules are the source of
+truth; the English is a human-readable gloss. See Decision 19-revised below.
+
+**Q-F (Daemon vs CLI-only):** CLI-only. Git is the persistence layer, each invocation
+reads certs, validates, writes, exits. Overhead ~5-20ms per command (negligible vs LLM
+inference). Daemon is a kaits concern if needed at Tier 3.
+
+## 3. Current State (as of 2026-04-01)
 
 ### 3.1 Where we are
 
-DISC-001 has progressed through two major phases:
+DISC-001 has progressed through three major phases:
 
 **Phase 1 (§2.1–§2.49): Context system design.** Complete. 17 primitives identified and
 mapped to storage. File-per-entity markdown+frontmatter as source of truth, SQLite as
@@ -1114,86 +1334,42 @@ derived index. Word-based IDs via petname. Kubernetes-inspired object model (api
 kind/metadata/spec). 17 skills mapped to 17 primitives. 7 process packages defined.
 6 personas validated across 10 scenarios. 50 tentative decisions recorded.
 
-**Phase 2 (§2.50): aiadm/aictl proposal.** Research complete, awaiting owner review.
+**Phase 2 (§2.50): aiadm/aictl proposal.** Research complete, owner reviewed.
 The purely probabilistic RBAC model (Decision 19) was identified as insufficient for
 enterprise users who need deterministic enforcement and tamper-proof audit logs. Research
 covered OS-level lockdown mechanisms, kubectl-to-aictl command mapping, impact on all 50
-decisions, and Kubernetes certificate/RBAC mechanics.
+decisions, and Kubernetes certificate/RBAC mechanics. Key finding: architecturally sound,
+probabilistic paradigm survives as a layer on a deterministic base.
 
-Key research finding: the proposal is architecturally sound. Of 50 decisions, 14 are
-unchanged, 17 need modification, 7 are superseded (clustered around identity/RBAC and
-the execution model), and 12 are strengthened. The probabilistic paradigm survives as a
-LAYER on top of a deterministic base — aictl handles mechanical correctness while agents
-retain judgment authority. Skills would shrink by 60-70%.
+**Phase 3 (§2.51–§2.56): Authorization design + scaling architecture.** Complete.
+Owner reviewed the aiadm/aictl proposal and resolved all 6 open questions. Key outcomes:
+
+- **Process protection via signed definitions + hash pinning** (§2.51): Process files
+  remain in git but are verified against signed pins before execution. Tampering is
+  detectable and rejectable, without filesystem lockdown.
+- **Tiered scaling architecture** (§2.52): Four tiers from solo (all-git) to enterprise
+  (pluggable backends). Event logs leave git at Tier 2 — the principle is "auditable and
+  recoverable," not "everything in git."
+- **Pluggable backends** (§2.53): aibox defines interfaces (event, search, identity).
+  Git-based defaults, alternative backends configurable in aibox.toml. Skills are
+  backend-agnostic.
+- **One CLI binary** (§2.54): No aiadm/aictl split. `aibox` with subcommand grouping.
+  `aibox admin` for infrastructure commands.
+- **kaits as Tier 3 layer** (§2.55): Multi-project orchestrator + dashboard above aibox.
+  Provides shared infrastructure (event store, search, CA) that aibox projects connect to.
 
 Full research: `context/research/aiadm-aictl-architecture-2026-03.md`
 
-### 3.2 Open questions — aiadm/aictl proposal (need owner input)
+### 3.2 Open questions — aiadm/aictl proposal (resolved 2026-04-01)
 
-**Q-A: Scope of aictl governance.** Does aictl govern ALL files in `context/`, or only
-entity files with YAML frontmatter? Research reports, work instructions, and PRD are
-"narrative content" — some have frontmatter, some don't. If aictl governs everything,
-agents cannot create/edit research reports without going through aictl. If aictl governs
-only entities, narrative content remains unprotected but also unrestricted. The boundary
-needs to be explicit: which files does the RBAC model cover?
+All 6 questions resolved by owner in §2.56. Summary:
 
-**Q-B: Guard evaluation model.** When an agent calls `aictl transition BACK-xxx --to
-in-review`, how does aictl handle the plain English guard ("all blocking items must be
-resolved")? Two options:
-- **(a) Trust the agent's assertion.** The agent says "I've checked the guards," aictl
-  records the transition with a note that guards were self-attested. The guard text is
-  logged for audit but not mechanically evaluated. Preserves the probabilistic philosophy.
-- **(b) Evaluate mechanically.** aictl parses the guard into checkable conditions and
-  blocks the transition if they fail. Requires a guard expression language (contradicts
-  the "plain English, not minijinja" decision).
-- **(c) Hybrid.** Some guards are tagged as `enforceable: true` with structured criteria
-  alongside the plain English. aictl enforces the structured part, logs the English part.
-
-**Q-C: Solo developer certificate complexity.** The Alex persona (solo dev, weekend
-projects) does not need certificate-based auth. Options:
-- `--no-auth` mode where aictl skips authentication entirely (simplest, no enforcement)
-- Auto-generated self-signed cert on `aiadm init` (transparent to user, but adds files)
-- Passphrase-based local auth (simpler than certificates, but weaker)
-- Tiered: solo mode = no auth, team mode = certificates enabled via `aiadm auth init`
-
-**Q-D: Rename timing.** The rename from `aibox` to `aiadm` is a breaking change affecting
-all documentation, CLAUDE.md templates, skill references, CLI binary name, GHCR paths,
-and user muscle memory. Options:
-- Rename now (before v1, while user base is small — clean break)
-- Rename at v1 release (bigger impact but bigger audience)
-- Keep `aibox` as the umbrella brand, `aiadm`/`aictl` as subcommands (`aibox adm init`,
-  `aibox ctl create workitem`) — avoids shipping two separate binaries
-
-**Q-E: Structured vs plain-English permissions.** Decision 19 uses plain English for
-role permissions. The aiadm/aictl model needs something machine-evaluable. Options:
-- **(a) Structured only.** Role files use verb+kind rules (like K8s RBAC). Machine-
-  enforceable but less flexible, harder for non-technical users to write.
-  ```yaml
-  permissions:
-    - action: [create, edit] kinds: [WorkItem, Decision]
-  ```
-- **(b) Plain English only, parsed by aictl.** aictl uses an LLM or rule engine to
-  interpret natural language permissions. Flexible but non-deterministic.
-- **(c) Hybrid.** Structured rules for enforcement + plain English as documentation.
-  The structured rules are the source of truth; the English is a human-readable gloss.
-  ```yaml
-  permissions:
-    - action: [create, edit]
-      kinds: [WorkItem, Decision]
-      description: "Can create and edit work items and decisions"
-  ```
-
-**Q-F: Daemon vs CLI-only.** Should aictl be a long-lived background daemon or a
-stateless CLI invoked per-command?
-- **CLI-only:** Simpler, no process management, familiar UX. Each invocation reads certs,
-  validates, writes, exits. Overhead ~5-20ms per command (negligible vs LLM inference).
-  No real-time watch/subscribe capability.
-- **Daemon:** Enables `aictl watch` (real-time entity change notifications), persistent
-  auth session (verify cert once), incremental index updates (no `aictl sync` needed),
-  file locking (prevent concurrent writes). More complex to manage but more capable.
-- **Hybrid:** CLI by default, optional `aictl daemon start` for advanced scenarios
-  (kaits, team environments). CLI commands connect to daemon if running, fall back to
-  direct file access if not.
+- ~~**Q-A (Scope):** Entity files with frontmatter = governed. Narrative content = unrestricted.~~
+- ~~**Q-B (Guards):** Option (a) — trust agent assertion. Guards are probabilistic layer.~~
+- ~~**Q-C (Solo certs):** Auto-generated self-signed cert at init. `--no-auth` available.~~
+- ~~**Q-D (Rename):** No rename. One binary `aibox` with subcommand grouping.~~
+- ~~**Q-E (Permissions):** Hybrid — structured rules for enforcement + plain English as docs.~~
+- ~~**Q-F (Daemon):** CLI-only. Daemon is a kaits/Tier 3 concern.~~
 
 ### 3.3 Open questions — earlier (still open)
 
@@ -1322,10 +1498,44 @@ stateless CLI invoked per-command?
     permissions, restrictions, active provider. Inspired by kubectl auth whoami.
 
 **NOTE:** Decisions 9, 19, 20, 21, 35, 43, 47, 48 are **superseded** by the aiadm/aictl
-proposal (§2.50). They remain listed here for historical context. The proposal introduces
-certificate-based auth, mechanical RBAC enforcement, and deterministic audit logging.
-Full impact analysis: `context/research/aiadm-aictl-architecture-2026-03.md`.
-Awaiting owner review — see §3.2 for the 6 open questions.
+proposal (§2.50) and the authorization design session (§2.51–§2.56). They remain listed
+here for historical context. The Phase 3 resolutions below replace them.
+
+**Phase 3 decisions (2026-04-01):**
+
+51. **Signed process definitions**: Process files remain markdown in git but are signed
+    by process-admin cert and hash-pinned in `.aibox/process-pins.toml`. aibox verifies
+    hash before trusting process definitions. Tampering is detectable without filesystem
+    lockdown. Supersedes the OS-level lockdown approach from §2.50.
+52. **Governance vs governed separation**: Low-volume entities (Process, Role, Gate,
+    Constraint, Scope) are governance — require process-admin signature. High-volume
+    entities (WorkItem, Decision, Discussion, Artifact) are governed — normal RBAC.
+    Aligns with Decision 40 (two filename patterns).
+53. **Principle: auditable and recoverable, not everything-in-git**: Git is the
+    zero-infrastructure default. The actual principle is auditability (attributable,
+    immutable, queryable, recoverable, portable). Alternative backends that satisfy
+    these properties are valid at scale.
+54. **Tiered scaling**: Four tiers (Solo → Small team → Medium team → Enterprise).
+    Events leave git at Tier 2. Governance and artifacts stay in git at all tiers.
+    See §2.52 for full tier table.
+55. **Pluggable backends**: aibox defines interfaces for events, search, and identity.
+    Git-based defaults. Alternative backends (Redis, Postgres, Meilisearch, OIDC)
+    configurable in aibox.toml. Skills are backend-agnostic.
+56. **One CLI binary**: No aiadm/aictl split. `aibox` with subcommand grouping.
+    Infrastructure commands under `aibox admin`. The 40 aictl commands become
+    `aibox <command>`, the aiadm commands become `aibox admin <command>`.
+57. **kaits is Tier 3**: Multi-project orchestrator + dashboard. Sits above aibox.
+    Provides shared infrastructure (event store, search, CA). Each project still
+    uses aibox. kaits coordinates between them.
+58. **RBAC permissions: structured + documented**: Role definitions use structured
+    verb+kind rules for mechanical enforcement, with plain English `description`
+    fields as human-readable documentation. Supersedes Decision 19.
+59. **Guards: trust agent assertion**: aibox records the transition with a note that
+    guards were self-attested. Guard text logged for audit but not mechanically
+    evaluated. Supersedes Decision 9.
+60. **Event log append-only in git**: Per-actor JSONL sharding (each actor appends to
+    own file). Server-side pre-receive hooks enforce append-only. Works at Tiers 0-1.
+    At Tier 2+, events move to configured backend. Supersedes Decision 20.
 11. **Three-level rule**: All entity .md files follow Level 1 (intro) → Level 2 (overview) →
     Level 3 (details). Directory INDEX.md files provide Level 0.
 12. **Filename conventions**: Inverse date prefix for temporal files + content slug for human
@@ -1347,8 +1557,8 @@ Awaiting owner review — see §3.2 for the 6 open questions.
 - [x] Establish infrastructure/application boundary — **done** (§2.24-2.28)
 - [x] Map primitives to skills — **done** (`context/research/primitive-skills-mapping-2026-03.md`)
 - [x] Research aiadm/aictl proposal — **done** (`context/research/aiadm-aictl-architecture-2026-03.md`)
-- [ ] **Owner review: aiadm/aictl proposal** — 6 open questions need owner input (§2.50)
-- [ ] Re-walk 10 validation scenarios under aiadm/aictl model
+- [x] **Owner review: aiadm/aictl proposal** — all 6 open questions resolved (§2.56)
+- [ ] Re-walk 10 validation scenarios under single-binary + tiered model
 - [ ] Update mapping exercise document with all accumulated decisions
 - [ ] Design new `context/` directory layout with sharding
 - [ ] Design YAML frontmatter schemas per primitive type (now with apiVersion/kind/metadata/spec)
