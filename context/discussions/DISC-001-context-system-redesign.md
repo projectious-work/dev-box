@@ -1564,6 +1564,99 @@ cannot erase the evidence from git's DAG (force-push is prevented by branch prot
 Any later audit — quarterly compliance review, team lead spot-check, incident
 investigation — will catch violations.
 
+### 2.62 Three-repo trust architecture — pure git enforcement (session 2026-04-04)
+
+Owner proposed the definitive architecture: three repos mapping to three trust levels,
+with git push permissions as the enforcement mechanism. This eliminates the need for
+custom server-side hooks, enterprise-tier features, or CI-dependent enforcement.
+
+**Structure:**
+
+```
+meta-process-repo/              ← PUSH: governance board only
+  processes/                    ← how processes are changed
+  roles/                        ← role definitions
+  rolebindings/                 ← role assignments
+  authorization-policy.toml     ← governs process-repo
+
+process-repo/                   ← PUSH: process architects only
+  meta/ (submodule → meta-process-repo @ pinned commit)
+  processes/                    ← "code" = process definitions for product repos
+  roles/
+  rolebindings/
+  authorization-policy.toml     ← governs product repos
+
+product-repo/                   ← PUSH: developers
+  processes/ (submodule → process-repo @ pinned commit)
+  context/                      ← governed artifacts (items, decisions, events)
+  src/                          ← actual source code
+```
+
+All three repos are aibox-managed. Each repo's "code" is what it governs:
+- Meta-process repo's "code" = meta-process definitions (how processes are changed)
+- Process repo's "code" = process definitions (how products are built)
+- Product repo's code = actual source code
+
+Each repo's "context" comes from the repo above it via submodule.
+
+**Why this works:** The fundamental problem — enforcement rules and governed content in
+the same repo — is eliminated by construction. Process definitions live in a repo the
+developer physically cannot push to. There's nothing to work around.
+
+**Enforcement uses only universal git platform features:**
+
+| Feature | Purpose | Platform support |
+|---------|---------|-----------------|
+| Push permissions per repo | Trust domain separation | All platforms, all tiers |
+| Signed commits required | Authorship proof | GitHub/GitLab/Gitea, free tier |
+| Branch protection + PR reviews | Change approval | GitHub/GitLab/Gitea, free tier |
+| CODEOWNERS | Protect `.gitmodules` from submodule URL tampering | GitHub/GitLab, free tier |
+| Submodule commit pinning | Governance version control | Git standard |
+
+No custom hooks. No enterprise tier. No CI dependency for enforcement.
+
+**Submodule tampering defense:** A developer could modify `.gitmodules` to point to a
+fork with relaxed process definitions. Three defenses:
+1. CODEOWNERS marks `.gitmodules` as requiring process-architect approval
+2. `aibox lint` verifies submodule URLs against canonical list in process-repo policy
+   (which the developer can't modify — it's in the submodule)
+3. The attack is inherently visible in diffs, PRs, and git log
+
+**aibox commands become pure convenience, not enforcement:**
+
+| Command | Purpose | Enforcement? |
+|---------|---------|-------------|
+| `aibox init` | Scaffold with submodule | No (convenience) |
+| `aibox commit` | Signed commit + verification manifest | No (convenience) |
+| `aibox lint --audit` | Verify history against policy | No (detective) |
+| `aibox edit` | Local RBAC check | No (advisory) |
+| `aibox transition` | State change with manifest | No (convenience) |
+
+Removing aibox doesn't remove the security properties — the repo separation does.
+
+**Horizontal scaling:** 50 product repos submodule the same process repo. Updating a
+company-wide process = push to process repo + each product repo updates its submodule
+pin (automatable via bot PR).
+
+**Recursive audit:** `aibox lint --audit` walks the entire submodule chain: verifies
+product repo against process-repo policy, process-repo against meta-process-repo policy.
+
+**Trust anchor termination:** The meta-process repo has no submodule above it. It
+self-governs via push permissions (governance board only). This is the trust anchor —
+authority, not more rules. Like Kubernetes CA key holder.
+
+**Revised trust model (supersedes §2.61):**
+
+| Trust anchor | What it provides | Universal? |
+|--------------|-----------------|------------|
+| Repo push permissions | Trust domain separation | Yes — all git platforms |
+| Branch protection | Require signed commits + PR approval | Yes — all major platforms, free tier |
+| CODEOWNERS | Protect .gitmodules | Yes — GitHub/GitLab free tier |
+| aibox binary | Convenience + audit verification | Yes — distributed, compiled |
+
+No platform-specific dependencies (enterprise hooks, compliance pipelines) required.
+These become optional hardening layers for organizations that have them.
+
 **Q-A (Scope of governance):** Entity files with frontmatter go through aibox RBAC.
 Narrative content (research, work instructions) can be directly edited — they're authored
 content, not process state. The boundary: does this file represent a state machine entity?
@@ -1640,6 +1733,10 @@ process repo architecture and per-file authorization enforcement. Key outcomes:
   not product repo. Developer cannot tamper with enforcement because they can't push to
   governance repo. Three minimal trust anchors: governance repo, platform settings,
   aibox binary.
+- **Three-repo trust architecture** (§2.62): Definitive enforcement model. Three repos
+  (meta-process, process, product) map to three trust levels. Enforcement via repo push
+  permissions — universal across all git platforms, no enterprise features needed. aibox
+  commands become convenience, not enforcement. Repo separation IS the security.
 
 Full research: `context/research/aiadm-aictl-architecture-2026-03.md`
 
@@ -1848,6 +1945,20 @@ here for historical context. The Phase 3 resolutions below replace them.
     client hook (advisory) → verification manifest (tamper-evident) → CI audit (blocks
     merge) → external audit from governance repo (tamper-proof) → server pre-receive hook
     (mechanical). Every team gets layers 1-3. Layers 4-5 for higher security.
+68. **Three-repo trust architecture**: Three repos = three trust levels. Meta-process repo
+    (governance board push), process repo (process architect push), product repo (developer
+    push). Enforcement via repo push permissions — universal, no custom hooks. Submodule
+    pins version governance. Each repo is aibox-managed. Supersedes single-repo models.
+    This is the definitive enterprise architecture.
+69. **aibox commands are convenience, not enforcement**: Repo separation provides security.
+    aibox provides pleasant UX (scaffolding, signed commits, verification manifests,
+    recursive audit) but removing aibox doesn't remove the security properties.
+70. **Submodule tampering defense**: CODEOWNERS on `.gitmodules` (requires process-architect
+    approval) + `aibox lint` verifies canonical URLs from submodule policy + inherent
+    visibility of `.gitmodules` changes in diffs/PRs.
+71. **Trust anchor termination**: Meta-process repo has no submodule above it. Self-governs
+    via push permissions (governance board only). The recursion terminates at authority.
+    Confirms §2.57 decision: two levels of submodules is the maximum needed.
 11. **Three-level rule**: All entity .md files follow Level 1 (intro) → Level 2 (overview) →
     Level 3 (details). Directory INDEX.md files provide Level 0.
 12. **Filename conventions**: Inverse date prefix for temporal files + content slug for human
