@@ -1296,7 +1296,125 @@ projects connect to via pluggable backends (§2.53).
 | Cross-project queries | No | Yes |
 | Infrastructure provisioning | Container images only | Full stack (DB, search, CA) |
 
-### 2.56 Owner answers to §3.2 open questions (session 2026-04-01)
+### 2.57 Process repo as aibox-managed project — two levels, not three (session 2026-04-04)
+
+Owner explored the implications of splitting process definitions into a separate repo
+at Tier 1+. Key insight: if the process repo is itself an aibox-managed project, then
+there needs to be a way to define how processes are changed — a "meta-process."
+
+**The recursive submodule question:** If a meta-process repo is a submodule in the process
+repo, and the process repo is a submodule in the product repo, do submodules cascade?
+Answer: **yes**, `git clone --recurse-submodules` recursively clones all levels. Each
+level pins a specific commit hash. But multi-level submodules add real friction —
+every `git pull` potentially requires updating two pins, and developers frequently
+forget `--recurse-submodules`.
+
+**Resolution: two levels, not three.** The meta-process collapses into the process repo's
+own governance. The process repo is an aibox-managed project with its own `context/`:
+
+```
+process-repo/                          ← aibox-managed project
+  context/
+    processes/
+      how-we-change-processes.md       ← THIS is the "meta-process"
+      release-process.md
+      code-review-process.md
+    roles/
+      process-architect.md             ← can modify process definitions
+      process-reviewer.md              ← can approve process changes
+    items/                             ← tracks process change requests as work items
+  aibox.toml
+
+product-repo/                          ← aibox-managed project
+  context/
+    items/                             ← work items, decisions, etc.
+  processes/ (submodule → process-repo)
+  src/
+  aibox.toml
+```
+
+The recursion terminates at authority, not at more rules. Like Kubernetes: you can have
+RBAC rules governing who can create RBAC rules, but at the top the CA key holder has
+unchecked power. That's the trust anchor — not rules all the way down.
+
+**Process repo event log can be purely probabilistic.** Because:
+- Process changes are low-frequency (no push-frequency problem)
+- Every change is a git commit (deterministic audit trail for free)
+- Git commit records who, when, what changed
+- Git signatures add authorization proof
+- The event-log skill captures reasoning ("why did we change this?") — probabilistic layer
+- The commit history captures facts ("what changed?") — deterministic layer
+
+Together they satisfy audit requirements without external infrastructure.
+
+### 2.58 Per-file authorization policy (session 2026-04-04)
+
+Within the process repo, different files need different authorization levels. The
+meta-process file (`how-we-change-processes.md`) needs stronger protection than regular
+process definitions.
+
+**Mechanism: signed authorization policy file** (like GitHub CODEOWNERS, enforced by aibox).
+
+```toml
+# .aibox/authorization-policy.toml (signed by governance-board)
+
+# Rules evaluated top-to-bottom, first match wins
+[[rules]]
+pattern = ".aibox/authorization-policy.toml"
+required_role = "governance-board"
+min_approvals = 2
+
+[[rules]]
+pattern = "context/processes/how-we-change-processes.md"
+required_role = "governance-board"
+min_approvals = 1
+
+[[rules]]
+pattern = "context/processes/*.md"
+required_role = "process-architect"
+
+[[rules]]
+pattern = "context/roles/*.md"
+required_role = "process-architect"
+
+[[rules]]
+pattern = "context/items/**"
+required_role = "developer"
+```
+
+**Bootstrap protection:** Auth rules live in a separate signed policy file, not in the
+files themselves. Otherwise someone could modify the auth level AND the content in the
+same commit. The policy file's first rule protects itself (requires governance-board).
+
+**Three enforcement points, layered:**
+
+| Point | Mechanism | Strength | When |
+|-------|-----------|----------|------|
+| 1. Local CLI | `aibox edit` checks policy before writing | Advisory (agent can bypass via direct edit) | Before write |
+| 2. Git pre-receive hook | Server rejects pushes without matching signed cert | Mechanical (cannot bypass without server access) | Before push |
+| 3. Post-facto audit | `aibox lint --audit` verifies all commits against policy | Detective (compliance reviews) | Anytime |
+
+**The server-side hook is where real enforcement lives:**
+```
+Developer pushes commit modifying release-process.md
+  → Hook reads .aibox/authorization-policy.toml
+  → Finds rule: "context/processes/*.md" requires "process-architect"
+  → Checks commit signature → extracts cert → extracts roles
+  → Role includes "process-architect"? → ALLOW
+  → Role is only "developer"? → REJECT
+```
+
+**Approval requirements** (`min_approvals`) cannot be enforced by git alone — git has
+no concept of "this commit was approved by N people." Two options:
+
+- **Git platform PR rules (practical):** Map `min_approvals` to required reviewers.
+  GitHub/GitLab enforces this. aibox documents the requirement; the platform enforces it.
+  `aibox lint --audit` verifies compliance after the fact.
+- **Co-signed commits (portable):** Commit carries N signatures via git trailers.
+  aibox's hook verifies all required signatures are present. More portable but awkward UX.
+
+For practical purposes, teams will use PR-based approvals. The authorization policy
+documents the requirement, the git platform enforces it, `aibox lint --audit` verifies.
 
 **Q-A (Scope of governance):** Entity files with frontmatter go through aibox RBAC.
 Narrative content (research, work instructions) can be directly edited — they're authored
@@ -1341,8 +1459,9 @@ covered OS-level lockdown mechanisms, kubectl-to-aictl command mapping, impact o
 decisions, and Kubernetes certificate/RBAC mechanics. Key finding: architecturally sound,
 probabilistic paradigm survives as a layer on a deterministic base.
 
-**Phase 3 (§2.51–§2.56): Authorization design + scaling architecture.** Complete.
-Owner reviewed the aiadm/aictl proposal and resolved all 6 open questions. Key outcomes:
+**Phase 3 (§2.51–§2.58): Authorization design + scaling architecture.** Complete.
+Owner reviewed the aiadm/aictl proposal and resolved all 6 open questions. Then explored
+process repo architecture and per-file authorization enforcement. Key outcomes:
 
 - **Process protection via signed definitions + hash pinning** (§2.51): Process files
   remain in git but are verified against signed pins before execution. Tampering is
@@ -1357,6 +1476,12 @@ Owner reviewed the aiadm/aictl proposal and resolved all 6 open questions. Key o
   `aibox admin` for infrastructure commands.
 - **kaits as Tier 3 layer** (§2.55): Multi-project orchestrator + dashboard above aibox.
   Provides shared infrastructure (event store, search, CA) that aibox projects connect to.
+- **Two-level repo architecture** (§2.57): Process repo is an aibox-managed project
+  with its own governance. No meta-process repo needed — meta-process is a file in the
+  process repo with higher authorization requirements.
+- **Per-file authorization policy** (§2.58): Signed `.aibox/authorization-policy.toml`
+  maps file patterns to required roles and approval counts. Enforced at three layers:
+  local CLI (advisory), git pre-receive hooks (mechanical), post-facto audit (detective).
 
 Full research: `context/research/aiadm-aictl-architecture-2026-03.md`
 
@@ -1536,6 +1661,19 @@ here for historical context. The Phase 3 resolutions below replace them.
 60. **Event log append-only in git**: Per-actor JSONL sharding (each actor appends to
     own file). Server-side pre-receive hooks enforce append-only. Works at Tiers 0-1.
     At Tier 2+, events move to configured backend. Supersedes Decision 20.
+61. **Two-level repo architecture**: Process repo is an aibox-managed project (self-governing).
+    No separate meta-process repo — the meta-process is a file in the process repo with
+    higher authorization requirements. Submodules cascade recursively but three levels
+    adds friction without proportional benefit. Recursion terminates at authority (trust
+    anchor), not at more rules.
+62. **Per-file authorization policy**: `.aibox/authorization-policy.toml` maps file glob
+    patterns to required roles and minimum approval counts. Policy file is signed by
+    governance-board role. First rule protects the policy file itself (bootstrap protection).
+    Enforcement: local CLI (advisory) + git pre-receive hooks (mechanical) + post-facto
+    audit (detective). Approval counts enforced via git platform PR rules or co-signed commits.
+63. **Process repo event log is probabilistic**: Low-frequency changes mean no git scaling
+    problem. Git commit history IS the deterministic audit trail. Event-log skill captures
+    reasoning (probabilistic). No external event infrastructure needed for governance repos.
 11. **Three-level rule**: All entity .md files follow Level 1 (intro) → Level 2 (overview) →
     Level 3 (details). Directory INDEX.md files provide Level 0.
 12. **Filename conventions**: Inverse date prefix for temporal files + content slug for human
