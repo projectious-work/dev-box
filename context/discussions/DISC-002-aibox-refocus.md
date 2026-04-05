@@ -310,20 +310,16 @@ the probabilistic path. Both are valid.
 
 ## 7. Open Questions
 
-### Q1: Process repo naming
+### Q1: Process repo naming (resolved)
 
-What is the process repo called? Options:
-- `aibox-processes` (tied to aibox brand)
-- `process-kit` (generic)
-- `ai-process-kit` (descriptive)
-- Something else?
+Name: **processkit**. Lives in `projectious-work/processkit`. Owner to create.
 
-### Q2: SQLite index — aibox or process repo concern?
+### Q2: SQLite index — aibox or process repo concern? (resolved)
 
-The SQLite derived index (gitignored, rebuilt by `aibox sync`) was designed in DISC-001.
-Does the index logic live in aibox CLI (Rust) or in the process repo (Python MCP)?
-- If in aibox CLI: fast, compiled, but couples aibox to the schema
-- If in MCP server: flexible, schema changes don't require CLI updates, but slower
+**Option B: process repo MCP servers (Python).** The index is a process concern.
+The MCP server parses files, builds SQLite, serves queries. Schema changes are
+self-contained in processkit. aibox CLI does basic structural validation only
+(file exists, has frontmatter, has `kind` field) without full schema knowledge.
 
 ### Q3: Which DISC-001 principles to carry forward? (resolved)
 
@@ -679,11 +675,70 @@ Does this generalization feel right? The trade-off:
 10. **No inner system fallacy.** aibox.toml for aibox concerns only. Docker options edited
     directly in Dockerfile/docker-compose.
 
+## 15. Gap Analysis — What Exists vs What's Needed
+
+### Already implemented in aibox
+
+| Component | Status | Location |
+|---|---|---|
+| CLI (Rust) | Working | `cli/` |
+| Addon system (22 addons, YAML + Minijinja) | Working | `addons/` |
+| Container image generation | Working | `images/`, `cli/src/generate.rs` |
+| Container lifecycle (start/stop) | Working | `cli/src/container.rs` |
+| 83 skills (simple markdown) | Working | `templates/skills/` |
+| 4 process templates (simple markdown) | Working | `templates/processes/` |
+| Package tiers (minimal/managed/research/product) | Working | `templates/` |
+| aibox.toml config parsing | Working | `cli/src/config.rs` |
+| CLAUDE.md scaffolding | Working | via templates |
+
+### Gaps — need implementation
+
+| Gap | Description | Where |
+|---|---|---|
+| **processkit repo** | Doesn't exist yet. Must be created, populated, scaffolded with aibox | New repo |
+| **Skill format migration** | Current 83 skills are single .md files. Need to become multi-artifact packages (SKILL.md + examples/ + templates/ + mcp/) | processkit |
+| **MCP servers for skills** | No MCP server code exists. Need at least foundation skills (event-log, workitem, decision) | processkit |
+| **Primitive schemas** | No YAML schema definitions for the 18 primitives exist | processkit |
+| **Entity file format** | The apiVersion/kind/metadata/spec frontmatter format isn't implemented in any real files | processkit |
+| **SQLite index** | No indexing logic exists. Per Q2, this lives in a processkit MCP server | processkit |
+| **ID generation** | Configurable UUID vs word-based (petname). Not implemented | aibox CLI |
+| **aibox init → processkit consumption** | `aibox init` currently scaffolds from local templates. Needs to consume processkit git tag releases | aibox CLI |
+| **aibox lint for entities** | Basic structural validation of context files (has frontmatter, has `kind`). Not implemented | aibox CLI |
+| **Binding primitive** | New primitive (generalized from RoleBinding). Schema, skill, MCP server needed | processkit |
+| **Three-level skill rewrite** | Existing 83 skills need review for three-level structure. Many are already close. | processkit |
+| **mcp.json scaffolding** | `aibox init` should generate MCP server config entries for installed skills | aibox CLI |
+
+### Key decision needed: what happens to existing 83 skills?
+
+The current 83 skills in `templates/skills/` are technical coding skills (rust-conventions,
+python-best-practices, database-modeling, etc.) — NOT process primitive skills (workitem-
+management, decision-record, event-log, etc.).
+
+These are two different categories:
+
+| Category | Examples | Where they live |
+|---|---|---|
+| **Process skills** (primitive management) | workitem-management, event-log, decision-record | processkit |
+| **Technical skills** (coding practices) | rust-conventions, python-best-practices, sql-patterns | ? |
+
+**Options:**
+- **(a)** Technical skills move to processkit too (one place for all skills)
+- **(b)** Technical skills stay in aibox (they're tied to addons — rust-conventions ships with the rust addon)
+- **(c)** Technical skills become a separate package/addon in aibox (not in processkit)
+
+Option (b) makes sense: technical skills are addon-specific. The rust-conventions skill
+ships when you enable the rust addon. Process skills are project-management-specific and
+ship from processkit when you choose a package tier.
+
+**Recommendation: (b)** — technical skills stay in aibox, tied to addons.
+
+Awaiting owner input. This is the last blocking decision before the implementation plan.
+
 ## 13. Next Steps
 
 - [x] ~~Owner review: Binding as generalized primitive (§11)~~ — approved
-- [x] ~~Name the process repo (Q1)~~ — owner will create in projectious-work org. Proposals: processkit, protoprocess, workcraft, forgeflow, aiproc, skillforge, contextkit
-- [ ] Decide where SQLite index logic lives (Q2) — see §14
+- [x] ~~Name the process repo (Q1)~~ — resolved: **processkit** (projectious-work/processkit)
+- [x] ~~Decide where SQLite index logic lives (Q2)~~ — resolved: Option B (process repo MCP servers)
 - [ ] Record formal decisions in DECISIONS.md
 - [ ] Create process repo and scaffold it with aibox
 
@@ -707,4 +762,5 @@ only (file exists, has frontmatter, has `kind` field) without full schema knowle
 `aibox sync` parses ALL frontmatter into generic key-value store. MCP server reads the
 generic index and applies schema-specific logic. Loosely coupled but two-step.
 
-Awaiting owner decision.
+**Resolved: Option B.** Process repo MCP servers own indexing. `aibox lint`/`aibox sync`
+do basic structural validation only. Schema knowledge stays in processkit.
