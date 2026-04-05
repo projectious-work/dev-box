@@ -164,6 +164,38 @@ two entities with optional scope, temporality, and conditions. See §11 for full
 **Rule:** If a relationship has scope, time, or its own attributes → Binding entity.
 If it's just "A relates to B" → cross-reference in frontmatter.
 
+### P13: Community process packages
+
+Process packages are git repos with a standard structure:
+```
+package.yaml        # metadata, requirements, provides
+context/            # files to merge into project context/
+skills/             # custom skills
+```
+
+Installable via `aibox process install <git-url>`. Validated via `aibox process check`.
+Enables company-to-community flow: customize → refine → export → publish.
+
+### P14: Template originals for migration
+
+`aibox init` stores original template copies in `context/.aibox/templates/v{version}/`.
+On version updates, `aibox migrate` generates diffs (old → new template) and produces
+migration prompts. The agent reviews the diff against the project's current state and
+applies changes with human approval. No automatic in-place patching.
+
+### P15: Skill hierarchy
+
+Skills reference lower-layer skills by name. `uses:` field in frontmatter documents
+dependencies. Strictly downward — lower-layer skills never reference higher-layer ones.
+
+```
+Layer 0: event-log (foundation)
+Layer 1: role-management, actor-profile
+Layer 2: workitem-management, decision-record, scope-management
+Layer 3: process-management, gate-management, schedule-management
+Layer 4: discussion-management, metrics-management
+```
+
 ## 4. What aibox is NOT
 
 - **Not a workflow engine.** aibox does not execute processes. Agents do.
@@ -649,9 +681,30 @@ Does this generalization feel right? The trade-off:
 
 ## 13. Next Steps
 
-- [ ] Owner review: Binding as generalized primitive (§11)
-- [ ] Name the process repo (Q1)
-- [ ] Decide where SQLite index logic lives (Q2)
-- [ ] Consolidate principles into numbered list (P1-P10 + resolved Q3 items)
+- [x] ~~Owner review: Binding as generalized primitive (§11)~~ — approved
+- [x] ~~Name the process repo (Q1)~~ — owner will create in projectious-work org. Proposals: processkit, protoprocess, workcraft, forgeflow, aiproc, skillforge, contextkit
+- [ ] Decide where SQLite index logic lives (Q2) — see §14
 - [ ] Record formal decisions in DECISIONS.md
 - [ ] Create process repo and scaffold it with aibox
+
+## 14. SQLite Index Logic — Where Does It Live?
+
+The index logic = code that parses markdown+frontmatter files, builds SQLite tables,
+and provides query capabilities. This includes knowing primitive schemas.
+
+**Option A — In aibox CLI (Rust):**
+`aibox sync` does everything: parse files, know schemas, write SQLite, provide queries.
+Fast (compiled Rust + rusqlite). But: schemas are defined in the process repo. Adding a
+primitive or changing a schema requires an aibox CLI update. Tight coupling between repos.
+
+**Option B — In process repo MCP servers (Python):**
+An MCP server owns indexing: parse files, build SQLite, serve queries to agents via tools.
+Schema changes are self-contained in the process repo. No coupling to aibox CLI. The MCP
+server IS the query interface. `aibox lint`/`aibox sync` do basic structural validation
+only (file exists, has frontmatter, has `kind` field) without full schema knowledge.
+
+**Option C — Split: aibox generic parsing, process repo schema-aware indexing:**
+`aibox sync` parses ALL frontmatter into generic key-value store. MCP server reads the
+generic index and applies schema-specific logic. Loosely coupled but two-step.
+
+Awaiting owner decision.
