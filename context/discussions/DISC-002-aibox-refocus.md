@@ -734,8 +734,11 @@ All skills — both technical (rust-conventions, python-best-practices) and proc
 - [x] ~~Record formal decisions in DECISIONS.md~~ — DEC-017..DEC-024 (2026-04-06)
 - [x] ~~Owner: create processkit repo (Phase 1.1)~~ — done 2026-04-06
 - [x] ~~Begin Phase 1 (processkit bootstrap)~~ — processkit v0.1.0 tagged 2026-04-06
-- [ ] Begin Phase 2 (skill migration to processkit)
+- [x] ~~Begin Phase 2 (skill migration to processkit)~~ — processkit v0.2.0 tagged 2026-04-06
+       (101 skills, 5 packages, docs-site bootstrapped, src/ layout, apiVersion `processkit.projectious.work/v1`)
+- [ ] Begin Phase 3 (MCP servers in processkit — index-management, event-log, workitem, decision, binding)
 - [ ] Begin Phase 4.4-4.5 (aibox lint + ID gen — no dependency on processkit)
+- [ ] Trim aibox docs-site: remove context/ and skills/ pages now living in processkit docs-site
 
 ## 16. Implementation Plan
 
