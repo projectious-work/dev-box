@@ -731,9 +731,10 @@ All skills — both technical (rust-conventions, python-best-practices) and proc
 - [x] ~~Decide where SQLite index logic lives (Q2)~~ — resolved: Option B (process repo MCP servers)
 - [x] ~~Decide where existing 85 skills live~~ — resolved: Option A (all in processkit)
 - [x] ~~Create implementation plan~~ — see §16
-- [ ] Record formal decisions in DECISIONS.md
-- [ ] Owner: create processkit repo (Phase 1.1)
-- [ ] Begin Phase 1 (processkit bootstrap)
+- [x] ~~Record formal decisions in DECISIONS.md~~ — DEC-017..DEC-024 (2026-04-06)
+- [x] ~~Owner: create processkit repo (Phase 1.1)~~ — done 2026-04-06
+- [x] ~~Begin Phase 1 (processkit bootstrap)~~ — processkit v0.1.0 tagged 2026-04-06
+- [ ] Begin Phase 2 (skill migration to processkit)
 - [ ] Begin Phase 4.4-4.5 (aibox lint + ID gen — no dependency on processkit)
 
 ## 16. Implementation Plan
