@@ -23,13 +23,16 @@ impl DiagResult {
     }
 }
 
-/// Return the list of expected files for a given set of process packages.
-/// Delegates to the shared list in context.rs and adds infrastructure files.
-fn expected_files(packages: &[String]) -> Vec<&'static str> {
-    let mut files = crate::context::expected_context_files(packages);
-    // Doctor also checks infrastructure files
-    files.extend_from_slice(&[".aibox-version", ".gitignore"]);
-    files
+/// Return the list of project-side files `aibox doctor` checks for.
+///
+/// Since v0.16.0 the bulk of context content (BACKLOG, DECISIONS, skills,
+/// AGENTS.md, …) is owned by processkit and may or may not be present
+/// depending on whether the user has run `aibox init` against a real
+/// processkit version. Doctor only checks the slice that aibox itself
+/// creates: the version marker, the gitignore, and the canonical
+/// agent entrypoint installed by processkit.
+fn expected_files(_packages: &[String]) -> Vec<&'static str> {
+    vec!["AGENTS.md", ".aibox-version", ".gitignore"]
 }
 
 /// Look up the embedded schema for a given version string.

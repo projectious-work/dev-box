@@ -22,7 +22,7 @@ fn lifecycle_init_sync() {
     runner.cleanup(test);
 
     // Init
-    let output = runner.aibox(test, &["init", "--name", test, "--base", "debian", "--process", "core"]);
+    let output = runner.aibox(test, &["init", "--name", test, "--base", "debian", "--process", "managed"]);
     assert!(
         output.status.success(),
         "init failed: {}",
@@ -54,7 +54,7 @@ fn claudemd_preserved_on_sync() {
     runner.cleanup(test);
 
     // Init
-    runner.aibox(test, &["init", "--name", test, "--base", "debian", "--process", "core"]);
+    runner.aibox(test, &["init", "--name", test, "--base", "debian", "--process", "managed"]);
 
     // Modify CLAUDE.md with user content
     runner.write_file(test, "CLAUDE.md", "# My Custom CLAUDE.md\n\nUser-specific content here.\n");
@@ -79,7 +79,7 @@ fn generated_files_overwritten_on_sync() {
     runner.cleanup(test);
 
     // Init
-    runner.aibox(test, &["init", "--name", test, "--base", "debian", "--process", "core"]);
+    runner.aibox(test, &["init", "--name", test, "--base", "debian", "--process", "managed"]);
 
     // Tamper with generated Dockerfile
     runner.write_file(test, ".devcontainer/Dockerfile", "# tampered\nFROM scratch\n");
@@ -107,7 +107,7 @@ fn status_without_container_shows_missing() {
     let test = "status-missing";
     runner.cleanup(test);
 
-    runner.aibox(test, &["init", "--name", test, "--base", "debian", "--process", "core"]);
+    runner.aibox(test, &["init", "--name", test, "--base", "debian", "--process", "managed"]);
 
     let output = runner.aibox(test, &["status"]);
     let combined = format!(

@@ -16,14 +16,15 @@ Before every release, check ALL upstream dependencies for updates.
 
 | Tool | Current | Pin location | How to check |
 |------|---------|-------------|-------------|
-| Zellij | 0.44.0 | `ARG ZELLIJ_VERSION` in base + .devcontainer | `gh api repos/zellij-org/zellij/releases/latest --jq .tag_name` |
+| Zellij | 0.44.1 | `ARG ZELLIJ_VERSION` in base + .devcontainer | `gh api repos/zellij-org/zellij/releases/latest --jq .tag_name` |
 | Yazi | 26.1.22 | `ARG YAZI_VERSION` | `gh api repos/sxyazi/yazi/releases/latest --jq .tag_name` |
 | ripgrep | 15.1.0 | `ARG RIPGREP_VERSION` | `gh api repos/BurntSushi/ripgrep/releases/latest --jq .tag_name` |
 | fd | 10.4.2 | `ARG FD_VERSION` | `gh api repos/sharkdp/fd/releases/latest --jq .tag_name` |
 | bat | 0.26.1 | `ARG BAT_VERSION` | `gh api repos/sharkdp/bat/releases/latest --jq .tag_name` |
 | eza | 0.23.4 | `ARG EZA_VERSION` | `gh api repos/eza-community/eza/releases/latest --jq .tag_name` |
-| fzf | 0.70.0 | `ARG FZF_VERSION` | `gh api repos/junegunn/fzf/releases/latest --jq .tag_name` |
-| delta | 0.19.1 | `ARG DELTA_VERSION` | `gh api repos/dandavison/delta/releases/latest --jq .tag_name` |
+| fzf | 0.71.0 | `ARG FZF_VERSION` | `gh api repos/junegunn/fzf/releases/latest --jq .tag_name` |
+| delta | 0.19.2 | `ARG DELTA_VERSION` | `gh api repos/dandavison/delta/releases/latest --jq .tag_name` |
+| ouch | 0.6.1 | `ARG OUCH_VERSION` | `gh api repos/ouch-org/ouch/releases/latest --jq .tag_name` |
 | starship | 1.24.2 | `ARG STARSHIP_VERSION` | `gh api repos/starship/starship/releases/latest --jq .tag_name` |
 | zoxide | 0.9.9 | `ARG ZOXIDE_VERSION` | `gh api repos/ajeetdsouza/zoxide/releases/latest --jq .tag_name` |
 | Rust | stable (unpinned) | rustup in .devcontainer | Verify stable works |

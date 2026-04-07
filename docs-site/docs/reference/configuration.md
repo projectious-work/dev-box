@@ -11,42 +11,46 @@ title: Configuration
 
 ```toml
 [aibox]
-version = "0.11.0"                    # aibox version used to generate this project
-base = "debian"                       # Base image
+version = "0.16.0"                    # aibox version used to generate this project
+base    = "debian"                    # Base image
 
 [container]
-name = "my-app"                       # Container name
+name     = "my-app"                   # Container name
 hostname = "my-app"                   # Container hostname
-user = "aibox"                        # Container user (default: aibox)
+user     = "aibox"                    # Container user (default: aibox)
 post_create_command = "npm install"   # Command to run after container creation
 
 [context]
-packages = ["managed"]               # Process packages or presets
-schema_version = "1.0.0"             # Context schema version (semver)
+schema_version = "1.0.0"              # Context schema version (semver)
+# processkit packages: minimal, managed (default), software, research, product
+packages = ["managed"]
+
+[processkit]
+source   = "https://github.com/projectious-work/processkit.git"
+version  = "v0.5.1"                   # Pin a real tag; "unset" skips fetching
+src_path = "src"
+# branch = "main"                     # Optional; tarball-first, branch as fallback
+# release_asset_url_template = "..."  # Optional, for non-GitHub hosts
 
 [addons.python.tools]                 # Addon: Python runtime
 python = { version = "3.13" }
-uv = { version = "0.7" }
+uv     = { version = "0.7" }
 
 [addons.rust.tools]                   # Addon: Rust toolchain
-rustc = { version = "1.87" }
-clippy = {}
+rustc   = { version = "1.87" }
+clippy  = {}
 rustfmt = {}
-
-[skills]
-include = ["data-science"]            # Extra skills beyond process packages
-exclude = ["debugging"]               # Skills to remove from active set
 
 [ai]
 providers = ["claude", "aider"]       # AI providers to install
 
 [customization]
-theme = "gruvbox-dark"               # Color theme (7 options)
-prompt = "default"                   # Starship preset (7 options)
-layout = "dev"                       # Zellij layout (4 options)
+theme  = "gruvbox-dark"               # Color theme (7 options)
+prompt = "default"                    # Starship preset (7 options)
+layout = "dev"                        # Zellij layout (4 options)
 
 [audio]
-enabled = false                       # Enable audio bridging
+enabled      = false                  # Enable audio bridging
 pulse_server = "tcp:host.docker.internal:4714"
 ```
 
@@ -79,23 +83,32 @@ Use `Dockerfile.local` for installing additional packages, and `docker-compose.o
 
 ### [context]
 
-Context system configuration. Controls which context files and skills are scaffolded, and tracks the schema version.
+Context-system metadata. Controls the schema version and the **declarative**
+processkit package selection — the list agents read to decide which subset of
+the installed processkit content is in scope for this project.
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `packages` | Array of strings | Yes | `["core"]` | Process packages or presets. Must include at least one. |
 | `schema_version` | String (semver) | No | `"1.0.0"` | Context schema version |
+| `packages` | Array of strings | No | `["managed"]` | processkit packages in scope for this project. |
 
-**13 packages:** `core`, `tracking`, `standups`, `handover`, `product`, `code`, `research`, `documentation`, `design`, `architecture`, `security`, `data`, `operations`
+**Five processkit packages**, defined by upstream YAMLs in
+`packages/{minimal,managed,software,research,product}.yaml` and composed via
+`extends:`:
 
-**4 convenience presets** (expand to multiple packages):
+| Package | Purpose |
+|---------|---------|
+| `minimal` | Bare-minimum skill set for scripts and experiments |
+| `managed` | Recommended default — backlog, decisions, standups, handover |
+| `software` | `managed` + code review, testing, debugging, refactoring, architecture |
+| `research` | `managed` + data science, documentation, research artefacts |
+| `product` | Everything — `software` + design, security, operations, product planning |
 
-| Preset | Expands to |
-|--------|-----------|
-| `managed` | core, tracking, standups, handover |
-| `software` | core, tracking, standups, handover, code, architecture |
-| `research-project` | core, tracking, standups, handover, research, documentation |
-| `full-product` | core, tracking, standups, handover, code, architecture, design, product, security, operations |
+> In v0.16.0, `packages` is **declarative metadata only**. aibox installs every
+> skill processkit ships under `src/skills/`, regardless of the selected
+> package(s). Agents read `packages` to decide which skills to *prefer*. The
+> install set may become package-aware in a future release; do not depend on
+> "this skill is not installed" as a guarantee.
 
 ### [addons]
 
@@ -111,20 +124,15 @@ Run `aibox addon list` to see all 21 available addons, or `aibox addon info <nam
 
 ### [skills]
 
-Skill management. The effective skill set is built from three sources in order:
+**Reserved / no-op in v0.16.0.** The TOML parser still accepts a `[skills]`
+table with `include` / `exclude` arrays for forward compatibility, but aibox
+**does not act on it**. Every project gets every processkit skill installed
+under `context/skills/`, and the agent decides which to use based on
+`[context].packages` and the skill's own `description`.
 
-1. **Process packages** -- skills bundled with the packages listed in `[context].packages`
-2. **Addon skills** -- skills recommended by active addons (e.g., `python` addon auto-deploys `python-best-practices`)
-3. **Include/exclude** -- manual overrides from this section
-
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `include` | Array of strings | No | `[]` | Additional skills to deploy beyond those from packages and addons |
-| `exclude` | Array of strings | No | `[]` | Skills to remove from the active set |
-
-Core skills (`agent-management`, `owner-profile`) cannot be excluded.
-
-Run `aibox skill list` to see all 84 available skills and their deploy status. See the [Skills Library](../skills/index.md) for the full deployment model.
+A future release may re-introduce per-skill include/exclude semantics. Until
+then, treat the section as informational. See the [Skills page](../skills/index.md)
+for the rationale and the full processkit boundary.
 
 ### [ai]
 
@@ -136,11 +144,18 @@ AI provider configuration. Providers listed here are automatically installed as 
 
 ### [processkit]
 
-Configures the **content source** the project consumes (skills,
-primitives, processes). The default upstream is the canonical
+The **load-bearing** content section in v0.16.0. Configures the content source
+the project consumes — skills, primitives, processes, package YAMLs, and the
+canonical `AGENTS.md` template. The default upstream is the canonical
 [projectious-work/processkit](https://github.com/projectious-work/processkit)
-repo, but any processkit-compatible source works (forks, self-hosted,
-private mirrors).
+repo, but any processkit-compatible source works (forks, self-hosted, private
+mirrors).
+
+If `version` is the sentinel `unset`, both `aibox init` and `aibox sync` skip
+the processkit fetch entirely. Pin a real tag (e.g. `v0.5.1`) to land the
+content. The downloaded tarball is git-tracked under
+`context/templates/processkit/<version>/` so derived projects always have the
+original to diff against.
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|

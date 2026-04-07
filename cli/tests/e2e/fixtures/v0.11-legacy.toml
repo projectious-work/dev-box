@@ -14,7 +14,7 @@ providers = ["claude"]
 enabled = false
 
 [process]
-packages = ["core"]
+packages = ["managed"]
 
 [appearance]
 theme = "gruvbox-dark"

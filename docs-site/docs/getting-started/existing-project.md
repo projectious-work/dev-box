@@ -26,21 +26,21 @@ If you prefer to write it by hand:
 
 ```toml
 [aibox]
-version = "0.10.1"
-base = "debian"
+version = "0.16.0"
+base    = "debian"
 
 [container]
-name = "my-existing-project"
-
-[process]
-packages = ["managed"]
+name     = "my-existing-project"
 hostname = "my-existing-project"
-ports = []
-extra_packages = []
-environment = {}
 
 [context]
 schema_version = "1.0.0"
+# processkit packages: minimal, managed (default), software, research, product
+packages = ["managed"]
+
+[processkit]
+source  = "https://github.com/projectious-work/processkit.git"
+version = "v0.5.1"   # Pin a real tag — "unset" skips fetching
 
 [ai]
 providers = ["claude"]
@@ -48,6 +48,15 @@ providers = ["claude"]
 [audio]
 enabled = false
 ```
+
+:::tip Pin processkit before sync
+
+Set `[processkit].version` to a real tag (e.g. `v0.5.1`) before the first
+`aibox sync`. The default sentinel `unset` skips processkit content
+installation entirely — you will get devcontainer files but no skills,
+processes, or `AGENTS.md`.
+
+:::
 
 ## Sync Devcontainer Files
 

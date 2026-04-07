@@ -67,7 +67,7 @@ fn record_themed_session(runner: &E2eRunner, test_name: &str, theme: &str) -> St
             "--base",
             "debian",
             "--process",
-            "core",
+            "managed",
             "--theme",
             theme,
         ],
@@ -228,7 +228,7 @@ fn visual_yazi_renders_in_zellij() {
             "--base",
             "debian",
             "--process",
-            "core",
+            "managed",
         ],
     );
 

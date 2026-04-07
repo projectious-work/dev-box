@@ -77,7 +77,7 @@ fn visual_kb_yazi_e_opens_file_in_vim_pane() {
     // Init project (seeds yazi keymap with `e` binding + zellij config)
     let init = runner.aibox(
         test_name,
-        &["init", "--name", test_name, "--base", "debian", "--process", "core"],
+        &["init", "--name", test_name, "--base", "debian", "--process", "managed"],
     );
     assert!(
         init.status.success(),
@@ -211,7 +211,7 @@ fn visual_kb_yazi_enter_opens_vim_inplace() {
 
     let init = runner.aibox(
         test_name,
-        &["init", "--name", test_name, "--base", "debian", "--process", "core"],
+        &["init", "--name", test_name, "--base", "debian", "--process", "managed"],
     );
     assert!(init.status.success(), "init failed");
 
@@ -354,7 +354,7 @@ fn visual_kb_vim_leader_e_opens_netrw() {
 
     let init = runner.aibox(
         test_name,
-        &["init", "--name", test_name, "--base", "debian", "--process", "core"],
+        &["init", "--name", test_name, "--base", "debian", "--process", "managed"],
     );
     assert!(init.status.success(), "init failed");
 
@@ -405,7 +405,7 @@ fn visual_kb_vim_leader_l_shows_buffer_list() {
 
     let init = runner.aibox(
         test_name,
-        &["init", "--name", test_name, "--base", "debian", "--process", "core"],
+        &["init", "--name", test_name, "--base", "debian", "--process", "managed"],
     );
     assert!(init.status.success(), "init failed");
 
@@ -460,7 +460,7 @@ fn visual_kb_vim_leader_w_saves_file() {
 
     let init = runner.aibox(
         test_name,
-        &["init", "--name", test_name, "--base", "debian", "--process", "core"],
+        &["init", "--name", test_name, "--base", "debian", "--process", "managed"],
     );
     assert!(init.status.success(), "init failed");
 
@@ -513,7 +513,7 @@ fn visual_kb_vim_leader_n_p_cycles_buffers() {
 
     let init = runner.aibox(
         test_name,
-        &["init", "--name", test_name, "--base", "debian", "--process", "core"],
+        &["init", "--name", test_name, "--base", "debian", "--process", "managed"],
     );
     assert!(init.status.success(), "init failed");
 

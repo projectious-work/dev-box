@@ -14,7 +14,7 @@ fn sync_updates_version_file() {
     runner.cleanup(test);
 
     // Init project
-    runner.aibox(test, &["init", "--name", test, "--base", "debian", "--process", "core"]);
+    runner.aibox(test, &["init", "--name", test, "--base", "debian", "--process", "managed"]);
 
     // Tamper with .aibox-version to simulate older version
     runner.write_file(test, ".aibox-version", "0.1.0");

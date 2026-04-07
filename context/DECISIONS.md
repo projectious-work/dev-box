@@ -2,6 +2,67 @@
 
 Inverse chronological. Each decision has a rationale and alternatives considered.
 
+## DEC-027 — aibox v0.16.0: rip the bundled process layer (2026-04-08)
+
+**Decision:** v0.16.0 removes every process-related artefact from the aibox repo and reduces aibox to two responsibilities: (1) managing AI-ready devcontainers, (2) installing a pinned `processkit` release into the consuming project. Specifically, this release deletes:
+
+- `cli/src/process_registry.rs` (the 705-line `ProcessPackage`/`ContextFileDef`/`ProcessPreset` registry)
+- `cli/src/skill_cmd.rs` and the entire `aibox skill` CLI subcommand
+- The bundled `templates/` directory (~85 `templates/skills/<name>/SKILL.md` files plus `templates/{minimal,managed,product,research}/` context-doc scaffolds plus `templates/processes/` plus `templates/agents/`)
+- The `ALL_SKILL_DEFS` array, all 141 `include_str!` calls, `scaffold_skills*`, `reconcile_skills`, `generate_aibox_md`, `check_agent_entry_points`, `expected_context_files`, `template_content_for_key`, `setup_owner_md` from `cli/src/context.rs` (~2000 of 2368 lines gone)
+- `context/AIBOX.md` and the in-repo and per-project copies of it (the auto-generated "universal baseline" file)
+- `context::reconcile_skills` and `context::generate_aibox_md` calls in `cmd_sync` and `cmd_update`
+- The `effective_skill_includes` config helper and the `skills_for_addons` addon-loader helper
+- The `[skills]` section's runtime semantics (the section still parses, but `include`/`exclude` are reserved for a future release; today aibox installs every skill processkit ships)
+- `context/AIBOX.md` from the sync perimeter; `.claude/skills/` from the sync perimeter (provider directories are no longer aibox territory)
+
+The new shape:
+
+- `aibox init` writes a slim project skeleton (`.aibox-version`, `.gitignore`, empty `context/`, `CLAUDE.md` thin pointer per `[ai].providers`, `.devcontainer/{Dockerfile.local,docker-compose.override.yml}` placeholders) and then calls `crate::content_init::install_content_source` to fetch the configured processkit release into `context/templates/processkit/<version>/` and copy the live install into `context/skills/`, `context/schemas/`, `context/state-machines/`, `context/processes/`, plus the canonical `AGENTS.md` at the project root (newly handled by a `scaffolding/` branch in `content_install::install_action_for`).
+- `aibox sync` no longer reconciles skills, generates `AIBOX.md`, or checks agent entry points. It runs the seed/generate path, then the three-way processkit diff, then the build.
+- The `[ai].providers` list is the lead for provider-specific entry files. When `claude` is listed, `aibox init` writes a thin `CLAUDE.md` at the project root pointing at `AGENTS.md`. Nothing else lands under `.claude/`. Other providers use config files (handled in `seed.rs` / addons) and do not get a markdown pointer.
+- Initial `--process` interactive selection now offers the five processkit packages (`minimal`, `managed`, `software`, `research`, `product`); the non-interactive default is `managed`.
+
+**Rationale:** Two reasons.
+
+1. *Single source of truth.* The previous arrangement carried duplicate copies of the same skills in two repos (aibox's `templates/skills/` and processkit's `src/skills/`), drifting out of sync at every release. processkit now ships 108 skills (a strict superset of aibox's 85), the package YAMLs (`packages/{minimal,managed,software,research,product}.yaml` with `extends:` composition), the primitive schemas, the state machines, the canonical `scaffolding/AGENTS.md`, and shared MCP lib. There is nothing left in aibox that processkit doesn't ship more comprehensively. Keeping the local copies would mean curating two registries and resolving conflicts on every processkit release.
+
+2. *Conceptual boundary.* aibox is to AI work environments what `uv` is to Python — infrastructure provisioning. The previous mixing of "process management" with "container management" tied aibox to a particular process model and made the CLI surface area schizophrenic (`aibox skill add` next to `aibox addon add` next to `aibox start`). After v0.16.0 the boundary is enforceable: aibox knows about devcontainers and consumes processkit as an opaque content source via the same release-asset machinery that any future content source will use (DEC-025).
+
+**Alternatives:**
+- *Keep the bundled skills as a "fallback" for when `[processkit].version = "unset"`.* Rejected: doubles maintenance, blurs the boundary, encourages drift.
+- *Filter installs by selected package at install time.* Considered, deferred. The `packages/*.yaml` schema is straightforward to walk (`extends:` chain → union of `includes.skills`), but skipping ~80 skills out of 108 to save disk space is not worth the additional Rust code and YAML dependency in v0.16.0. Agents read SKILL.md files lazily; extra files on disk cost nothing at session time. Will revisit in a follow-up release if there is a real reason (e.g. license filtering, MCP server start cost).
+- *Scaffold context-doc templates from aibox and request processkit add them.* Initially planned. Then realised processkit deliberately ships **two tracks** for the same artefacts: an entity-sharded track (`workitem-management`, `decision-record`, `scope-management`, …) that creates per-item YAML files on demand via MCP, and a single-file track (`backlog-context`, `decisions-adr`, `standup-context`, `session-handover`, `context-archiving`) where the skill itself instructs the agent to create/edit `context/BACKLOG.md` etc. directly. Neither track needs upfront scaffolding from aibox — the entity track creates files lazily, and the single-file track has the skill *as* the documentation. The aibox `templates/{minimal,managed,product,research}/` scaffolds were pre-split-era relics from before either track existed. Rejected the issue against processkit; deleted the scaffolds outright.
+- *Stage v0.16.0 as several smaller PRs.* Rejected. The cleanup is interlocking: half-removing the registry leaves the build broken for several callers in `container.rs`, `update.rs`, `sync_perimeter.rs`, and `doctor.rs`. The user explicitly authorised one big breaking change.
+
+**Implementation:** Branch `release/v0.16.0`. New `scaffolding/` install branch in `content_install.rs` mapping `scaffolding/AGENTS.md` → project-root `AGENTS.md` (skipping `scaffolding/INDEX.md`). Test fixtures and the static perimeter table updated to match the new contract. `aibox.toml` in this repo now pins `[processkit].version = "v0.5.1"`. Container deps queued from v0.15.0 bumped: zellij `0.44.0 → 0.44.1`, fzf `0.70.0 → 0.71.0`, delta `0.19.1 → 0.19.2`, ouch `0.5.1 → 0.6.1`. Docusaurus docs updated to reflect the new boundary; the `docs-site/docs/skills/` tree (~17 files) is collapsed to a single index page pointing at processkit.
+
+**Migration impact for derived projects:** **Breaking.** Any project on aibox v0.15.x:
+- Loses `aibox skill` — use the SKILL.md files under `context/skills/` directly, edit-in-place per Strawman D.
+- Loses `context/AIBOX.md` — the file is gone; replace any references with `AGENTS.md` (now installed by processkit).
+- Will see `[skills] include = [...]` parse but have no effect at install time. Today's installer ignores it; a future release may re-introduce filtering. Document removal is fine.
+- Must set `[processkit].version` to a real release tag (e.g. `"v0.5.1"`) for skills/processes/AGENTS.md to land. The default is `"unset"`, which is safe but produces an empty install.
+- Will get an `AGENTS.md` written into the project root on the next `aibox init` if processkit is pinned. If the user already had a hand-written `AGENTS.md`, the install is `write_if_missing` so it is preserved.
+
+The user has confirmed they will handle their derived project (processkit itself) manually.
+
+**Source:** Session 2026-04-07/2026-04-08, "remove all process-related content from aibox now". Picks up where DEC-025 (release-asset fetcher) and DEC-026 (cache-tracked processkit reference) left off.
+
+## DEC-026 — Cache-tracked processkit reference under context/templates/ (2026-04-08)
+
+**Decision:** The fetched processkit release is mirrored verbatim into `<project>/context/templates/processkit/<version>/` and **git-tracked** alongside the live install at `<project>/context/{skills,schemas,state-machines,processes}/` and `<project>/AGENTS.md`. This is the "immutable upstream reference" used by the three-way diff in `content_diff.rs` to detect upstream-vs-local edits at sync time. Strawman D applies: derived projects edit live files in place; the templates dir is the diff baseline.
+
+**Rationale:** The user explicitly wants derived projects to be able to "edit processes/skills/state-machines etc in place but always have the original as reference." Tracking the templates dir in git gives that reference at every commit, makes upstream changes inspectable in PR diffs, and lets `aibox sync` compute the three-way merge without re-fetching from the network. The cache is reproducible from `aibox.lock` (source + version + commit + sha256), so it's not a secret and not a build artefact — it's documentation. Per BACK-106 / DEC-025 the cache is a verbatim copy of `<src_path>/` modulo `.git`/`__pycache__`/dotfiles/`*.pyc`.
+
+**Alternatives:**
+- *Cache outside the project under `~/.cache/aibox/processkit/<version>/`.* Rejected: would require every collaborator to re-fetch on first checkout, would make CI runs harder to debug, and would defeat the "in-PR-diff visibility" goal.
+- *Cache inside the project but `.gitignore`'d.* Rejected for the same reasons.
+- *Cache only the package YAMLs and rely on the live install for everything else.* Rejected: the live install can drift (Strawman D says edit in place); without the immutable templates dir there is nothing to diff against.
+
+**Implementation:** Already in `cli/src/content_init.rs::copy_templates_from_cache` (BACK-106). The path is `context/templates/processkit/<version>/`. The cache is created on `aibox init` and on `aibox sync` when the version moves. `aibox sync` reads `aibox.lock` to find the current version and walks the templates dir for the diff.
+
+**Source:** Session 2026-04-07/2026-04-08, recap of last session's discussion. Recorded here so the load-bearing layout is in the decision log rather than only in the content_init module-doc.
+
 ## DEC-025 — Generic content-source release-asset fetcher (2026-04-07)
 
 **Decision:** aibox consumes content sources (today: processkit; tomorrow: any processkit-compatible producer) via a **generic release-asset fetcher** that prefers a purpose-built `<name>-<version>.tar.gz` attached to the producer's release, with bit-exact reproducibility via a sibling `.sha256` checksum file. Host auto-tarball and `git clone` remain as fallback paths. The fetcher is content-source-neutral by construction — processkit gets no special treatment, just a default URL template that happens to point at the canonical processkit repo when no consumer override is set.

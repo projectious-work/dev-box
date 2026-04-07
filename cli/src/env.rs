@@ -13,8 +13,11 @@ const ENV_DIR: &str = ".aibox-env";
 /// State file tracking current environment.
 const STATE_FILE: &str = "state.toml";
 
-/// Per-environment files to save/restore.
-const ENV_FILES: &[&str] = &["aibox.toml", "CLAUDE.md"];
+/// Per-environment files to save/restore. Includes the canonical
+/// `AGENTS.md` (owned by processkit, but `write_if_missing` lets users
+/// hand-customize it; envs should snapshot those customizations) and
+/// the thin-pointer `CLAUDE.md`.
+const ENV_FILES: &[&str] = &["aibox.toml", "AGENTS.md", "CLAUDE.md"];
 /// Per-environment directory (excluding shared/).
 const ENV_CONTEXT_DIR: &str = "context";
 /// Shared subdirectory name — excluded from env copy.

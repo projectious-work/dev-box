@@ -63,7 +63,7 @@ fn run_in_with_mock(
 fn init_project(dir: &std::path::Path, name: &str) {
     let output = run_in(
         dir,
-        &["init", "--name", name, "--base", "debian", "--process", "core"],
+        &["init", "--name", name, "--base", "debian", "--process", "managed"],
     );
     assert!(
         output.status.success(),

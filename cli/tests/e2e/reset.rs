@@ -14,7 +14,7 @@ fn reset_creates_backup() {
     runner.cleanup(test);
 
     // Init project
-    runner.aibox(test, &["init", "--name", test, "--base", "debian", "--process", "core"]);
+    runner.aibox(test, &["init", "--name", test, "--base", "debian", "--process", "managed"]);
     assert!(runner.file_exists(test, "aibox.toml"));
 
     // Reset (with backup, auto-confirm)
@@ -47,7 +47,7 @@ fn reset_no_backup_deletes_all() {
     let test = "reset-no-backup";
     runner.cleanup(test);
 
-    runner.aibox(test, &["init", "--name", test, "--base", "debian", "--process", "core"]);
+    runner.aibox(test, &["init", "--name", test, "--base", "debian", "--process", "managed"]);
 
     let output = runner.aibox(test, &["reset", "--no-backup", "--yes"]);
     assert!(

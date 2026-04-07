@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use std::path::{Path, PathBuf};
 
 use crate::config::AiboxConfig;
-use crate::{context, generate, output, seed};
+use crate::{generate, output, seed};
 
 // --- Response structs for JSON deserialization ---
 
@@ -203,14 +203,15 @@ fn update_toml_version(toml_path: &Path, old_version: &str, new_version: &str) -
     Ok(())
 }
 
-/// Shared helper: seed + generate + reconcile skills + generate AIBOX.md.
+/// Shared helper: seed + generate.
 ///
-/// Used by both `do_upgrade` and any other flow that needs a full config sync.
+/// Skills, AGENTS.md, and the universal baseline are owned by processkit
+/// since v0.16.0 and refreshed via the content-source diff in
+/// `cmd_sync`. This helper now only handles the slice that is intrinsic
+/// to aibox.
 fn sync_config_files(config: &AiboxConfig) -> Result<()> {
     seed::seed_root_dir(config)?;
     generate::generate_all(config)?;
-    context::reconcile_skills(config)?;
-    context::generate_aibox_md(config)?;
     Ok(())
 }
 

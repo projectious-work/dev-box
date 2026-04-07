@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # ── Zellij ───────────────────────────────────────────────────────────────────
 FROM fetch-base AS fetch-zellij
-ARG ZELLIJ_VERSION=0.44.0
+ARG ZELLIJ_VERSION=0.44.1
 RUN ARCH=$(uname -m) && \
     curl -fsSL \
       "https://github.com/zellij-org/zellij/releases/download/v${ZELLIJ_VERSION}/zellij-${ARCH}-unknown-linux-musl.tar.gz" \
@@ -83,7 +83,7 @@ RUN ARCH=$(uname -m) && \
 
 # ── fzf (uses amd64/arm64 instead of x86_64/aarch64) ────────────────────────
 FROM fetch-base AS fetch-fzf
-ARG FZF_VERSION=0.70.0
+ARG FZF_VERSION=0.71.0
 RUN ARCH=$(uname -m) && \
     FZF_ARCH=$(case $ARCH in aarch64) echo arm64;; x86_64) echo amd64;; esac) && \
     curl -fsSL \
@@ -93,7 +93,7 @@ RUN ARCH=$(uname -m) && \
 
 # ── delta (no aarch64 musl build — use gnu) ──────────────────────────────────
 FROM fetch-base AS fetch-delta
-ARG DELTA_VERSION=0.19.1
+ARG DELTA_VERSION=0.19.2
 RUN ARCH=$(uname -m) && \
     DELTA_LIBC=$(case $ARCH in x86_64) echo musl;; *) echo gnu;; esac) && \
     curl -fsSL \
@@ -108,7 +108,7 @@ RUN ARCH=$(uname -m) && \
 # yazi's built-in archive previewer, which calls 7z (provided by the
 # p7zip-full apt package below).
 FROM fetch-base AS fetch-ouch
-ARG OUCH_VERSION=0.5.1
+ARG OUCH_VERSION=0.6.1
 RUN ARCH=$(uname -m) && \
     curl -fsSL \
       "https://github.com/ouch-org/ouch/releases/download/${OUCH_VERSION}/ouch-${ARCH}-unknown-linux-musl.tar.gz" \

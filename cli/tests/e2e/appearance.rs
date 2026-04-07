@@ -33,7 +33,7 @@ fn init_with_appearance(dir: &std::path::Path, theme: &str, prompt: &str) {
             "init",
             "--name", "appearance-test",
             "--base", "debian",
-            "--process", "core",
+            "--process", "managed",
             "--theme", theme,
             "--prompt", prompt,
         ],

@@ -4,7 +4,7 @@ Central task registry. Each item has a unique ID for cross-referencing.
 Source of truth — GitHub issues are for external visibility.
 Archive of completed/merged items: [archive/BACKLOG.md](archive/BACKLOG.md)
 
-## Next ID: BACK-107
+## Next ID: BACK-110
 
 ## Format
 
@@ -20,6 +20,9 @@ Priority values: `must`, `should`, `could`, `wont`
 
 | ID | Title | Status | Priority | Notes |
 |----|-------|--------|----------|-------|
+| BACK-107 | v0.16.0 — rip bundled process layer | done | must | **Landed:** removed `cli/src/process_registry.rs`, `cli/src/skill_cmd.rs`, the entire `aibox skill` subcommand, the bundled `templates/` tree (~85 skills + context-doc scaffolds + processes + agents pointer), `context/AIBOX.md`, `ALL_SKILL_DEFS` and 141 `include_str!` calls in `cli/src/context.rs` (~2000 lines), `reconcile_skills`/`generate_aibox_md`/`check_agent_entry_points`, `effective_skill_includes`, `skills_for_addons`. Added `scaffolding/` install branch in `content_install.rs` so processkit's `scaffolding/AGENTS.md` lands at the project root. Inlined provider thin-pointer scaffolding (CLAUDE.md → AGENTS.md). Updated sync_perimeter to drop `context/AIBOX.md` and `.claude/skills/`. Bumped `[aibox].version` and `cli/Cargo.toml` to 0.16.0. See DEC-027. |
+| BACK-108 | v0.16.0 — pin processkit v0.5.1 in this repo | done | must | Added `[processkit] version = "v0.5.1"` to the repo's own `aibox.toml`, switched `[context].packages` to `["product"]` (real processkit package). Replaced `templates/`-era preset names with the five processkit packages (`minimal`, `managed`, `software`, `research`, `product`). |
+| BACK-109 | v0.16.0 — bump container deps queued from v0.15.0 | done | should | zellij `0.44.0 → 0.44.1`, fzf `0.70.0 → 0.71.0`, delta `0.19.1 → 0.19.2`, ouch `0.5.1 → 0.6.1`. Updated `images/base-debian/Dockerfile`, `.devcontainer/Dockerfile.e2e`, and `context/work-instructions/RELEASE-PROCESS.md`. |
 | BACK-002 | Security review | todo | must | **CLI:** input validation (container names, hostnames, package names, env names — injection vectors in generated Dockerfiles/compose); file ops (symlink following, path traversal in backup/restore/env); network calls (TLS, no credential leaks in update cmd); TOML config parsing (DoS via large/malformed input). **Container:** default root user (document implications, recommend non-root); mount permissions; Claude CLI install script (pins or hash verify); Dockerfile injection via user-controlled values (extra_packages, env vars, post_create_command); PulseAudio TCP without auth (document exposure). **Supply chain:** `cargo audit` on Cargo.lock; image provenance/cosign (sigstore/cosign for published images — was BACK-015); binary checksum verification in base Dockerfile (was BACK-014); skill hash verification + allowed-tools audit (was BACK-016); curl-pipe-bash install script (document verification). |
 | BACK-004 | Skill eval framework | todo | should | Test/benchmark skills per Anthropic skill-creator pattern |
 | BACK-006 | Docs review (existing-project, base-image pages) | todo | could | Deprioritized pending BACK-021 (Docusaurus migration — now done) and architecture changes (settled). Ready to action. |

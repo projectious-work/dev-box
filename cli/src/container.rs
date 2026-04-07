@@ -22,15 +22,24 @@ pub struct InitParams {
     pub addons: Option<Vec<String>>,
 }
 
-/// Build process selection items for the interactive prompt.
-/// Shows presets only — individual package names are still accepted via --process on the CLI.
+/// Build processkit-package selection items for the interactive prompt.
+///
+/// processkit ships five tiers under `src/packages/`. They are listed
+/// here as static presets so `aibox init` can offer them without yet
+/// having a fetched processkit cache to read from.
 fn process_selection_items() -> (Vec<String>, Vec<String>) {
-    let presets = crate::process_registry::all_presets();
-    let labels = presets
+    const PRESETS: &[(&str, &str)] = &[
+        ("minimal", "solo developers and small side projects"),
+        ("managed", "small teams with a shared backlog (recommended)"),
+        ("software", "software engineering teams building production systems"),
+        ("research", "research, data science, and ML projects"),
+        ("product", "full product development (engineering + design + ops)"),
+    ];
+    let labels = PRESETS
         .iter()
-        .map(|p| format!("{} — {}", p.name, p.description))
+        .map(|(n, d)| format!("{} — {}", n, d))
         .collect();
-    let values = presets.iter().map(|p| p.name.to_string()).collect();
+    let values = PRESETS.iter().map(|(n, _)| n.to_string()).collect();
     (labels, values)
 }
 
@@ -89,7 +98,7 @@ pub fn resolve_init_values(
                 .interact()?;
             vec![values[idx].clone()]
         }
-        None => vec!["core".to_string()],
+        None => vec!["managed".to_string()],
     };
 
     // --- addons ---
@@ -302,13 +311,13 @@ fn serialize_config_with_comments(config: &AiboxConfig) -> String {
         "schema_version = {:12} # Context schema version — updated automatically by `aibox sync`\n",
         format!("\"{}\"", config.context.schema_version)
     ));
-    out.push_str("# Presets (use one of these):\n");
-    out.push_str("#   managed          core + tracking + standups + handover  (recommended default)\n");
-    out.push_str("#   software         managed + code + architecture\n");
-    out.push_str("#   research-project managed + research + documentation\n");
-    out.push_str("#   full-product     managed + code + architecture + design + product + security + operations\n");
-    out.push_str("# Individual packages (advanced): core, tracking, standups, handover, code, architecture,\n");
-    out.push_str("#   design, product, security, data, operations, research, documentation\n");
+    out.push_str("# processkit packages (one or more, choose by tier):\n");
+    out.push_str("#   minimal   solo developers and small side projects\n");
+    out.push_str("#   managed   small teams with a shared backlog (recommended default)\n");
+    out.push_str("#   software  software engineering teams (extends managed)\n");
+    out.push_str("#   research  research, data science, ML projects (extends managed)\n");
+    out.push_str("#   product   full product development (extends software)\n");
+    out.push_str("# See context/templates/processkit/<version>/packages/ for the YAML definitions.\n");
     out.push_str(&format!(
         "packages = [{}]\n",
         config
@@ -659,14 +668,9 @@ pub fn cmd_sync(config_path: &Option<String>, no_cache: bool, no_build: bool) ->
     seed::seed_root_dir(&config)?;
     generate::generate_all(&config)?;
 
-    // Skill reconciliation
-    context::reconcile_skills(&config)?;
-
-    // Generate AIBOX.md (universal baseline)
-    context::generate_aibox_md(&config)?;
-
-    // Check agent entry points
-    context::check_agent_entry_points(&config)?;
+    // Skills, AGENTS.md, and the universal baseline are owned by
+    // processkit since v0.16.0. They are installed at `aibox init`
+    // time by content_init and refreshed via the three-way diff below.
 
     // Three-way processkit diff (A6).
     //
@@ -745,7 +749,7 @@ mod tests {
         assert!(!name.is_empty(), "name should not be empty");
 
         assert_eq!(base, BaseImage::Debian);
-        assert_eq!(process, vec!["core".to_string()]);
+        assert_eq!(process, vec!["managed".to_string()]);
         assert!(addons.is_empty());
     }
 

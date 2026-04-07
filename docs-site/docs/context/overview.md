@@ -5,125 +5,184 @@ title: "Context Overview"
 
 # Context System Overview
 
-The aibox context system provides structured files that give AI agents the information they need to work effectively on your project.
+The aibox context system gives AI agents the structured, file-based information
+they need to work effectively on your project — backlog, decisions, standups,
+processes, primitives, and skills.
+
+As of **v0.16.0**, the system is split across two cleanly separated projects:
+
+- **aibox** owns the **container** — devcontainers, addons, the CLI, the
+  install/sync/migrate machinery, and the slim project skeleton (`.aibox-version`,
+  `.gitignore`, an empty `context/`, and a thin `CLAUDE.md` pointer).
+- **[processkit](https://github.com/projectious-work/processkit)** owns the
+  **content** — every skill, every primitive schema, every state machine, the
+  canonical `AGENTS.md` template, the processes, and the package YAMLs that
+  compose them.
+- **The user-side `context/` directory is shared territory.** aibox creates it,
+  processkit fills it, and the user edits in place. An immutable upstream
+  snapshot is kept under `context/templates/processkit/<version>/` for the
+  three-way diff that `aibox sync` uses to detect upstream changes versus
+  local edits.
 
 ## The Problem
 
-AI coding agents like Claude operate best when they understand not just the code, but the project's goals, decisions, and current state. Without structure, this information ends up scattered across chat histories, stale comments, and the developer's memory.
+AI coding agents like Claude operate best when they understand not just the
+code, but the project's goals, decisions, and current state. Without structure,
+this information ends up scattered across chat histories, stale comments, and
+the developer's memory.
 
-`CLAUDE.md` alone is not enough for complex projects. It works well for instructions and preferences, but it does not provide a standard place for decisions, backlog, progress tracking, or team conventions.
+A single root-level instructions file is not enough for non-trivial projects.
+It works well for instructions and preferences, but it does not provide a
+standard place for decisions, backlog, progress tracking, or team conventions.
 
 ## How Context Files Work
 
-aibox scaffolds a `context/` directory based on your chosen work process flavor. Each file has a defined purpose:
+After `aibox init` and `aibox sync` (with a real `[processkit].version` pinned),
+your project looks something like this:
 
-| File | Purpose |
-|------|---------|
-| `CLAUDE.md` | AI agent instructions and project preferences (lives at project root) |
-| `DECISIONS.md` | Architectural decisions with rationale and status |
-| `BACKLOG.md` | Prioritized work items |
-| `STANDUPS.md` | Session-by-session progress notes |
-| `PROJECTS.md` | Multi-project tracking and status |
-| `PRD.md` | Product requirements document |
-| `PROGRESS.md` | Learning/research progress tracking |
-
-### CLAUDE.md vs context/
-
-`CLAUDE.md` sits at the project root and contains instructions for AI agents: coding style, project conventions, what to avoid. It is read automatically by tools like Claude Code.
-
-The `context/` directory contains structured project knowledge: what has been decided, what needs to be done, what happened in recent sessions. AI agents reference these files to understand project state, but the files are also useful for human developers.
-
-## OWNER.md -- Developer Identity
-
-`OWNER.md` captures the developer's identity and preferences. It is created as a local file in `context/OWNER.md` during `aibox init`, with fields that help AI agents understand who they are working with:
-
-- **Name** -- how the developer prefers to be addressed
-- **Domain expertise** -- areas of knowledge and experience
-- **Primary languages** -- programming languages used most often
-- **Communication language** -- natural language for responses (e.g., English, German)
-- **Timezone** -- for scheduling and availability context
-- **Working hours** -- typical availability window
-- **Current focus** -- what the developer is currently working on or learning
-- **Communication preferences** -- style and conventions for AI interactions
-
-Each project gets its own `OWNER.md`, allowing you to tailor the developer context per project (for example, different "current focus" or "domain expertise" entries for different repositories).
-
-## Work Process Flavors
-
-aibox provides four process flavors that scale from simple to comprehensive:
-
-| Flavor | Files | Best For |
-|--------|-------|----------|
-| `minimal` | CLAUDE.md only | Scripts, experiments, small utilities |
-| `managed` | DECISIONS, BACKLOG, STANDUPS, work-instructions | Ongoing projects with decisions to track |
-| `research` | PROGRESS, research/, experiments/, analysis/ | Learning, documentation, academic work |
-| `product` | Everything from managed + PROJECTS, PRD, project-notes, ideas | Full product development |
-
-See [Process Packages](process-packages.md) for detailed documentation of each flavor.
-
-## Version Tracking
-
-The context schema is versioned via `aibox.toml`:
-
-```toml
-[context]
-schema_version = "1.0.0"
+```
+my-project/
+├── AGENTS.md                       # Canonical agent entry — rendered from processkit scaffolding
+├── CLAUDE.md                       # Thin pointer to AGENTS.md (provider entry file)
+├── aibox.toml
+├── .devcontainer/
+└── context/
+    ├── BACKLOG.md                  # Created by the agent on first use
+    ├── DECISIONS.md                # Created by the agent on first use
+    ├── STANDUPS.md                 # Created by the agent on first use
+    ├── OWNER.md                    # Profile of the project owner
+    ├── skills/                     # Editable skill copies (108 in v0.5.1)
+    ├── processes/                  # release, code-review, feature-development, bug-fix
+    ├── primitives/                 # schemas, state-machines
+    └── templates/
+        └── processkit/
+            └── v0.5.1/             # Immutable upstream snapshot — base of three-way diffs
 ```
 
-A `.aibox-version` file in the project root tracks the version that was last applied. When the schema evolves, `aibox doctor` can detect version mismatches and generate migration artifacts.
+Notable: the single-file context tracks (`BACKLOG.md`, `DECISIONS.md`,
+`STANDUPS.md`, …) are **not** scaffolded as starter files. The corresponding
+processkit skill — `backlog-context`, `decisions-adr`, `standup-context` —
+instructs the agent to create the file in place the first time it needs to
+write to it. There is deliberately no template; the file is born by being
+used.
 
-See [Migration](migration.md) for details on how upgrades work.
+### AGENTS.md, CLAUDE.md, and provider files
 
-## Relationship to aibox.toml
+`AGENTS.md` at the project root is the **canonical** agent entry document. It
+is rendered from the processkit scaffolding template (`src/scaffolding/AGENTS.md`)
+during `aibox init` (write-if-missing — never overwrites). The
+[agents.md](https://agents.md/) ecosystem convention is to read this file from
+any AI harness.
 
-The `[context]` section in `aibox.toml` determines which context files are scaffolded during `aibox init`:
+When `[ai].providers` includes `claude`, aibox also writes a thin `CLAUDE.md`
+at the project root that just points at `AGENTS.md`. **No content is written
+under `.claude/skills/` or any other provider-specific directory** as of
+v0.16.0 — that path is gone. Other providers (Aider, Gemini, Mistral) use
+config files (`.aider.conf.yml`, `.gemini/settings.json`, `.mistral/config.json`)
+which are scaffolded by the addon system; they do not get a markdown pointer.
+
+## OWNER.md — Developer Identity
+
+`OWNER.md` captures the developer's identity and preferences. It is created
+during `aibox init` (or by the `owner-profile` skill the first time the agent
+asks), with fields that help AI agents understand who they are working with:
+
+- **Name** — how the developer prefers to be addressed
+- **Domain expertise** — areas of knowledge and experience
+- **Primary languages** — programming languages used most often
+- **Communication language** — natural language for responses (e.g., English, German)
+- **Timezone** — for scheduling and availability context
+- **Working hours** — typical availability window
+- **Current focus** — what the developer is currently working on or learning
+- **Communication preferences** — style and conventions for AI interactions
+
+## Two Tracks for the Same Artefact
+
+processkit deliberately ships **two tracks** for context-management. Both are
+installed in every release; pick the one that fits each project.
+
+| Track | Skills | How it works |
+|-------|--------|--------------|
+| **Single-file** | `backlog-context`, `decisions-adr`, `standup-context`, `session-handover`, `context-archiving` | The skill maintains a single Markdown file in place (e.g. `context/BACKLOG.md`). No starter template — the file is born when the agent first writes to it. |
+| **Entity-sharded** | `workitem-management`, `decision-record`, `scope-management`, … | Per-item YAML files with IDs, slugs, and state machines. Backed by an MCP server. |
+
+## Process Packages
+
+processkit ships **five packages** that compose skill sets via `extends:` in
+upstream YAMLs (`packages/{minimal,managed,software,research,product}.yaml`).
+You select packages declaratively in `aibox.toml`:
 
 ```toml
 [context]
 packages = ["managed"]
 ```
 
-Changing this after initialization does not automatically add or remove files. Use `aibox doctor` to identify gaps and `aibox sync` to reconcile.
+| Package | Best for |
+|---------|----------|
+| `minimal` | Scripts, experiments, small utilities |
+| `managed` | Recommended default — backlog, decisions, standups, handover |
+| `software` | Software projects with a recurring build/test/review cycle |
+| `research` | Learning, documentation, academic work |
+| `product` | Full product development with security, ops, design, planning |
 
-## Process Templates
+In v0.16.0, package selection is **declarative metadata**. aibox installs every
+processkit skill regardless; the package list tells agents which subset to
+prefer. See [Process Packages](process-packages.md) for the full breakdown.
 
-aibox ships four process templates in `context/processes/` that define standard workflows for common development activities:
+## Version Tracking
 
-| Template | Purpose |
-|----------|---------|
-| `release.md` | Release process steps and checklist |
-| `code-review.md` | Code review workflow and standards |
-| `feature-development.md` | Feature development lifecycle |
-| `bug-fix.md` | Bug investigation and fix workflow |
+Two pieces track the version:
 
-Process templates declare **WHAT** your project does -- the steps, roles, and definition of done for each workflow. They are intentionally thin. The executable details (how an AI agent should format entries, which tools to use, integration specifics) live in **skills** (see [Skills](../skills/index.md)).
+```toml
+[aibox]
+version = "0.16.0"
 
-Process templates are scaffolded for `managed`, `research`, and `product` flavors. The `minimal` flavor does not include process templates.
+[context]
+schema_version = "1.0.0"
 
-You can customize process templates freely: edit them, add new ones, or remove ones you do not use.
+[processkit]
+version = "v0.5.1"
+```
 
-## SKILL.md Support
+`.aibox-version` in the project root records the aibox CLI version that was
+last applied. When the schema evolves, `aibox doctor` flags version mismatches
+and `aibox sync` runs the relevant migrations. See [Migration](migration.md)
+for details.
 
-Skills complement processes by providing the **HOW** -- executable instructions for AI agents. A skill is a `SKILL.md` file installed at `.claude/skills/<name>/SKILL.md` that tells the AI agent how to perform a specific task.
+## Relationship to aibox.toml
 
-aibox bundles three example skills:
+The `[context]` section in `aibox.toml` declares which processkit packages are
+in scope. The `[processkit]` section pins which version of the content
+repository this project consumes:
 
-| Skill | Description |
-|-------|-------------|
-| `backlog-context` | Manages BACKLOG.md -- adding, prioritizing, and tracking work items |
-| `decisions-adr` | Manages DECISIONS.md using Architecture Decision Record format |
-| `standup-context` | Manages STANDUPS.md with session progress notes |
+```toml
+[context]
+packages = ["managed"]
 
-This separation of **WHAT** (processes) from **HOW** (skills) is a core architectural decision (DEC-011). It enables swappable implementations -- for example, you could replace `backlog-context` (which manages a Markdown file) with a `backlog-github` skill that manages GitHub Issues instead, without changing your process declarations.
+[processkit]
+source  = "https://github.com/projectious-work/processkit.git"
+version = "v0.5.1"
+```
 
-See [Skills](../skills/index.md) for full documentation on installing and using skills.
+Changing `[context].packages` after initialisation does not move files around —
+the install set is always the full processkit skill catalogue. Run `aibox sync`
+after editing `[processkit].version` to pull a new release.
 
 ## Design Principles
 
-**Convention over configuration.** File names and locations are standardized so AI agents can find them without special instructions.
+**Convention over configuration.** File names and locations are standardised
+so AI agents can find them without special instructions.
 
-**Human-readable first.** All context files are Markdown. They are useful without any tooling.
+**Human-readable first.** All context files are Markdown. They are useful
+without any tooling.
 
-**Progressive complexity.** Start with `minimal` and upgrade to `managed` or `product` as the project grows.
+**Editable in place.** Everything under `context/skills/`, `context/processes/`,
+and `context/primitives/` is yours to edit. The immutable snapshot under
+`context/templates/processkit/<version>/` exists only as the base of
+`aibox sync`'s three-way diff.
 
-**No lock-in.** Context files are plain Markdown in a `context/` directory. Stop using aibox and the files remain useful.
+**No lock-in.** Context files are plain Markdown in a `context/` directory.
+Stop using aibox and the files remain useful.
+
+**Clean boundary between container and content.** aibox owns the box;
+processkit owns what goes in it. Each ships on its own cadence.

@@ -37,7 +37,7 @@ fn run_in(dir: &std::path::Path, args: &[&str]) -> std::process::Output {
 fn init_project(dir: &std::path::Path, name: &str) {
     let output = run_in(
         dir,
-        &["init", "--name", name, "--base", "debian", "--process", "core"],
+        &["init", "--name", name, "--base", "debian", "--process", "managed"],
     );
     assert!(
         output.status.success(),
@@ -259,66 +259,83 @@ node = { version = "22" }
     );
 }
 
-// ─── Process Section Tests ───────────────────────────────────────────────────
+// ─── processkit package selection tests ──────────────────────────────────────
+//
+// Since v0.16.0 aibox no longer scaffolds context-doc files (BACKLOG.md,
+// DECISIONS.md, PRD.md, PROJECTS.md, …). Those are created lazily by the
+// single-file processkit skills (backlog-context, decisions-adr, …) when
+// an agent first uses them, OR by the entity-sharded processkit skills
+// (workitem-management, decision-record, …) which write per-entity YAML
+// files under context/workitems/ etc.
+//
+// What aibox owns at init time is the slim project skeleton: context/
+// directory, .aibox-version, .gitignore, CLAUDE.md thin pointer, and
+// (when [processkit] version != "unset") the processkit content
+// installed by content_init. The tests below verify that contract for
+// each of the five processkit package presets.
 
-#[test]
-fn process_core_creates_minimal_context() {
-    let dir = tempfile::tempdir().unwrap();
-    let output = run_in(
-        dir.path(),
-        &["init", "--name", "proc-core", "--base", "debian", "--process", "core"],
+fn assert_post_init_skeleton(dir: &std::path::Path) {
+    assert!(dir.join("context").exists(), "context/ should exist");
+    assert!(dir.join("CLAUDE.md").exists(), "CLAUDE.md thin pointer should exist");
+    assert!(dir.join(".aibox-version").exists(), ".aibox-version should exist");
+    assert!(dir.join(".gitignore").exists(), ".gitignore should exist");
+    let claude = fs::read_to_string(dir.join("CLAUDE.md")).unwrap();
+    assert!(
+        claude.contains("Pointer file") && claude.contains("AGENTS.md"),
+        "CLAUDE.md should be a thin pointer to AGENTS.md, got: {claude}"
     );
-    assert!(output.status.success());
-    assert!(dir.path().join("context").exists(), "context/ should exist");
-    assert!(dir.path().join("CLAUDE.md").exists(), "CLAUDE.md should exist");
 }
 
 #[test]
-fn process_managed_creates_backlog() {
+fn process_minimal_creates_skeleton() {
+    let dir = tempfile::tempdir().unwrap();
+    let output = run_in(
+        dir.path(),
+        &["init", "--name", "proc-min", "--base", "debian", "--process", "minimal"],
+    );
+    assert!(output.status.success());
+    assert_post_init_skeleton(dir.path());
+}
+
+#[test]
+fn process_managed_creates_skeleton() {
     let dir = tempfile::tempdir().unwrap();
     let output = run_in(
         dir.path(),
         &["init", "--name", "proc-mgd", "--base", "debian", "--process", "managed"],
     );
     assert!(output.status.success());
+    assert_post_init_skeleton(dir.path());
+    // Context-doc files are NOT created by aibox post-v0.16.0 — they
+    // are owned by processkit single-file skills.
     assert!(
-        dir.path().join("context/BACKLOG.md").exists(),
-        "BACKLOG.md should exist for managed process"
-    );
-    assert!(
-        dir.path().join("context/DECISIONS.md").exists(),
-        "DECISIONS.md should exist for managed process"
+        !dir.path().join("context/BACKLOG.md").exists(),
+        "aibox v0.16.0 must not scaffold context/BACKLOG.md (owned by processkit backlog-context skill)"
     );
 }
 
 #[test]
-fn process_product_creates_prd() {
+fn process_product_creates_skeleton() {
     let dir = tempfile::tempdir().unwrap();
     let output = run_in(
         dir.path(),
         &["init", "--name", "proc-prod", "--base", "debian", "--process", "product"],
     );
     assert!(output.status.success());
+    assert_post_init_skeleton(dir.path());
     assert!(
-        dir.path().join("context/PRD.md").exists(),
-        "PRD.md should exist for product process"
-    );
-    assert!(
-        dir.path().join("context/PROJECTS.md").exists(),
-        "PROJECTS.md should exist for product process"
+        !dir.path().join("context/PRD.md").exists(),
+        "aibox v0.16.0 must not scaffold context/PRD.md"
     );
 }
 
 #[test]
-fn process_research_creates_progress() {
+fn process_research_creates_skeleton() {
     let dir = tempfile::tempdir().unwrap();
     let output = run_in(
         dir.path(),
         &["init", "--name", "proc-res", "--base", "debian", "--process", "research"],
     );
     assert!(output.status.success());
-    assert!(
-        dir.path().join("context/PROGRESS.md").exists(),
-        "PROGRESS.md should exist for research process"
-    );
+    assert_post_init_skeleton(dir.path());
 }

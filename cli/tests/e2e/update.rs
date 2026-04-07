@@ -29,7 +29,7 @@ fn update_check_fetches_from_registry() {
             "--base",
             "debian",
             "--process",
-            "core",
+            "managed",
         ],
     );
     assert!(
@@ -94,7 +94,7 @@ fn update_dry_run_fetches_from_registry() {
             "--base",
             "debian",
             "--process",
-            "core",
+            "managed",
         ],
     );
 

@@ -32,7 +32,7 @@ fn run_in(dir: &std::path::Path, args: &[&str]) -> std::process::Output {
 fn init_project(dir: &std::path::Path, name: &str) {
     let output = run_in(
         dir,
-        &["init", "--name", name, "--base", "debian", "--process", "core"],
+        &["init", "--name", name, "--base", "debian", "--process", "managed"],
     );
     assert!(
         output.status.success(),

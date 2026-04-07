@@ -91,7 +91,7 @@ fn init_creates_expected_files() {
             "--base",
             "debian",
             "--process",
-            "core",
+            "managed",
         ],
     );
     assert!(
@@ -116,18 +116,21 @@ fn init_creates_expected_files() {
         dir.path().join(".devcontainer/devcontainer.json").exists(),
         "devcontainer.json should be created"
     );
+    // AGENTS.md is owned by processkit since v0.16.0 and lands only
+    // when [processkit].version is pinned. The default `aibox init`
+    // writes "unset", so AGENTS.md is intentionally absent here.
     assert!(
-        dir.path().join("AGENTS.md").exists(),
-        "AGENTS.md (canonical) should be created"
+        !dir.path().join("AGENTS.md").exists(),
+        "AGENTS.md should NOT be created when processkit version is unset"
     );
     assert!(
         dir.path().join("CLAUDE.md").exists(),
-        "CLAUDE.md (thin pointer in default mode) should be created"
+        "CLAUDE.md (thin pointer) should be created"
     );
     let claude_body = std::fs::read_to_string(dir.path().join("CLAUDE.md")).unwrap();
     assert!(
-        claude_body.contains("AGENTS.md"),
-        "default-mode CLAUDE.md should reference AGENTS.md"
+        claude_body.contains("AGENTS.md") && claude_body.contains("Pointer file"),
+        "thin-pointer CLAUDE.md should reference AGENTS.md"
     );
     assert!(
         dir.path().join(".aibox-version").exists(),
@@ -148,7 +151,7 @@ fn init_existing_config_exits_nonzero() {
             "--base",
             "debian",
             "--process",
-            "core",
+            "managed",
         ],
     );
     // Second init should fail
@@ -161,7 +164,7 @@ fn init_existing_config_exits_nonzero() {
             "--base",
             "debian",
             "--process",
-            "core",
+            "managed",
         ],
     );
     assert!(
@@ -188,7 +191,7 @@ fn generate_after_init_succeeds() {
             "--base",
             "debian",
             "--process",
-            "core",
+            "managed",
         ],
     );
     assert!(init_output.status.success(), "init should succeed");
@@ -214,7 +217,7 @@ fn init_invalid_base_exits_nonzero() {
             "--base",
             "invalid-base",
             "--process",
-            "core",
+            "managed",
         ],
     );
     assert!(
@@ -271,7 +274,7 @@ fn init_with_all_base_images() {
                 "--base",
                 base,
                 "--process",
-                "core",
+                "managed",
             ],
         );
         assert!(
@@ -285,7 +288,7 @@ fn init_with_all_base_images() {
 
 #[test]
 fn init_with_all_process_packages() {
-    for pkg in &["core", "managed", "research", "product"] {
+    for pkg in &["minimal", "managed", "software", "research", "product"] {
         let dir = tempfile::tempdir().unwrap();
         let output = run_in_dir(
             dir.path(),

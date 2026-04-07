@@ -34,7 +34,7 @@ aibox init [OPTIONS]
 |--------|---------|-------------|
 | `--name <NAME>` | Current directory name | Project and container name |
 | `--base <BASE>` | `debian` | Base image: `debian` |
-| `--process <PACKAGES>` | `core` | Process packages (space-separated): package names or presets |
+| `--process <PACKAGES>` | `managed` | processkit package(s): `minimal`, `managed`, `software`, `research`, `product` (can be repeated) |
 | `--ai <PROVIDER>` | `claude` | AI provider(s): `claude`, `aider`, `gemini`, `mistral` (can be repeated) |
 | `--theme <THEME>` | `gruvbox-dark` | Color theme: `gruvbox-dark`, `catppuccin-mocha`, `catppuccin-latte`, `dracula`, `tokyo-night`, `nord`, `projectious` |
 | `--user <USER>` | `aibox` | Container user |
@@ -45,8 +45,18 @@ aibox init [OPTIONS]
 1. Creates `aibox.toml` with the specified settings
 2. Creates `.aibox-home/` directory with default configuration files
 3. Generates `.devcontainer/Dockerfile`, `docker-compose.yml`, and `devcontainer.json`
-4. Scaffolds context files based on the chosen process flavor
+4. Scaffolds the slim project skeleton: `.aibox-version`, `.gitignore`, an empty
+   `context/` directory, and a thin `CLAUDE.md` pointer to `AGENTS.md` (when the
+   `claude` provider is enabled)
 5. Updates `.gitignore` with required entries (`.aibox-home/`, `.devcontainer/`, etc.)
+6. **Installs processkit content** — fetches the version pinned in `[processkit]`,
+   extracts it to `context/templates/processkit/<version>/`, and materialises an
+   editable copy under `context/skills/`. The canonical `AGENTS.md` is rendered
+   from the processkit scaffolding template at this point.
+
+> If `[processkit].version` is the sentinel `unset`, the processkit install step
+> is skipped — pin a real tag (e.g. `v0.5.1`) and re-run `aibox sync` to land
+> the content.
 
 ### Examples
 
@@ -54,7 +64,7 @@ aibox init [OPTIONS]
 # Basic initialization (uses directory name, defaults)
 aibox init
 
-# Specify project name and process
+# Specify project name and processkit package
 aibox init --name my-api --process managed
 
 # With addons
@@ -78,9 +88,9 @@ aibox init --name my-app --theme catppuccin-mocha
 
 When `--name` or `--process` flags are omitted and the terminal is interactive, `aibox init` prompts for each missing value.
 
-The `--process` prompt shows only the four convenience presets (`managed`, `software`, `research-project`, `full-product`). To use an individual package instead, pass `--process <name>` explicitly on the command line.
+The `--process` prompt shows the five processkit packages (`minimal`, `managed`, `software`, `research`, `product`). `managed` is the recommended default.
 
-In non-interactive environments (scripts, CI pipelines), omitted flags silently use defaults: the current directory name for `--name`, `debian` for `--base`, and `core` for `--process`.
+In non-interactive environments (scripts, CI pipelines), omitted flags silently use defaults: the current directory name for `--name`, `debian` for `--base`, and `managed` for `--process`.
 
 !!! warning "Will not overwrite"
     If `aibox.toml` already exists, `init` exits with an error. Delete the file first or edit it directly.
@@ -109,9 +119,17 @@ aibox sync [OPTIONS]
 2. **Force-updates theme-dependent config files** in `.aibox-home/`
 3. **Seeds `.aibox-home/`** directory with default configs (if missing)
 4. **Regenerates `.devcontainer/` files** from `aibox.toml`
-5. **Reconciles skills** — deploys missing skills, reports orphans
-6. **Generates AIBOX.md** — universal agent baseline document
-7. **Builds the container image** via `docker compose build` (skipped gracefully if no runtime)
+5. **Installs / refreshes processkit content** — fetches the pinned
+   `[processkit].version`, verifies the release-asset SHA256 (when present),
+   extracts it to `context/templates/processkit/<version>/`, and three-way
+   diffs the editable copy under `context/skills/` against it. Skipped when
+   `[processkit].version` is `unset`.
+6. **Builds the container image** via `docker compose build` (skipped gracefully if no runtime)
+
+`aibox sync` no longer generates a `context/AIBOX.md` file — that file
+existed in pre-v0.16 releases and has been removed. The canonical agent
+entry document is now `AGENTS.md`, owned by processkit and rendered at
+`aibox init` time (write-if-missing, never overwritten).
 
 Only files whose content has actually changed are written. Reports what was updated.
 
@@ -120,7 +138,7 @@ Only files whose content has actually changed are written. Reports what was upda
 `aibox sync` is allowed to create, modify, or delete **only** the files
 listed below. Anything else — including `README.md`, `AGENTS.md`,
 `CLAUDE.md`, `LICENSE`, `src/`, `tests/`, `docs/`, `context/BACKLOG.md`,
-`context/skills/`, and any user-authored content — is **out of perimeter
+`context/skills/**`, and any user-authored content — is **out of perimeter
 and will never be touched**, in any release, under any configuration.
 
 | Path | Why |
@@ -131,9 +149,14 @@ and will never be touched**, in any release, under any configuration.
 | `.devcontainer/Dockerfile` | Regenerated from `aibox.toml` |
 | `.devcontainer/docker-compose.yml` | Regenerated from `aibox.toml` |
 | `.devcontainer/devcontainer.json` | Regenerated from `aibox.toml` |
-| `.claude/skills/**` | Skill deployment (write-if-missing; never overwrites) |
-| `context/AIBOX.md` | Universal baseline (regenerated; explicitly aibox-owned) |
+| `context/templates/processkit/<version>/**` | Immutable upstream snapshot used as the base of three-way diffs |
 | `context/migrations/**` | Migration documents (additive; never overwrites) |
+
+> **Editable processkit content** under `context/skills/`, `context/processes/`,
+> and similar directories is **never** rewritten by `aibox sync`. Sync only
+> reports drift (via the three-way diff against the immutable snapshot under
+> `context/templates/processkit/<version>/`) and lets the user reconcile
+> changes by hand.
 
 The perimeter is enforced two ways:
 
@@ -450,7 +473,7 @@ aibox completions fish | source
 
 Manage named environments for switching between configurations within a single project.
 
-Environments save `aibox.toml`, `CLAUDE.md`, and `context/` (excluding `context/shared/`) to `.aibox-env/<name>/`. Files in `context/shared/` are shared across all environments.
+Environments save `aibox.toml`, `AGENTS.md`, `CLAUDE.md`, and `context/` (excluding `context/shared/`) to `.aibox-env/<name>/`. Files in `context/shared/` are shared across all environments.
 
 ### Subcommands
 
@@ -563,6 +586,7 @@ Copies all aibox managed files to a timestamped subdirectory:
 - `.aibox-home/`
 - `.aibox-version`
 - `context/`
+- `AGENTS.md`
 - `CLAUDE.md`
 - `.gitignore`
 
@@ -595,7 +619,7 @@ aibox backup --output-dir /tmp/my-backup
 Remove all aibox files and reset the project to its pre-init state.
 
 !!! danger "Danger zone"
-    This command deletes aibox.toml, .devcontainer/, .aibox-home/, context/, CLAUDE.md, and .aibox-version. By default a backup is created first. `.gitignore` is backed up but **not** deleted.
+    This command deletes aibox.toml, .devcontainer/, .aibox-home/, context/, AGENTS.md, CLAUDE.md, and .aibox-version. By default a backup is created first. `.gitignore` is backed up but **not** deleted.
 
 ### Usage
 
@@ -752,68 +776,6 @@ aibox addon info rust
 
 # Remove an add-on
 aibox addon remove python
-```
-
----
-
-## aibox skill
-
-Manage skills (AI agent capabilities).
-
-### Subcommands
-
-#### aibox skill list
-
-List all available skills and their deploy status.
-
-```bash
-aibox skill list
-```
-
-Shows each skill's name, source package, and whether it's active in the current project.
-
-#### aibox skill add
-
-Add a skill to `[skills].include` in `aibox.toml`.
-
-```bash
-aibox skill add <name>
-```
-
-If the skill was in `[skills].exclude`, it's removed from there. Runs skill reconciliation after.
-
-#### aibox skill remove
-
-Remove a skill by managing `[skills].include` and `[skills].exclude`.
-
-```bash
-aibox skill remove <name>
-```
-
-If the skill was in `[skills].include`, removes it. Otherwise, adds it to `[skills].exclude`. Core skills (`agent-management`, `owner-profile`) cannot be removed.
-
-#### aibox skill info
-
-Show info about a skill, including a preview of its SKILL.md content.
-
-```bash
-aibox skill info <name>
-```
-
-### Examples
-
-```bash
-# See all skills and their status
-aibox skill list
-
-# Add a skill not in your process packages
-aibox skill add data-science
-
-# Remove a skill from your active set
-aibox skill remove debugging
-
-# Preview a skill's content
-aibox skill info code-review
 ```
 
 ---

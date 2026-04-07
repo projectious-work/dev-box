@@ -45,10 +45,14 @@ Thank you for your interest in contributing to aibox!
 
 - **`cli/`** — Rust CLI source code
 - **`images/`** — Published container image Dockerfiles
-- **`templates/`** — Work process flavor templates
-- **`schemas/`** — Context schema documents
-- **`docs/`** — MkDocs documentation source
+- **`addons/`** — Addon definitions (language runtimes, tool bundles, AI agents)
+- **`docs-site/`** — Docusaurus documentation source
 - **`.devcontainer/`** — This project's own dev environment
+
+> Process content (skills, packages, primitives, processes, the canonical
+> `AGENTS.md`) lives in **[processkit](https://github.com/projectious-work/processkit)**,
+> not in this repository. As of v0.16.0 aibox no longer ships a `templates/`
+> directory or a `schemas/` directory — both have moved upstream to processkit.
 
 See [CLAUDE.md](https://github.com/projectious-work/aibox/blob/main/CLAUDE.md) for detailed architecture notes.
 
@@ -69,9 +73,9 @@ See [CLAUDE.md](https://github.com/projectious-work/aibox/blob/main/CLAUDE.md) f
 
 ### Documentation Changes
 
-1. Edit or add pages in `docs/`
-2. Update `mkdocs.yml` nav if adding new pages
-3. Preview locally: `mkdocs serve`
+1. Edit or add pages in `docs-site/docs/`
+2. Update `docs-site/sidebars.js` if adding new pages
+3. Preview locally: `cd docs-site && npm run start`
 
 ## Pull Requests
 

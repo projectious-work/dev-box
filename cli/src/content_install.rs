@@ -26,11 +26,13 @@
 //! | `primitives/schemas/<f>.yaml`       | `context/schemas/<f>.yaml`                 |
 //! | `primitives/state-machines/<f>.yaml`| `context/state-machines/<f>.yaml`          |
 //! | `processes/<f>.md`                  | `context/processes/<f>.md`                 |
+//! | `scaffolding/AGENTS.md`             | `AGENTS.md` (project root)                 |
 //! | `primitives/FORMAT.md`              | skipped (internal reference)               |
 //! | `skills/FORMAT.md`                  | skipped (internal reference)               |
 //! | `PROVENANCE.toml` (top of src/)     | skipped (aibox reads from cache)           |
 //! | `INDEX.md` (any level)              | skipped (processkit-internal docs)         |
-//! | `packages/...`                      | skipped (consumed by init logic)           |
+//! | `packages/...`                      | skipped (declarative — read from templates)|
+//! | `scaffolding/INDEX.md`              | skipped (processkit-internal)              |
 //! | anything unrecognized               | skipped                                    |
 //!
 //! ## Why every path is under `context/`
@@ -163,9 +165,21 @@ pub fn install_action_for(rel_path: &Path) -> InstallAction {
             InstallAction::Install(p)
         }
 
-        // packages/*  →  skipped (consumed at init time to select skills,
-        // not installed into the project).
+        // packages/*  →  skipped from the live install. The full set is
+        // available in context/templates/processkit/<version>/packages/
+        // for agents to read declaratively. v0.16.0 installs every skill
+        // processkit ships regardless of selected package.
         "packages" => InstallAction::Skip,
+
+        // scaffolding/AGENTS.md  →  AGENTS.md (project root)
+        // The canonical agent entry point. processkit owns the template
+        // (with {{PROJECT_NAME}} placeholder); the file is overwritten on
+        // re-install so upstream changes propagate.
+        // scaffolding/INDEX.md and any other scaffolding files are skipped.
+        "scaffolding" if parts.len() == 2 && parts[1] == "AGENTS.md" => {
+            InstallAction::Install(PathBuf::from("AGENTS.md"))
+        }
+        "scaffolding" => InstallAction::Skip,
 
         // Anything else is unknown — skip rather than guess.
         _ => InstallAction::Skip,
@@ -292,6 +306,24 @@ mod tests {
         assert_skipped("packages/minimal.yaml");
         assert_skipped("packages/managed.yaml");
         assert_skipped("packages/software.yaml");
+    }
+
+    #[test]
+    fn scaffolding_agents_md_installs_at_project_root() {
+        assert_installs_to("scaffolding/AGENTS.md", "AGENTS.md");
+    }
+
+    #[test]
+    fn scaffolding_index_md_is_skipped() {
+        assert_skipped("scaffolding/INDEX.md");
+    }
+
+    #[test]
+    fn scaffolding_other_files_are_skipped() {
+        // Defensive — if processkit grows scaffolding/<other>.md, aibox
+        // skips it rather than guessing where it should land. Add an
+        // explicit branch when a new scaffolding file is intentional.
+        assert_skipped("scaffolding/foo.md");
     }
 
     #[test]

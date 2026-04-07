@@ -53,18 +53,20 @@ If `aibox status` is run in a project with no running container, then the
 output must contain `missing` or equivalent wording.
 `[lifecycle.rs · status_without_container_shows_missing]`
 
-**Managed preset creates expected context files**
-If `aibox init --process managed` is run, then `context/BACKLOG.md`,
-`context/DECISIONS.md`, `context/STANDUPS.md`, and
-`context/project-notes/session-template.md` must all be created, and
-`aibox.toml` must reference the `managed` process.
-`[lifecycle.rs · init_with_managed_preset_creates_context_files]`
+**Managed package writes the slim project skeleton**
+If `aibox init --process managed` is run, then `aibox.toml` must contain
+`packages = ["managed"]` under `[context]`, an empty `context/` directory must
+exist, and a thin `CLAUDE.md` pointer must be created when the `claude`
+provider is enabled. The single-file context tracks (`BACKLOG.md`,
+`DECISIONS.md`, `STANDUPS.md`) are **not** scaffolded by `init` — the
+corresponding processkit skills create them in place on first use.
 
-**Software preset creates processes directory**
-If `aibox init --process software` is run, then the tracking and standups
-files from the `managed` base must exist, and `context/processes/` must also
-be created for the architecture package.
-`[lifecycle.rs · init_with_software_preset_creates_code_files]`
+**Software package selection is recorded in aibox.toml**
+If `aibox init --process software` is run, then `aibox.toml` must contain
+`packages = ["software"]` under `[context]`. As with all processkit packages
+in v0.16.0, this is declarative metadata; the actual skills land under
+`context/skills/` only after `aibox sync` with a real `[processkit].version`
+pinned.
 
 ---
 
@@ -340,25 +342,24 @@ is run, then `.devcontainer/Dockerfile` must contain install content for
 both.
 `[config_coverage.rs · addon_multiple_in_dockerfile]`
 
-**Core process creates minimal context structure**
-If `aibox init --process core` is run, then `CLAUDE.md` and `AIBOX.md` must
-exist but no tracking or product files should be created.
-`[config_coverage.rs · process_core_creates_minimal_context]`
+**Minimal package creates slim project skeleton**
+If `aibox init --process minimal` is run, then `aibox.toml`, `.aibox-version`,
+an empty `context/` directory, and a thin `CLAUDE.md` pointer must exist.
+The single-file context tracks (`BACKLOG.md`, `DECISIONS.md`, `STANDUPS.md`)
+are **not** created at init time — the corresponding processkit skills create
+them in place on first use.
 
-**Managed process creates backlog and tracking files**
-If `aibox init --process managed` is run, then `context/BACKLOG.md` must
-exist.
-`[config_coverage.rs · process_managed_creates_backlog]`
+**Managed package is the recommended default**
+If `aibox init --process managed` is run, then the slim project skeleton must
+exist. With a real `[processkit].version` pinned, `aibox sync` then installs
+the full processkit skill catalogue under `context/skills/` and the immutable
+upstream snapshot under `context/templates/processkit/<version>/`.
 
-**Product process creates PRD**
-If `aibox init --process full-product` (or the product package) is run,
-then `context/PRD.md` must exist.
-`[config_coverage.rs · process_product_creates_prd]`
-
-**Research process creates progress file**
-If `aibox init --process research-project` (or the research package) is run,
-then a research progress file must exist.
-`[config_coverage.rs · process_research_creates_progress]`
+**Product / research / software packages**
+The five processkit packages (`minimal`, `managed`, `software`, `research`,
+`product`) are declarative metadata in `[context].packages`. In v0.16.0 they
+do not change which files land on disk — every project gets every processkit
+skill — but they tell agents which subset to prefer.
 
 ---
 

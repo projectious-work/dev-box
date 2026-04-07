@@ -35,7 +35,7 @@ fn doctor_after_init_reports_healthy() {
     let test = "doctor-healthy";
     runner.cleanup(test);
 
-    runner.aibox(test, &["init", "--name", test, "--base", "debian", "--process", "core"]);
+    runner.aibox(test, &["init", "--name", test, "--base", "debian", "--process", "managed"]);
 
     let output = runner.aibox(test, &["doctor"]);
     assert!(output.status.success());

@@ -103,23 +103,27 @@ providers = ["claude", "aider"]
 # aider = {}
 ```
 
-## Addon Skills
+## Addons and Skills
 
-Each addon can recommend skills that are automatically deployed when the addon is active. No manual `[skills].include` needed -- adding an addon brings the right skills with it:
+As of v0.16.0, all skills live in [processkit](https://github.com/projectious-work/processkit)
+and **every project gets every skill installed** under `context/skills/`,
+regardless of which addons are active. There is no longer an addon-driven
+"auto-deploy a skill" mechanism, and no `[skills].include` to manage.
 
-| Addon | Auto-deployed skills |
-|-------|---------------------|
-| `python` | python-best-practices, fastapi-patterns, pandas-polars |
-| `rust` | rust-conventions, concurrency-patterns |
-| `go` | go-conventions, concurrency-patterns |
-| `node` | typescript-patterns, tailwind |
-| `latex` | latex-authoring, documentation |
-| `typst` | documentation |
-| `kubernetes` | kubernetes-basics, container-orchestration |
-| `infrastructure` | terraform-basics |
-| `docs-*` (all 6) | documentation |
+The relevant skills for each addon's tooling are still in the catalogue —
+agents pick them up via skill descriptions, not via addon membership:
 
-See the [Skills Library](../skills/index.md) for the full skill deployment model.
+| Addon | Naturally relevant skills |
+|-------|---------------------------|
+| `python` | `python-best-practices`, `fastapi-patterns`, `pandas-polars` |
+| `rust` | `rust-conventions`, `concurrency-patterns` |
+| `go` | concurrency-patterns and the Go-flavoured patterns shipped upstream |
+| `node` | `typescript-patterns`, `tailwind` |
+| `latex` / `typst` | `documentation` |
+| `kubernetes` | `container-orchestration` |
+| `infrastructure` | terraform-flavoured patterns shipped upstream |
+
+See [Skills (via processkit)](../skills/index.md) for the full split.
 
 ## How Addons Work
 

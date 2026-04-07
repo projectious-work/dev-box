@@ -29,8 +29,6 @@
 //! | `.devcontainer/Dockerfile`                    | Regenerated from `aibox.toml`                                    |
 //! | `.devcontainer/docker-compose.yml`            | Regenerated from `aibox.toml`                                    |
 //! | `.devcontainer/devcontainer.json`             | Regenerated from `aibox.toml`                                    |
-//! | `.claude/skills/`                             | Skill deployment (write-if-missing; never overwrites)            |
-//! | `context/AIBOX.md`                            | Universal baseline (regenerated; explicitly aibox-owned)         |
 //! | `context/migrations/`                         | Migration documents (additive; never overwrites)                 |
 //!
 //! Anything else is **out of perimeter**. Notable items that aibox sync
@@ -41,6 +39,7 @@
 //! - `context/BACKLOG.md`, `context/DECISIONS.md`, `context/PRD.md`,
 //!   `context/work-instructions/`, `context/skills/` (note: install-time
 //!   destination for processkit content; sync never writes here)
+//! - `.claude/`, `.gemini/`, any other provider directory
 //! - `.gitignore` (created by `aibox init`; sync never edits it)
 //!
 //! Note: `aibox init` is allowed to create files outside this list as
@@ -91,10 +90,7 @@ pub const SYNC_PERIMETER: &[&str] = &[
     ".devcontainer/Dockerfile",
     ".devcontainer/docker-compose.yml",
     ".devcontainer/devcontainer.json",
-    // ── Skills deployed by aibox (write-if-missing) ─────────────────────
-    ".claude/skills/",
-    // ── Universal baseline + migrations ────────────────────────────────
-    "context/AIBOX.md",
+    // ── Migration documents (additive) ─────────────────────────────────
     "context/migrations/",
 ];
 
@@ -335,11 +331,6 @@ mod tests {
         assert!(within(".devcontainer/devcontainer.json"));
     }
 
-    #[test]
-    fn aibox_md_is_in_perimeter() {
-        assert!(within("context/AIBOX.md"));
-    }
-
     // -- Directories in perimeter ------------------------------------------
 
     #[test]
@@ -348,13 +339,6 @@ mod tests {
         assert!(within(".aibox-home/.config/zellij/config.kdl"));
         assert!(within(".aibox-home/.config/yazi/yazi.toml"));
         assert!(within(".aibox-home/.vim/vimrc"));
-    }
-
-    #[test]
-    fn claude_skills_subtree_is_in_perimeter() {
-        assert!(within(".claude/skills"));
-        assert!(within(".claude/skills/agent-management/SKILL.md"));
-        assert!(within(".claude/skills/foo/references/bar.md"));
     }
 
     #[test]
@@ -416,11 +400,21 @@ mod tests {
     }
 
     #[test]
-    fn other_dotclaude_files_are_out_of_perimeter() {
-        // Only .claude/skills/. The rest of .claude/ may be user state
-        // (settings.json, history, etc.) — sync never touches it.
+    fn provider_dirs_are_out_of_perimeter() {
+        // Since v0.16.0 nothing under .claude/, .gemini/, .aider/ is
+        // aibox-managed. The full provider directories are user state
+        // and sync never touches them.
         assert!(!within(".claude/settings.json"));
         assert!(!within(".claude/cache/foo"));
+        assert!(!within(".claude/skills/agent-management/SKILL.md"));
+        assert!(!within(".gemini/settings.json"));
+    }
+
+    #[test]
+    fn aibox_md_is_out_of_perimeter() {
+        // context/AIBOX.md was removed in v0.16.0. Nothing aibox writes
+        // should ever land at this path again.
+        assert!(!within("context/AIBOX.md"));
     }
 
     // -- Edge cases --------------------------------------------------------
@@ -457,8 +451,8 @@ mod tests {
     fn similar_prefix_is_not_a_match() {
         // ".aibox-home" is in the list, ".aibox-homely" must not be.
         assert!(!within(".aibox-homely/foo"));
-        // "context/AIBOX.md" is the literal entry, "context/AIBOX.md.bak" is not.
-        assert!(!within("context/AIBOX.md.bak"));
+        // ".devcontainer/Dockerfile" is the literal entry; the .bak twin is not.
+        assert!(!within(".devcontainer/Dockerfile.bak"));
     }
 
     // -- check_perimeter ---------------------------------------------------
@@ -512,11 +506,6 @@ mod tests {
             ".aibox-home/.bashrc",
             ".aibox-home/.config/starship.toml",
             ".aibox-home/.asoundrc",
-            // context::reconcile_skills
-            ".claude/skills/agent-management/SKILL.md",
-            ".claude/skills/code-review/references/checklist.md",
-            // context::generate_aibox_md
-            "context/AIBOX.md",
             // content_diff::write_migration_document
             "context/migrations/pending/MIG-20260407T120000.md",
         ];

@@ -13,7 +13,7 @@ fn addon_add_modifies_toml() {
     let test = "addon-add";
     runner.cleanup(test);
 
-    runner.aibox(test, &["init", "--name", test, "--base", "debian", "--process", "core"]);
+    runner.aibox(test, &["init", "--name", test, "--base", "debian", "--process", "managed"]);
 
     // Add python addon
     let output = runner.aibox(test, &["addon", "add", "python", "--no-build"]);
@@ -41,7 +41,7 @@ fn addon_remove_cleans_toml() {
     runner.cleanup(test);
 
     // Init with python addon
-    runner.aibox(test, &["init", "--name", test, "--base", "debian", "--process", "core", "--addons", "python"]);
+    runner.aibox(test, &["init", "--name", test, "--base", "debian", "--process", "managed", "--addons", "python"]);
 
     // Verify it's there
     let toml = runner.read_file(test, "aibox.toml");
@@ -73,7 +73,7 @@ fn addon_rebuild_includes_tools_in_dockerfile() {
     runner.cleanup(test);
 
     // Init with python addon
-    runner.aibox(test, &["init", "--name", test, "--base", "debian", "--process", "core", "--addons", "python"]);
+    runner.aibox(test, &["init", "--name", test, "--base", "debian", "--process", "managed", "--addons", "python"]);
 
     // Sync to regenerate
     runner.aibox(test, &["sync"]);
@@ -95,7 +95,7 @@ fn addon_list_shows_available() {
     let test = "addon-list";
     runner.cleanup(test);
 
-    runner.aibox(test, &["init", "--name", test, "--base", "debian", "--process", "core"]);
+    runner.aibox(test, &["init", "--name", test, "--base", "debian", "--process", "managed"]);
 
     let output = runner.aibox(test, &["addon", "list"]);
     assert!(output.status.success());

@@ -7,6 +7,25 @@ title: "Migration"
 
 When the aibox context schema evolves between versions, existing projects may need to update their context files. The `aibox doctor` command helps identify gaps and produces migration artifacts.
 
+:::warning v0.16.0 — `context/AIBOX.md` is gone
+
+Pre-v0.16 releases generated a `context/AIBOX.md` "universal baseline" file
+on every `aibox sync`. That file has been **removed** as part of the
+aibox⇄processkit split. The canonical agent entry document is now `AGENTS.md`
+at the project root, owned by processkit and rendered at `aibox init` time
+(write-if-missing — never overwritten).
+
+Existing projects upgrading to v0.16.0 can safely delete `context/AIBOX.md`.
+Anything you wrote into it by hand should be moved into `AGENTS.md`,
+`context/DECISIONS.md`, or one of the work-instructions files, depending on
+its nature.
+
+The `[skills]` section in `aibox.toml` still parses but is **reserved / no-op**
+in v0.16.0. Every project gets every processkit skill installed under
+`context/skills/` regardless of `include`/`exclude`.
+
+:::
+
 ## How Version Tracking Works
 
 Two pieces track the version:

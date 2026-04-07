@@ -96,7 +96,7 @@ fn default_schema_version() -> String {
 }
 
 fn default_context_packages() -> Vec<String> {
-    vec!["core".to_string()]
+    vec!["managed".to_string()]
 }
 
 impl Default for ContextSection {
@@ -873,20 +873,6 @@ impl AiboxConfig {
         }
     }
 
-    /// Collect effective skill includes: user's `[skills].include` merged with
-    /// skills recommended by active addons. Deduplicates preserving order.
-    pub fn effective_skill_includes(&self) -> Vec<String> {
-        let addon_names: Vec<String> = self.addons.addons.keys().cloned().collect();
-        let addon_skills = crate::addon_loader::skills_for_addons(&addon_names);
-        let mut combined = self.skills.include.clone();
-        for skill in addon_skills {
-            if !combined.contains(&skill) {
-                combined.push(skill);
-            }
-        }
-        combined
-    }
-
     /// Get the host root path (.aibox-home/ directory), respecting env override.
     /// Falls back to `.root/` if that directory exists (backward compatibility).
     pub fn host_root_dir(&self) -> PathBuf {
@@ -1130,7 +1116,7 @@ name = "my-project"
         assert_eq!(config.container.hostname, "aibox");
         assert_eq!(config.context.schema_version, "1.0.0");
         assert_eq!(config.ai.providers, vec![AiProvider::Claude]);
-        assert_eq!(config.context.packages, vec!["core"]);
+        assert_eq!(config.context.packages, vec!["managed"]);
         assert!(config.addons.addons.is_empty());
         assert!(config.skills.include.is_empty());
         assert!(config.skills.exclude.is_empty());
@@ -1398,9 +1384,9 @@ rustfmt = {}
     // -- Context packages ---------------------------------------------------
 
     #[test]
-    fn context_packages_default_is_core() {
+    fn context_packages_default_is_managed() {
         let config = parse_toml(minimal_toml()).unwrap();
-        assert_eq!(config.context.packages, vec!["core"]);
+        assert_eq!(config.context.packages, vec!["managed"]);
     }
 
     #[test]

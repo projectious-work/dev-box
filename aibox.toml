@@ -6,7 +6,7 @@
 # Note: this project dogfoods its own CLI (installed from releases on the host).
 
 [aibox]
-version = "0.14.1"              # Set by aibox — do not edit manually
+version = "0.16.0"              # Set by aibox — do not edit manually
 base    = "debian"              # Base image flavor. Options: debian
 
 # =============================================================================
@@ -45,21 +45,44 @@ keepalive = true               # Send periodic keepalive (prevents NAT idle drop
 # =============================================================================
 [context]
 schema_version = "1.0.0"  # Context schema version — updated automatically by `aibox sync`
-# Presets (use one of these):
-#   managed          core + tracking + standups + handover  (recommended default)
-#   software         managed + code + architecture
-#   research-project managed + research + documentation
-#   full-product     managed + code + architecture + design + product + security + operations
-# Individual packages (advanced): core, tracking, standups, handover, code, architecture,
-#   design, product, security, data, operations, research, documentation
-packages = ["full-product", "handover"]
+# processkit packages (one or more, choose by tier):
+#   minimal   solo developers and small side projects
+#   managed   small teams with a shared backlog (recommended default)
+#   software  software engineering teams (extends managed)
+#   research  research, data science, ML projects (extends managed)
+#   product   full product development (extends software)
+# See context/templates/processkit/<version>/packages/ for the YAML definitions.
+packages = ["product"]
 
 # =============================================================================
-# [skills] — fine-tune which skills are deployed
+# [processkit] — content layer source (skills, primitives, processes)
 # =============================================================================
-[skills]
-include = ["rust-conventions", "concurrency-patterns"]
-exclude = []
+# processkit ships the skills and primitives that aibox installs into the
+# project. The default upstream is the canonical projectious-work/processkit
+# repo. Companies can fork processkit and have projects consume the fork by
+# changing `source` to point at their fork.
+#
+# `version` is the git tag of the processkit source to consume. The sentinel
+# value "unset" means "no version pinned yet" — the project doesn't yet
+# consume processkit content.
+[processkit]
+source   = "https://github.com/projectious-work/processkit.git"
+version  = "v0.5.1"
+src_path = "src"
+# branch = "main"   # optional — for tracking a moving branch (discouraged)
+#
+# Optional release-asset URL template for non-GitHub hosts (Gitea, GitLab,
+# self-hosted). When unset, the fetcher uses the GitHub-style default:
+#   {source}/releases/download/{version}/{name}-{version}.tar.gz
+# Placeholders: {source} (.git stripped), {version}, {org}, {name}.
+# release_asset_url_template = "https://gitea.example.com/{org}/{name}/releases/download/{version}/payload.tar.gz"
+
+# =============================================================================
+# [skills] — optional include/exclude filter on processkit-shipped skills
+# =============================================================================
+# Reserved for a future release. Today aibox installs every skill that
+# processkit ships under src/skills/, regardless of which package is
+# selected; the [context].packages list is metadata for agents.
 
 # =============================================================================
 # [addons] — language runtimes and tool bundles

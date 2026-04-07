@@ -5,272 +5,112 @@ title: "Process Packages"
 
 # Process Packages
 
-aibox uses a composable package system to determine which context files and skills are scaffolded for your project. **Presets** bundle multiple packages into sensible defaults; individual **packages** can be combined for custom setups.
-
-## Presets at a Glance
-
-| Factor | managed | software | research-project | full-product |
-|--------|---------|----------|-----------------|--------------|
-| Project complexity | Low–Medium | Medium | Varies | High |
-| Decision tracking | Yes | Yes | Yes | Yes |
-| Backlog management | Yes | Yes | Yes | Yes |
-| Progress tracking | Via standups | Via standups | Via standups | Via standups |
-| Development conventions | No | Yes | No | Yes |
-| Research artifacts | No | No | Yes | Yes |
-| Product planning | No | No | No | Yes |
-| Team/ops conventions | No | No | No | Yes |
-
-## managed
-
-The recommended starting point. Structured tracking without product planning overhead. **Packages:** core + tracking + standups + handover.
-
-### Files Created
-
-```
-my-project/
-├── CLAUDE.md
-└── context/
-    ├── DECISIONS.md
-    ├── BACKLOG.md
-    ├── STANDUPS.md
-    ├── EVENTLOG.md
-    ├── OWNER.md
-    ├── archive/
-    │   ├── BACKLOG.md
-    │   └── DECISIONS.md
-    └── project-notes/
-        └── session-template.md
-```
-
-### When to Use
-
-- Ongoing projects with multiple work sessions
-- Projects where architectural decisions need recording
-- Team projects where context must be shared
-- Open-source projects with contributors
-
-### File Purposes
-
-**DECISIONS.md** — Record architectural and design decisions using a lightweight ADR (Architecture Decision Record) format:
-
-```markdown
-## DEC-001: Use SQLite for local storage
-- **Status:** Accepted
-- **Date:** 2026-03-15
-- **Context:** Need a local database; options are SQLite, embedded Postgres, flat files
-- **Decision:** SQLite — zero config, single file, sufficient for our scale
-- **Consequences:** No concurrent write support; acceptable for single-user app
-```
-
-**BACKLOG.md** — Prioritized list of work items:
-
-```markdown
-## High Priority
-- [ ] Implement user authentication
-- [ ] Add error handling for API calls
-
-## Medium Priority
-- [ ] Write integration tests
-- [ ] Improve logging output
-```
-
-**STANDUPS.md** — Session-by-session progress log (newest first):
-
-```markdown
-## 2026-03-16
-- Completed authentication module
-- Fixed bug in API error handling
-- Next: write integration tests
-```
-
-**project-notes/session-template.md** — Template for session handover notes: what was done, open items, next steps.
-
----
-
-## software
-
-For software development projects. Adds development conventions and architecture skills on top of `managed`. **Packages:** core + tracking + standups + handover + code + architecture.
-
-### Files Created (beyond managed)
-
-```
-my-project/
-└── context/
-    └── work-instructions/
-        └── DEVELOPMENT.md
-```
-
-Plus additional skills: `code-review`, `testing-strategy`, `software-architecture`, `refactoring`, and others.
-
-### When to Use
-
-- Software projects with a recurring build/test/review cycle
-- Projects that benefit from documented coding conventions and architecture patterns
-- Any project where `managed` is a good fit and you write code
-
----
-
-## research-project
-
-For learning, documentation, and academic projects. Adds research artifacts and documentation skills on top of `managed`. **Packages:** core + tracking + standups + handover + research + documentation.
-
-### Files Created (beyond managed)
-
-```
-my-project/
-├── experiments/
-│   └── README.md
-└── context/
-    ├── PROGRESS.md
-    ├── research/
-    │   └── _template.md
-    └── analysis/
-```
-
-Plus additional skills: `data-science`, `data-visualization`, `feature-engineering`, and others.
-
-### When to Use
-
-- LaTeX documents and academic papers
-- Learning projects and study materials
-- Data analysis projects
-- Any project where the output is knowledge, not software
-
-### File Purposes
-
-**PROGRESS.md** — Track learning and research progress:
-
-```markdown
-## Chapter 3: Concurrency Patterns (In Progress)
-- Read through mutex and channel sections
-- Completed exercises 3.1-3.4
-- Next: re-read section on pinning
-
-## Chapter 2: Ownership (Complete)
-- All exercises done
-- Key insight: think of ownership as a compile-time garbage collector
-```
-
-**research/** — Directory for research notes, source summaries, literature reviews. Use `_template.md` as a starting point.
-
-**experiments/** — Top-level directory for hands-on prototypes, benchmarks, and technical evaluations.
-
-**analysis/** — Directory for analysis artifacts, data exploration notes, methodology documents.
-
----
-
-## full-product
-
-The most comprehensive preset. Everything from `managed` plus product planning, development conventions, and team/ops structure. **Packages:** core + tracking + standups + handover + code + architecture + design + product + security + operations.
-
-### Files Created
-
-```
-my-project/
-├── CLAUDE.md
-└── context/
-    ├── DECISIONS.md
-    ├── BACKLOG.md
-    ├── STANDUPS.md
-    ├── PROJECTS.md
-    ├── PRD.md
-    ├── OWNER.md
-    ├── work-instructions/
-    │   ├── DEVELOPMENT.md
-    │   └── TEAM.md
-    ├── archive/
-    │   ├── BACKLOG.md
-    │   ├── DECISIONS.md
-    │   └── PROJECTS.md
-    ├── project-notes/
-    │   └── session-template.md
-    └── processes/
-        ├── README.md
-        ├── release.md
-        ├── code-review.md
-        ├── feature-development.md
-        └── bug-fix.md
-```
-
-Plus a comprehensive skill set covering code review, testing, architecture, security, CI/CD, and more.
-
-### When to Use
-
-- Software products with users
-- Multi-component systems
-- Projects with multiple AI agents working in parallel
-- Any project that benefits from formal requirements, security awareness, and team conventions
-
-### Additional Files (beyond managed)
-
-**PROJECTS.md** — Track multiple workstreams or sub-projects:
-
-```markdown
-## Active Projects
-
-### Authentication Overhaul
-- **Status:** In Progress
-- **Lead:** Claude (agent-1)
-- **Target:** v2.0 release
-- **Key files:** src/auth/, tests/auth/
-```
-
-**PRD.md** — Product Requirements Document:
-
-```markdown
-## Product Vision
-A CLI tool that manages AI-ready development containers.
-
-## User Personas
-1. Solo developer using Claude Code daily
-2. Team lead standardizing dev environments
-
-## Requirements
-### Must Have
-- Single config file (aibox.toml)
-- Container lifecycle management
-```
-
-**work-instructions/DEVELOPMENT.md** — Development-specific conventions: branching strategy, testing requirements, release process.
-
-**work-instructions/TEAM.md** — Team conventions for multi-agent or multi-developer work: who owns what, communication protocols, review processes.
-
----
-
-## Individual Packages (Power Users)
-
-Presets are the right choice for most projects. If you need a custom combination, you can specify individual packages directly via `--process <name>` on the CLI:
-
-**13 available packages:** `core`, `tracking`, `standups`, `handover`, `code`, `architecture`, `design`, `product`, `security`, `data`, `operations`, `research`, `documentation`
-
-```bash
-# Custom combination: managed tracking + code only, no standups/handover
-aibox init --process core --process tracking --process code
-```
-
-Individual packages are not shown in the interactive selection menu — pass them explicitly on the command line.
-
----
-
-## Changing Process Packages
-
-You can change the process at any time by editing `aibox.toml`:
+Process packages are **upstream-defined skill bundles** owned by
+[processkit](https://github.com/projectious-work/processkit). They live as YAML
+files under `packages/{minimal,managed,software,research,product}.yaml` in the
+processkit repository and compose via an `extends:` field, so each package can
+build on the one below it without restating its contents.
+
+aibox itself does not define packages anymore — it only consumes them. The
+package you pick in `aibox.toml`'s `[context].packages` is forwarded to
+processkit content and read by AI agents to decide which skills are *relevant*
+for the project.
 
 ```toml
 [context]
-packages = ["full-product"]  # was ["managed"]
+packages = ["managed"]   # or "minimal", "software", "research", "product"
 ```
 
-Then run `aibox sync` to regenerate container files and deploy the new skill set.
+> **Heads-up:** in **v0.16.0**, package selection is declarative metadata only.
+> aibox installs every processkit skill into `context/skills/` regardless of the
+> selected package. The package list is what agents read to filter; it does not
+> change which files land on disk. Future releases may make installation
+> package-aware — do not depend on "this skill is not installed" as a guarantee.
 
-However, changing packages does **not** automatically create or remove context files. To reconcile:
+## The Five Packages
 
-1. Update `packages` in the `[context]` section of `aibox.toml`
-2. Run `aibox doctor` to see what files are missing or extra
-3. Create missing files manually or re-run `aibox init` in a temporary directory and copy the templates
+| Package | Extends | Adds | Best for |
+|---------|---------|------|----------|
+| `minimal` | — | Bare minimum: agent management, owner profile | Scripts, experiments, small utilities |
+| `managed` | `minimal` | Backlog, decisions, standups, session handover, archiving | The recommended default for most projects |
+| `software` | `managed` | Code review, testing, debugging, refactoring, TDD, error handling, git workflow, integration testing, software architecture | Software projects with a recurring build/test/review cycle |
+| `research` | `managed` | Data science, data visualisation, feature engineering, documentation, LaTeX | Learning, documentation, academic work |
+| `product` | `software` | Design, infographics, security, secure coding, threat modelling, secrets, dependency audit, CI/CD, container orchestration, logging, metrics, alerting, incident response, performance profiling, estimation, retrospectives, PRD/PROJECTS skills | Full product development |
 
-:::warning Upgrading is additive
+The exact composition is defined upstream and may evolve from release to
+release. For the canonical, version-pinned source of truth, look at:
 
-Moving from `managed` to `full-product` means adding files. Moving from `full-product` to `managed` does not delete files — your existing context is preserved.
+- `https://github.com/projectious-work/processkit/tree/main/src/packages` (HEAD)
+- `context/templates/processkit/<version>/packages/` in your project (after
+  `aibox sync`)
 
-:::
+## Where the Content Lands
+
+After `aibox init` and `aibox sync` with `[processkit].version` pinned:
+
+```
+context/
+├── skills/                              # Editable copies of every processkit skill
+│   ├── code-review/SKILL.md
+│   ├── backlog-context/SKILL.md
+│   └── ... (108 skills in v0.5.1)
+├── processes/                           # release, code-review, feature-development, bug-fix
+├── primitives/
+│   ├── schemas/
+│   └── state-machines/
+└── templates/
+    └── processkit/
+        └── v0.5.1/
+            ├── skills/
+            ├── packages/                # The package YAMLs themselves
+            │   ├── minimal.yaml
+            │   ├── managed.yaml
+            │   ├── software.yaml
+            │   ├── research.yaml
+            │   └── product.yaml
+            ├── processes/
+            ├── primitives/
+            └── scaffolding/
+                └── AGENTS.md            # The canonical entry-point template
+```
+
+The version path (`v0.5.1` above) is whatever `[processkit].version` is pinned
+to in `aibox.toml`.
+
+## Single-File vs Entity-Sharded Tracks
+
+Every processkit release ships **two tracks** for the same conceptual artefact:
+
+| Track | Examples | Storage |
+|-------|----------|---------|
+| **Single-file** | `backlog-context`, `decisions-adr`, `standup-context`, `session-handover`, `context-archiving` | One Markdown file per artefact (`context/BACKLOG.md`, `context/DECISIONS.md`, …). The skill creates the file in place on first use — there is **no** starter template. |
+| **Entity-sharded** | `workitem-management`, `decision-record`, `scope-management`, … | Per-item YAML files with IDs, slugs, and state machines. Backed by an MCP server. |
+
+Both tracks are installed in every project, regardless of selected package.
+Pick the one that fits the project; nothing forces you to use one over the
+other.
+
+## Changing Packages
+
+You can change the package list at any time by editing `aibox.toml`:
+
+```toml
+[context]
+packages = ["product"]   # was ["managed"]
+```
+
+Then run `aibox sync`. Because all processkit skills are already on disk, no
+file movement happens — only the metadata changes. Agents will start preferring
+the broader skill set on their next session.
+
+## Upstream Source
+
+The package YAMLs and the skills they reference are owned by processkit. To
+inspect or fork them:
+
+- Repository: https://github.com/projectious-work/processkit
+- Releases: https://github.com/projectious-work/processkit/releases
+- Local copy in your project: `context/templates/processkit/<version>/packages/`
+
+To consume a fork or a private mirror, point `[processkit].source` at it (see
+[`[processkit]` configuration](../reference/configuration.md#processkit)).

@@ -36,7 +36,11 @@ pub struct AddonYaml {
     pub tools: Vec<ToolYaml>,
     #[serde(default)]
     pub requires: Vec<String>,
+    /// Tolerated for backwards-compat with addon YAML files that still
+    /// declare a `skills:` block. Ignored since v0.16.0 — skills are
+    /// owned by processkit and installed via the content-source pipeline.
     #[serde(default)]
+    #[allow(dead_code)]
     pub skills: Vec<String>,
     #[serde(default)]
     pub builder: Option<String>,
@@ -72,7 +76,6 @@ pub struct LoadedAddon {
     pub builder_weight: Option<String>,
     pub tools: Vec<LoadedTool>,
     pub requires: Vec<String>,
-    pub skills: Vec<String>,
     pub builder_template: Option<String>,
     pub runtime_template: Option<String>,
 }
@@ -176,7 +179,6 @@ fn load_yaml_file(path: &Path) -> Result<LoadedAddon> {
                 supported_versions: t.supported_versions,
             })
             .collect(),
-        skills: yaml.skills,
         builder_template: yaml.builder,
         runtime_template: yaml.runtime,
     })
@@ -210,23 +212,6 @@ pub fn all_addons() -> &'static [LoadedAddon] {
 /// Find an addon by name.
 pub fn get_addon(name: &str) -> Option<&'static LoadedAddon> {
     all_addons().iter().find(|a| a.name == name)
-}
-
-/// Collect recommended skills from a set of active addon names.
-/// Returns a deduplicated list preserving order.
-pub fn skills_for_addons(addon_names: &[String]) -> Vec<String> {
-    let mut skills = Vec::new();
-    let mut seen = std::collections::HashSet::new();
-    for name in addon_names {
-        if let Some(addon) = get_addon(name) {
-            for skill in &addon.skills {
-                if seen.insert(skill.clone()) {
-                    skills.push(skill.clone());
-                }
-            }
-        }
-    }
-    skills
 }
 
 // ---------------------------------------------------------------------------
@@ -436,7 +421,6 @@ runtime: |
                 default_version: "3.0".to_string(),
                 supported_versions: vec!["3.0".to_string()],
             }],
-            skills: vec![],
             builder_template: None,
             runtime_template: Some("RUN install mytool={{ tools.mytool.version }}".to_string()),
         };
@@ -475,7 +459,6 @@ runtime: |
                     supported_versions: vec![],
                 },
             ],
-            skills: vec![],
             builder_template: None,
             runtime_template: Some(
                 "RUN install required\n\
@@ -507,7 +490,6 @@ runtime: |
             builder_weight: Some("heavy".to_string()),
             tools: vec![],
             requires: vec![],
-            skills: vec![],
             builder_template: Some("FROM debian".to_string()),
             runtime_template: None,
         };
@@ -517,7 +499,6 @@ runtime: |
             builder_weight: Some("medium".to_string()),
             tools: vec![],
             requires: vec![],
-            skills: vec![],
             builder_template: Some("FROM debian".to_string()),
             runtime_template: None,
         };
@@ -527,7 +508,6 @@ runtime: |
             builder_weight: None,
             tools: vec![],
             requires: vec![],
-            skills: vec![],
             builder_template: None,
             runtime_template: None,
         };
@@ -544,28 +524,4 @@ runtime: |
         assert!(err.contains("install script"), "error should mention install: {}", err);
     }
 
-    #[test]
-    fn skills_for_addons_collects_from_loaded() {
-        // Initialize from the repo's addons directory
-        let addons_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .parent()
-            .unwrap()
-            .join("addons");
-        let _ = init_from_dir(&addons_dir);
-
-        let skills = skills_for_addons(&["python".to_string()]);
-        assert!(skills.contains(&"python-best-practices".to_string()));
-
-        let skills = skills_for_addons(&["rust".to_string()]);
-        assert!(skills.contains(&"rust-conventions".to_string()));
-
-        // Unknown addon returns empty
-        let skills = skills_for_addons(&["nonexistent".to_string()]);
-        assert!(skills.is_empty());
-
-        // Deduplicates across addons
-        let skills = skills_for_addons(&["latex".to_string(), "typst".to_string()]);
-        let doc_count = skills.iter().filter(|s| *s == "documentation").count();
-        assert_eq!(doc_count, 1, "documentation should appear once, got {}", doc_count);
-    }
 }

@@ -27,8 +27,8 @@ const sidebars = {
       items: ['context/overview', 'context/process-packages', 'context/migration'],
     },
     {
-      type: 'category', label: 'Skills Library',
-      items: ['skills/index', 'skills/process', 'skills/development', 'skills/language', 'skills/infrastructure', 'skills/architecture', 'skills/design', 'skills/data', 'skills/ai-ml', 'skills/api', 'skills/security', 'skills/observability', 'skills/database', 'skills/performance', 'skills/framework'],
+      type: 'category', label: 'Skills (via processkit)',
+      items: ['skills/index'],
     },
     {
       type: 'category', label: 'Customization',

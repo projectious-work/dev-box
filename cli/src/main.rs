@@ -19,8 +19,6 @@ mod lock;
 mod migration;
 mod output;
 #[allow(dead_code)]
-mod process_registry;
-#[allow(dead_code)]
 mod content_diff;
 mod content_init;
 #[allow(dead_code)]
@@ -31,7 +29,6 @@ mod content_source;
 mod reset;
 mod runtime;
 mod seed;
-mod skill_cmd;
 mod sync_perimeter;
 mod themes;
 mod update;
@@ -149,12 +146,6 @@ fn dispatch(cli: cli::Cli) -> anyhow::Result<()> {
             cli::AddonAction::Add { name, no_build } => addon_cmd::cmd_addon_add(config_path, &name, no_build),
             cli::AddonAction::Remove { name, no_build } => addon_cmd::cmd_addon_remove(config_path, &name, no_build),
             cli::AddonAction::Info { name } => addon_cmd::cmd_addon_info(&name),
-        },
-        cli::Commands::Skill { action } => match action {
-            cli::SkillAction::List => skill_cmd::cmd_skill_list(config_path),
-            cli::SkillAction::Add { name } => skill_cmd::cmd_skill_add(config_path, &name),
-            cli::SkillAction::Remove { name } => skill_cmd::cmd_skill_remove(config_path, &name),
-            cli::SkillAction::Info { name } => skill_cmd::cmd_skill_info(&name),
         },
         cli::Commands::Migrate { action } => {
             let cwd = std::env::current_dir()?;
