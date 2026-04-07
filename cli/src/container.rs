@@ -553,6 +553,41 @@ pub fn cmd_init(config_path: &Option<String>, params: InitParams) -> Result<()> 
     context::scaffold_context(&config)?;
     seed::seed_root_dir(&config)?;
 
+    // Install processkit content (A5). Runs last, after the rest of the
+    // init pipeline has succeeded. Warn-and-continue on failure so a
+    // network hiccup or bad processkit URL doesn't wedge the user's
+    // whole init — they get a working aibox project either way and can
+    // fix the [processkit] section then re-run `aibox sync`.
+    output::info("Installing processkit content...");
+    let project_root = std::env::current_dir()
+        .map_err(|e| anyhow::anyhow!("failed to resolve current directory: {}", e))?;
+    match crate::processkit_init::install_processkit(&project_root, &config) {
+        Ok(report) if report.skipped_due_to_unset => {
+            output::warn(&format!(
+                "Skipped processkit install — [processkit] version is \"{}\". \
+                 Edit aibox.toml and run `aibox sync` to install processkit content.",
+                crate::config::PROCESSKIT_VERSION_UNSET
+            ));
+        }
+        Ok(report) => {
+            output::ok(&format!(
+                "Installed {} files from processkit {}@{} ({} groups, {} skipped)",
+                report.files_installed,
+                report.fetched_from,
+                report.fetched_version,
+                report.groups_touched,
+                report.files_skipped,
+            ));
+        }
+        Err(e) => {
+            output::warn(&format!(
+                "Processkit install failed: {}. The project is set up but processkit \
+                 content was not installed. Run `aibox sync` to retry.",
+                e
+            ));
+        }
+    }
+
     output::ok("Project initialized. Edit aibox.toml to customize, then run: aibox start");
 
     Ok(())

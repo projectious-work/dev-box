@@ -21,6 +21,8 @@ mod output;
 #[allow(dead_code)]
 mod process_registry;
 #[allow(dead_code)]
+mod processkit_init;
+#[allow(dead_code)]
 mod processkit_install;
 #[allow(dead_code)]
 mod processkit_source;
