@@ -588,6 +588,46 @@ pub fn cmd_sync(config_path: &Option<String>, no_cache: bool, no_build: bool) ->
     // Check agent entry points
     context::check_agent_entry_points(&config)?;
 
+    // Three-way processkit diff (A6).
+    //
+    // If the project doesn't yet have a processkit.lock (i.e. nobody has run
+    // `aibox init` against this project after A5 landed, OR the version is
+    // "unset"), skip — there's nothing to compare against. Any failure is
+    // warned-and-continued so a network glitch doesn't break the rest of
+    // sync's work.
+    match std::env::current_dir() {
+        Ok(cwd) => match crate::manifest::read_lock(&cwd) {
+            Ok(Some(lock)) => {
+                output::info("Comparing processkit cache against project...");
+                match crate::processkit_diff::run_processkit_sync(&cwd, &lock) {
+                    Ok(report) => {
+                        if report.summary.has_user_relevant_changes() {
+                            output::info(&format!(
+                                "Processkit changes detected: {} upstream-only, {} conflicts, {} new, {} removed",
+                                report.summary.changed_upstream_only,
+                                report.summary.conflict,
+                                report.summary.new_upstream,
+                                report.summary.removed_upstream,
+                            ));
+                            if let Some(path) = report.migration_document_path {
+                                output::ok(&format!(
+                                    "Wrote migration document: {}",
+                                    path.display()
+                                ));
+                            }
+                        } else {
+                            output::ok("Processkit cache is in sync — no migration needed");
+                        }
+                    }
+                    Err(e) => output::warn(&format!("Processkit diff failed: {}", e)),
+                }
+            }
+            Ok(None) => { /* No lock file yet — nothing to diff against. */ }
+            Err(e) => output::warn(&format!("Failed to read processkit lock: {}", e)),
+        },
+        Err(e) => output::warn(&format!("Failed to determine working directory: {}", e)),
+    }
+
     // Build container image (if a container runtime is available)
     if no_build {
         output::ok("Sync complete (build skipped)");
