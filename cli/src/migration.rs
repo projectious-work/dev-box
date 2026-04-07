@@ -13,7 +13,9 @@ use crate::output;
 /// Check for version mismatch and generate migration document if needed.
 /// Called during `aibox sync`. Operates in the current working directory.
 pub fn check_and_generate_migration() -> Result<()> {
-    check_and_generate_migration_in(Path::new("."))
+    check_and_generate_migration_in(Path::new("."))?;
+    ensure_processkit_section_in(Path::new("."))?;
+    Ok(())
 }
 
 /// Check for version mismatch and generate migration document if needed.
@@ -244,6 +246,223 @@ with v{to}.
     )
 }
 
+// ---------------------------------------------------------------------------
+// One-shot migration: auto-insert [processkit] section into legacy aibox.toml
+// ---------------------------------------------------------------------------
+
+/// Default `[processkit]` block written into legacy aibox.toml files that
+/// don't yet have one. The content is intentionally a string literal (not
+/// generated from `ProcessKitSection::default()`) so this migration is stable
+/// and reviewable as a fixture.
+const DEFAULT_PROCESSKIT_BLOCK: &str = "\
+# =============================================================================
+# [processkit] — content layer source (skills, primitives, processes)
+# =============================================================================
+# processkit ships the skills and primitives that aibox installs into the
+# project. The default upstream is the canonical projectious-work/processkit
+# repo. Companies can fork processkit and have their projects consume the fork
+# by changing `source` to point at their fork.
+#
+# `version` is the git tag of the processkit source to consume. The sentinel
+# value \"unset\" means \"no version pinned yet\" — the project doesn't yet
+# consume processkit content. Edit this once a real version is available.
+[processkit]
+source   = \"https://github.com/projectious-work/processkit.git\"
+version  = \"unset\"
+src_path = \"src\"
+# branch = \"main\"   # optional — for tracking a moving branch (discouraged)
+";
+
+/// If `aibox.toml` exists in `root` and lacks a `[processkit]` section,
+/// surgically insert the default block and write a migration note. This
+/// runs at most once per project — once the section is present, this is a
+/// no-op.
+fn ensure_processkit_section_in(root: &Path) -> Result<()> {
+    let toml_path = root.join("aibox.toml");
+    if !toml_path.exists() {
+        return Ok(());
+    }
+
+    let original = fs::read_to_string(&toml_path)
+        .with_context(|| format!("Failed to read {}", toml_path.display()))?;
+
+    if has_processkit_section(&original) {
+        return Ok(());
+    }
+
+    let updated = insert_processkit_section(&original);
+    fs::write(&toml_path, &updated)
+        .with_context(|| format!("Failed to write {}", toml_path.display()))?;
+
+    output::ok("Added [processkit] section to aibox.toml (one-time migration)");
+
+    // Write a migration note describing what was done.
+    let note_path = root
+        .join("context")
+        .join("migrations")
+        .join("aibox-processkit-section-added.md");
+    write_processkit_migration_note(&note_path)?;
+
+    Ok(())
+}
+
+/// Detect whether the TOML source already contains a `[processkit]` section
+/// header. Looks for a line that, after trimming whitespace, equals the
+/// literal `[processkit]`. This avoids matching e.g. `[processkit.foo]` or
+/// commented-out lines.
+fn has_processkit_section(toml_src: &str) -> bool {
+    for line in toml_src.lines() {
+        let trimmed = line.trim_start();
+        if trimmed.starts_with('#') {
+            continue;
+        }
+        if trimmed.trim_end() == "[processkit]" {
+            return true;
+        }
+    }
+    false
+}
+
+/// Insert the default `[processkit]` block into `toml_src`. Insertion point:
+///
+/// 1. If a `[customization]` (or legacy `[appearance]`) section exists,
+///    insert directly above its header (and any comments preceding the
+///    header). This puts processkit in a sensible place: after content
+///    (`[ai]`, `[skills]`, `[addons]`) and before presentation.
+/// 2. Otherwise, append the block to the end of the file with a leading
+///    blank line so it's visually separated from whatever section came last.
+fn insert_processkit_section(toml_src: &str) -> String {
+    let lines: Vec<&str> = toml_src.lines().collect();
+
+    // Locate the [customization] / [appearance] header line, if present.
+    let mut header_idx: Option<usize> = None;
+    for (i, line) in lines.iter().enumerate() {
+        let trimmed = line.trim_start();
+        if trimmed.starts_with('#') {
+            continue;
+        }
+        let head = trimmed.trim_end();
+        if head == "[customization]" || head == "[appearance]" {
+            header_idx = Some(i);
+            break;
+        }
+    }
+
+    let block = format!("{}\n", DEFAULT_PROCESSKIT_BLOCK);
+
+    match header_idx {
+        Some(idx) => {
+            // Walk backwards over the comment-band immediately preceding the
+            // header so we insert above the comments that belong to it (e.g.
+            // the `# =====` separator and the `# [customization] — ...` line).
+            let mut insert_at = idx;
+            while insert_at > 0 {
+                let prev = lines[insert_at - 1];
+                let trimmed = prev.trim_start();
+                if trimmed.starts_with('#') || trimmed.is_empty() {
+                    insert_at -= 1;
+                } else {
+                    break;
+                }
+            }
+
+            let mut out = String::with_capacity(toml_src.len() + block.len() + 2);
+            for (i, line) in lines.iter().enumerate() {
+                if i == insert_at {
+                    out.push_str(&block);
+                    out.push('\n');
+                }
+                out.push_str(line);
+                out.push('\n');
+            }
+            // If the original file did not end with a newline, the loop above
+            // still added one. Trim it to preserve original trailing-newline
+            // semantics: if the original ended without a newline, drop ours.
+            if !toml_src.ends_with('\n') {
+                out.pop();
+            }
+            out
+        }
+        None => {
+            // Append to end. Ensure we have a clean blank-line separator.
+            let mut out = String::with_capacity(toml_src.len() + block.len() + 2);
+            out.push_str(toml_src);
+            if !toml_src.ends_with('\n') {
+                out.push('\n');
+            }
+            if !toml_src.ends_with("\n\n") {
+                out.push('\n');
+            }
+            out.push_str(&block);
+            out
+        }
+    }
+}
+
+/// Write the migration note for the processkit-section addition. Idempotent:
+/// does not overwrite an existing note.
+fn write_processkit_migration_note(path: &Path) -> Result<()> {
+    if path.exists() {
+        return Ok(());
+    }
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).with_context(|| {
+            format!("Failed to create migration directory {}", parent.display())
+        })?;
+    }
+    let date = chrono_free_date();
+    let body = format!(
+        "\
+# Migration: [processkit] section added to aibox.toml
+
+> **SAFETY: Do not execute any actions in this document automatically.**
+> **Discuss each item with the project owner before proceeding.**
+
+**Generated:** {date}
+**Status:** pending
+**Type:** schema migration (additive, one-time)
+
+## Summary
+
+aibox now reads a `[processkit]` section from `aibox.toml` to determine where
+project content (skills, primitives, processes) should come from. Existing
+projects pre-date this section, so on the first `aibox sync` after upgrading,
+aibox surgically inserts a default `[processkit]` block into your
+`aibox.toml`:
+
+```toml
+[processkit]
+source   = \"https://github.com/projectious-work/processkit.git\"
+version  = \"unset\"
+src_path = \"src\"
+# branch = \"main\"
+```
+
+The sentinel `version = \"unset\"` means \"no processkit version pinned yet\".
+Until you set a real version, no processkit content will be fetched. This
+migration is purely plumbing — your existing project files are untouched.
+
+## What you should do
+
+- [ ] Decide whether you want to consume processkit content for this project.
+- [ ] If yes: replace `\"unset\"` with a real released version of processkit
+      (e.g. `\"v0.4.0\"`). Run `aibox sync` again to pull content.
+- [ ] If you maintain a fork of processkit, change `source` to point at it.
+- [ ] If you want to track a moving branch instead of a tag, set `branch`
+      and leave `version` as the empty sentinel — discouraged but supported.
+- [ ] Mark this migration as completed (change Status above to \"completed\").
+
+## Rollback
+
+To revert: `git checkout HEAD -- aibox.toml` and delete this file. The
+migration will re-run on the next `aibox sync`.
+"
+    );
+    fs::write(path, body)
+        .with_context(|| format!("Failed to write migration note {}", path.display()))?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -373,6 +592,240 @@ mod tests {
         assert!(doc.contains("**Generated:** 2026-01-15"));
         assert!(doc.contains("**aibox CLI version:** v2.0.0"));
         assert!(doc.contains("from v1.2.3 to v2.0.0"));
+    }
+
+    // -- ProcessKit section auto-migration ----------------------------------
+
+    const SAMPLE_LEGACY_TOML: &str = r#"[aibox]
+version = "0.14.4"
+base = "debian"
+
+[container]
+name = "demo"
+hostname = "demo"
+user = "aibox"
+
+[context]
+schema_version = "1.0.0"
+packages = ["core"]
+
+# =============================================================================
+# [ai] — AI coding assistant providers
+# =============================================================================
+[ai]
+providers = ["claude"]
+
+# =============================================================================
+# [customization] — color theme, shell prompt, and zellij layout
+# =============================================================================
+[customization]
+theme  = "gruvbox-dark"
+prompt = "default"
+layout = "dev"
+
+[audio]
+enabled = false
+"#;
+
+    #[test]
+    fn migration_adds_processkit_section_when_missing() {
+        let updated = insert_processkit_section(SAMPLE_LEGACY_TOML);
+        assert!(
+            has_processkit_section(&updated),
+            "after insertion, [processkit] should be present"
+        );
+        assert!(
+            updated.contains("https://github.com/projectious-work/processkit.git"),
+            "default source should be present"
+        );
+        assert!(
+            updated.contains("version  = \"unset\""),
+            "default version sentinel should be present"
+        );
+        assert!(
+            updated.contains("src_path = \"src\""),
+            "default src_path should be present"
+        );
+    }
+
+    #[test]
+    fn migration_preserves_existing_processkit_section() {
+        let already_has = format!(
+            "{}\n[processkit]\nsource = \"https://forks.example/pk.git\"\nversion = \"v0.5.0\"\n",
+            SAMPLE_LEGACY_TOML
+        );
+        assert!(has_processkit_section(&already_has));
+
+        // The ensure helper would no-op; verify the detector itself is correct.
+        let tmp = TempDir::new().unwrap();
+        let toml_path = tmp.path().join("aibox.toml");
+        fs::write(&toml_path, &already_has).unwrap();
+
+        ensure_processkit_section_in(tmp.path()).unwrap();
+
+        let after = fs::read_to_string(&toml_path).unwrap();
+        assert_eq!(after, already_has, "file should be unchanged");
+        assert!(
+            !tmp.path()
+                .join("context/migrations/aibox-processkit-section-added.md")
+                .exists(),
+            "no migration note should be written when section already exists"
+        );
+    }
+
+    #[test]
+    fn migration_preserves_comments_and_ordering_in_other_sections() {
+        let updated = insert_processkit_section(SAMPLE_LEGACY_TOML);
+
+        // [aibox], [container], [context], [ai], [audio] are all still present
+        // and in the original order.
+        let aibox_pos = updated.find("[aibox]").unwrap();
+        let container_pos = updated.find("[container]").unwrap();
+        let context_pos = updated.find("[context]").unwrap();
+        let ai_pos = updated.find("[ai]").unwrap();
+        let processkit_pos = updated.find("[processkit]").unwrap();
+        let custom_pos = updated.find("[customization]").unwrap();
+        let audio_pos = updated.find("[audio]").unwrap();
+
+        assert!(aibox_pos < container_pos);
+        assert!(container_pos < context_pos);
+        assert!(context_pos < ai_pos);
+        assert!(ai_pos < processkit_pos);
+        assert!(processkit_pos < custom_pos);
+        assert!(custom_pos < audio_pos);
+
+        // The original [ai] header comment band is intact.
+        assert!(updated.contains("# [ai] — AI coding assistant providers"));
+        assert!(updated.contains("# [customization] — color theme, shell prompt, and zellij layout"));
+        // Original concrete values are intact.
+        assert!(updated.contains("name = \"demo\""));
+        assert!(updated.contains("theme  = \"gruvbox-dark\""));
+        assert!(updated.contains("layout = \"dev\""));
+    }
+
+    #[test]
+    fn migration_inserts_above_customization_when_present() {
+        let updated = insert_processkit_section(SAMPLE_LEGACY_TOML);
+        let processkit_pos = updated.find("[processkit]").unwrap();
+        let custom_pos = updated.find("[customization]").unwrap();
+        assert!(
+            processkit_pos < custom_pos,
+            "[processkit] must appear above [customization]"
+        );
+
+        // The customization comment band must follow processkit, not precede it.
+        let custom_comment_pos = updated
+            .find("# [customization] — color theme")
+            .expect("customization comment should exist");
+        assert!(
+            processkit_pos < custom_comment_pos,
+            "processkit block should be inserted ABOVE the [customization] comment band"
+        );
+    }
+
+    #[test]
+    fn migration_appends_to_end_when_no_customization() {
+        let no_custom = r#"[aibox]
+version = "0.14.4"
+base = "debian"
+
+[container]
+name = "demo"
+
+[ai]
+providers = ["claude"]
+"#;
+        let updated = insert_processkit_section(no_custom);
+        assert!(has_processkit_section(&updated));
+        // Processkit block should come after [ai].
+        let ai_pos = updated.find("[ai]").unwrap();
+        let processkit_pos = updated.find("[processkit]").unwrap();
+        assert!(processkit_pos > ai_pos);
+    }
+
+    #[test]
+    fn migration_appends_when_legacy_appearance_section_present() {
+        // [appearance] is the legacy alias for [customization]; insertion
+        // should still target it.
+        let with_appearance = r#"[aibox]
+version = "0.14.4"
+
+[container]
+name = "demo"
+
+[appearance]
+theme = "dracula"
+"#;
+        let updated = insert_processkit_section(with_appearance);
+        let processkit_pos = updated.find("[processkit]").unwrap();
+        let appearance_pos = updated.find("[appearance]").unwrap();
+        assert!(
+            processkit_pos < appearance_pos,
+            "processkit must precede legacy [appearance]"
+        );
+    }
+
+    #[test]
+    fn migration_end_to_end_writes_file_and_note() {
+        let tmp = TempDir::new().unwrap();
+        let toml_path = tmp.path().join("aibox.toml");
+        fs::write(&toml_path, SAMPLE_LEGACY_TOML).unwrap();
+
+        ensure_processkit_section_in(tmp.path()).unwrap();
+
+        let after = fs::read_to_string(&toml_path).unwrap();
+        assert!(has_processkit_section(&after));
+
+        // The result must still be a parseable AiboxConfig.
+        crate::config::AiboxConfig::from_str(&after)
+            .expect("post-migration aibox.toml must remain valid");
+
+        let note = tmp
+            .path()
+            .join("context/migrations/aibox-processkit-section-added.md");
+        assert!(note.exists(), "migration note should be created");
+        let body = fs::read_to_string(&note).unwrap();
+        assert!(body.contains("[processkit]"));
+        assert!(body.contains("**Status:** pending"));
+    }
+
+    #[test]
+    fn migration_end_to_end_is_idempotent() {
+        let tmp = TempDir::new().unwrap();
+        let toml_path = tmp.path().join("aibox.toml");
+        fs::write(&toml_path, SAMPLE_LEGACY_TOML).unwrap();
+
+        ensure_processkit_section_in(tmp.path()).unwrap();
+        let first = fs::read_to_string(&toml_path).unwrap();
+
+        ensure_processkit_section_in(tmp.path()).unwrap();
+        let second = fs::read_to_string(&toml_path).unwrap();
+
+        assert_eq!(first, second, "second run must be a no-op");
+    }
+
+    #[test]
+    fn migration_no_op_when_no_aibox_toml() {
+        let tmp = TempDir::new().unwrap();
+        // No aibox.toml at all
+        ensure_processkit_section_in(tmp.path()).unwrap();
+        assert!(
+            !tmp.path()
+                .join("context/migrations/aibox-processkit-section-added.md")
+                .exists()
+        );
+    }
+
+    #[test]
+    fn has_processkit_section_ignores_commented_lines() {
+        let src = "# [processkit] this is just a comment\n[ai]\n";
+        assert!(!has_processkit_section(src));
+    }
+
+    #[test]
+    fn has_processkit_section_ignores_subsection_keys() {
+        let src = "[processkit.tools]\nfoo = 1\n";
+        assert!(!has_processkit_section(src));
     }
 
     #[test]
