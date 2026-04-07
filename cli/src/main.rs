@@ -18,6 +18,8 @@ mod migration;
 mod output;
 #[allow(dead_code)]
 mod process_registry;
+#[allow(dead_code)]
+mod processkit_source;
 mod reset;
 mod runtime;
 mod seed;
