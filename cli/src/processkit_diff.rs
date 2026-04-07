@@ -1,6 +1,6 @@
 //! Three-way comparison between the project's installed processkit content
-//! (live working tree) and a freshly-fetched cache, against the manifest's
-//! "as-installed" SHAs.
+//! (live working tree), a freshly-fetched cache, and the immutable
+//! reference templates dir written by [`crate::processkit_init`].
 //!
 //! Used by `aibox sync` to detect what changed upstream and what changed
 //! locally, and to write Migration documents for the user to review.
@@ -8,32 +8,33 @@
 //!
 //! ## Three-way truth table
 //!
-//! For each file we compute up to three SHAs: the manifest's recorded
-//! `upstream_sha` (what upstream shipped at install time), the fresh
-//! cache SHA (what upstream ships now), and the live file SHA (what the
-//! project has on disk right now). The classification follows:
+//! For each file we compute up to three SHAs: the **reference SHA** (what
+//! was installed last time, read from
+//! `context/templates/processkit/<lock.version>/<rel_path>`), the **cache
+//! SHA** (what upstream ships now), and the **live SHA** (what the project
+//! has on disk right now). The classification follows:
 //!
-//! | manifest vs cache | manifest vs live      | classification         |
-//! |-------------------|-----------------------|------------------------|
-//! | equal             | equal                 | Unchanged              |
-//! | equal             | different (or missing)| ChangedLocallyOnly     |
-//! | different         | equal                 | ChangedUpstreamOnly    |
-//! | different         | different             | Conflict               |
-//! | (in cache, not in manifest)   | n/a           | NewUpstream            |
-//! | (in manifest, not in cache)   | n/a           | RemovedUpstream        |
+//! | reference vs cache | reference vs live    | classification         |
+//! |--------------------|----------------------|------------------------|
+//! | equal              | equal                | Unchanged              |
+//! | equal              | different (or missing)| ChangedLocallyOnly    |
+//! | different          | equal                | ChangedUpstreamOnly    |
+//! | different          | different            | Conflict               |
+//! | (in cache, not in reference)  | n/a       | NewUpstream            |
+//! | (in reference, not in cache)  | n/a       | RemovedUpstream        |
 //!
 //! Files whose install-action is `Skip` (processkit-internal, not
-//! user-facing) are excluded from the diff entirely — they are neither
-//! walked in the cache nor reported in removed-upstream output.
+//! user-facing) are excluded from the diff entirely — they live in the
+//! templates dir as part of the full upstream snapshot but are never
+//! reported in the diff because they have no live counterpart.
 
 use anyhow::{Context, Result};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::manifest::{
-    self, ManifestEntry, ProcessKitLock, ProcessKitManifest, group_for_path, sha256_of_file,
-};
+use crate::lock::{AiboxLock, group_for_path, sha256_of_file, should_skip_entry};
+use crate::processkit_init::templates_dir_for_version;
 use crate::processkit_install::{InstallAction, install_action_for};
 
 // ---------------------------------------------------------------------------
@@ -43,21 +44,21 @@ use crate::processkit_install::{InstallAction, install_action_for};
 /// Per-file classification from the three-way comparison.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FileClassification {
-    /// Manifest, cache, and live all match — nothing to do.
+    /// Reference, cache, and live all match — nothing to do.
     Unchanged,
-    /// Manifest matches cache but not live — user has edited it locally;
+    /// Reference matches cache but not live — user has edited it locally;
     /// upstream has not changed. No-op for this migration but worth noting.
     ChangedLocallyOnly,
-    /// Manifest matches live but not cache — upstream has changed; user
+    /// Reference matches live but not cache — upstream has changed; user
     /// has not touched it. Safe to take with one approval.
     ChangedUpstreamOnly,
-    /// Manifest matches neither — both sides changed. Conflict, must be
+    /// Reference matches neither — both sides changed. Conflict, must be
     /// resolved by hand.
     Conflict,
-    /// File exists in cache but not in manifest (i.e. wasn't in the
+    /// File exists in cache but not in reference (i.e. wasn't in the
     /// previous version of upstream). New addition.
     NewUpstream,
-    /// File exists in manifest but not in cache (i.e. removed from
+    /// File exists in reference but not in cache (i.e. removed from
     /// upstream). Decide whether to drop locally or keep as a project fork.
     RemovedUpstream,
 }
@@ -79,11 +80,12 @@ impl FileClassification {
 /// One file's worth of comparison data.
 #[derive(Debug, Clone)]
 pub struct FileDiff {
-    /// Path relative to the cache `<src_path>/`. The same key used in the manifest.
+    /// Path relative to the cache `<src_path>/`. The same key used to
+    /// look up the file in the templates dir.
     pub cache_rel_path: String,
     /// Where the file would be installed in the project (from `processkit_install`).
     pub project_path: Option<PathBuf>,
-    /// Logical group from `manifest::group_for_path`.
+    /// Logical group from `lock::group_for_path`.
     pub group: Option<String>,
     /// Classification.
     pub classification: FileClassification,
@@ -97,23 +99,23 @@ pub type GroupedDiff = BTreeMap<String, Vec<FileDiff>>;
 // Classification helper
 // ---------------------------------------------------------------------------
 
-/// Classify a single file given the three SHAs (manifest / cache / live).
+/// Classify a single file given the three SHAs (reference / cache / live).
 ///
-/// - If `manifest_sha` is `None` and `cache_sha` is `Some` → `NewUpstream`.
-/// - If `manifest_sha` is `Some` and `cache_sha` is `None` → `RemovedUpstream`.
+/// - If `reference_sha` is `None` and `cache_sha` is `Some` → `NewUpstream`.
+/// - If `reference_sha` is `Some` and `cache_sha` is `None` → `RemovedUpstream`.
 /// - Otherwise consult the three-way truth table using `live_sha`.
 pub fn classify(
-    manifest_sha: Option<&str>,
+    reference_sha: Option<&str>,
     cache_sha: Option<&str>,
     live_sha: Option<&str>,
 ) -> FileClassification {
-    match (manifest_sha, cache_sha) {
+    match (reference_sha, cache_sha) {
         (None, Some(_)) => FileClassification::NewUpstream,
         (Some(_), None) => FileClassification::RemovedUpstream,
         (None, None) => FileClassification::Unchanged, // should not happen in practice
-        (Some(m), Some(c)) => {
-            let cache_eq = m == c;
-            let live_eq = live_sha.map(|l| l == m).unwrap_or(false);
+        (Some(r), Some(c)) => {
+            let cache_eq = r == c;
+            let live_eq = live_sha.map(|l| l == r).unwrap_or(false);
             match (cache_eq, live_eq) {
                 (true, true) => FileClassification::Unchanged,
                 (true, false) => FileClassification::ChangedLocallyOnly,
@@ -133,14 +135,17 @@ pub fn classify(
 /// Inputs:
 ///   - `project_root` — where the project lives (used to resolve install paths)
 ///   - `cache_src_path` — fetched cache `<src_path>/` directory
-///   - `manifest` — the as-installed reference (read from `processkit.manifest`
-///     before calling this; the function does not read the manifest itself)
+///   - `templates_src_path` — the immutable reference dir, normally
+///     `<project_root>/context/templates/processkit/<lock.version>/`. Must
+///     contain a verbatim mirror of the cache `<src_path>/` from the
+///     previous install (this is what `processkit_init::copy_templates_from_cache`
+///     writes).
 ///
 /// Returns the full per-file diff plus a grouped view.
 pub fn three_way_diff(
     project_root: &Path,
     cache_src_path: &Path,
-    manifest: &ProcessKitManifest,
+    templates_src_path: &Path,
 ) -> Result<(Vec<FileDiff>, GroupedDiff)> {
     if !cache_src_path.is_dir() {
         anyhow::bail!(
@@ -153,13 +158,13 @@ pub fn three_way_diff(
     let mut seen_cache_keys: BTreeSet<String> = BTreeSet::new();
 
     // Walk the cache to find every installable file.
-    walk_cache(cache_src_path, cache_src_path, &mut |rel_path| {
-        let rel_str = path_to_forward_slash(rel_path);
+    walk_tree(cache_src_path, cache_src_path, &mut |rel_path| {
         let action = install_action_for(rel_path);
         let project_install = match action {
             InstallAction::Skip => return Ok(()),
             InstallAction::Install(p) => p,
         };
+        let rel_str = path_to_forward_slash(rel_path);
         seen_cache_keys.insert(rel_str.clone());
 
         let cache_abs = cache_src_path.join(rel_path);
@@ -175,10 +180,20 @@ pub fn three_way_diff(
             None
         };
 
-        let manifest_sha_opt = manifest.files.get(&rel_str).map(|e| e.upstream_sha.clone());
+        let reference_abs = templates_src_path.join(rel_path);
+        let reference_sha_opt = if reference_abs.is_file() {
+            Some(sha256_of_file(&reference_abs).with_context(|| {
+                format!(
+                    "failed to hash reference file {}",
+                    reference_abs.display()
+                )
+            })?)
+        } else {
+            None
+        };
 
         let classification = classify(
-            manifest_sha_opt.as_deref(),
+            reference_sha_opt.as_deref(),
             Some(&cache_sha),
             live_sha_opt.as_deref(),
         );
@@ -192,24 +207,26 @@ pub fn three_way_diff(
         Ok(())
     })?;
 
-    // Walk the manifest to find removed-upstream files (in manifest, not in cache).
-    for (rel_str, _entry) in manifest.files.iter() {
-        if seen_cache_keys.contains(rel_str) {
-            continue;
-        }
-        // If the cache file simply wouldn't be installable, skip it from the
-        // diff entirely — consistent with walk_cache's Skip handling.
-        let rel_path = PathBuf::from(rel_str);
-        let project_install = match install_action_for(&rel_path) {
-            InstallAction::Skip => continue,
-            InstallAction::Install(p) => p,
-        };
-        diffs.push(FileDiff {
-            cache_rel_path: rel_str.clone(),
-            project_path: Some(project_install),
-            group: group_for_path(&rel_path),
-            classification: FileClassification::RemovedUpstream,
-        });
+    // Walk the templates dir to find removed-upstream files (in reference,
+    // not in cache). Skip files that wouldn't be installable anyway.
+    if templates_src_path.is_dir() {
+        walk_tree(templates_src_path, templates_src_path, &mut |rel_path| {
+            let project_install = match install_action_for(rel_path) {
+                InstallAction::Skip => return Ok(()),
+                InstallAction::Install(p) => p,
+            };
+            let rel_str = path_to_forward_slash(rel_path);
+            if seen_cache_keys.contains(&rel_str) {
+                return Ok(());
+            }
+            diffs.push(FileDiff {
+                cache_rel_path: rel_str,
+                project_path: Some(project_install),
+                group: group_for_path(rel_path),
+                classification: FileClassification::RemovedUpstream,
+            });
+            Ok(())
+        })?;
     }
 
     // Build the grouped view.
@@ -222,17 +239,16 @@ pub fn three_way_diff(
     Ok((diffs, groups))
 }
 
-/// Recursively walk a cache `src_path` directory, calling `cb` with each
-/// file's path relative to `root`. Mirrors the skip rules in
-/// `manifest::manifest_from_cache` so the diff and the manifest agree on
-/// what exists.
-fn walk_cache(
+/// Recursively walk a directory, calling `cb` with each file's path
+/// relative to `root`. Honours [`should_skip_entry`] so the diff and the
+/// init walker agree on which files exist.
+fn walk_tree(
     root: &Path,
     dir: &Path,
     cb: &mut dyn FnMut(&Path) -> Result<()>,
 ) -> Result<()> {
     for entry in fs::read_dir(dir)
-        .with_context(|| format!("failed to read cache directory {}", dir.display()))?
+        .with_context(|| format!("failed to read directory {}", dir.display()))?
     {
         let entry = entry?;
         let path = entry.path();
@@ -242,11 +258,11 @@ fn walk_cache(
         let name = entry.file_name();
         let name_str = name.to_string_lossy().to_string();
 
-        if should_skip(&name_str) {
+        if should_skip_entry(&name_str) {
             continue;
         }
         if ft.is_dir() {
-            walk_cache(root, &path, cb)?;
+            walk_tree(root, &path, cb)?;
             continue;
         }
         if !ft.is_file() {
@@ -262,19 +278,6 @@ fn walk_cache(
         cb(rel)?;
     }
     Ok(())
-}
-
-fn should_skip(name: &str) -> bool {
-    if name == ".git" || name == "__pycache__" || name == ".fetch-complete" {
-        return true;
-    }
-    if name.starts_with('.') {
-        return true;
-    }
-    if name.ends_with(".pyc") {
-        return true;
-    }
-    false
 }
 
 fn path_to_forward_slash(rel: &Path) -> String {
@@ -343,7 +346,7 @@ pub struct SyncReport {
 /// document already exists in `pending/` or `in-progress/`.
 pub fn write_migration_document(
     project_root: &Path,
-    lock_before: &ProcessKitLock,
+    lock_before: &AiboxLock,
     cache_version: &str,
     cache_resolved_commit: Option<&str>,
     summary: &DiffSummary,
@@ -604,13 +607,13 @@ fn parse_yaml_scalar_value(s: &str) -> String {
 /// Run the full processkit sync-diff flow:
 ///
 /// 1. Fetch the cache for the version pinned in the lock (idempotent).
-/// 2. Read the installed manifest from disk.
-/// 3. Three-way diff against cache + live.
+/// 2. Resolve the templates reference dir for that version.
+/// 3. Three-way diff against cache + templates + live.
 /// 4. If there are user-relevant changes, write a Migration document.
 /// 5. Return a `SyncReport` summarizing the outcome.
 pub fn run_processkit_sync(
     project_root: &Path,
-    lock: &ProcessKitLock,
+    lock: &AiboxLock,
 ) -> Result<SyncReport> {
     let fetched = crate::processkit_source::fetch(
         &lock.source,
@@ -620,12 +623,9 @@ pub fn run_processkit_sync(
     )
     .with_context(|| "failed to fetch processkit cache".to_string())?;
 
-    let manifest = manifest::read_manifest(project_root)?
-        .unwrap_or_else(|| ProcessKitManifest {
-            files: Default::default(),
-        });
+    let templates_dir = templates_dir_for_version(project_root, &lock.version);
 
-    let (diffs, _groups) = three_way_diff(project_root, &fetched.src_path, &manifest)?;
+    let (diffs, _groups) = three_way_diff(project_root, &fetched.src_path, &templates_dir)?;
     let summary = DiffSummary::from_diffs(&diffs);
 
     let migration_document_path = if summary.has_user_relevant_changes() {
@@ -647,13 +647,6 @@ pub fn run_processkit_sync(
     })
 }
 
-// Silence unused-import warning for ManifestEntry — it's re-exported from
-// manifest.rs and referenced in doc comments + tests.
-#[allow(dead_code)]
-fn _keep_manifest_entry_in_scope() -> Option<ManifestEntry> {
-    None
-}
-
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -661,7 +654,7 @@ fn _keep_manifest_entry_in_scope() -> Option<ManifestEntry> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::manifest::{ManifestEntry, ProcessKitManifest, manifest_from_cache};
+    use crate::processkit_init::{copy_templates_from_cache, install_files_from_cache};
     use std::collections::BTreeMap;
     use tempfile::TempDir;
 
@@ -703,7 +696,7 @@ mod tests {
             FileClassification::Conflict
         );
         // Missing live file with upstream changed is also a conflict —
-        // the local tree can't be considered "unchanged-from-manifest".
+        // the local tree can't be considered "unchanged-from-reference".
         assert_eq!(
             classify(Some("a"), Some("b"), None),
             FileClassification::Conflict
@@ -739,7 +732,6 @@ mod tests {
         fs::create_dir_all(src.join("skills/event-log/templates")).unwrap();
         fs::create_dir_all(src.join("primitives/schemas")).unwrap();
         fs::create_dir_all(src.join("lib/processkit")).unwrap();
-        fs::write(src.join("PROVENANCE.toml"), "version = \"v1.0.0\"\n").unwrap();
         fs::write(src.join("skills/event-log/SKILL.md"), "# skill v1\n").unwrap();
         fs::write(
             src.join("skills/event-log/templates/entry.yaml"),
@@ -752,30 +744,21 @@ mod tests {
         )
         .unwrap();
         fs::write(src.join("lib/processkit/entity.py"), "print(1)\n").unwrap();
-        // A file that install_action_for will Skip (every INDEX.md).
+        // A file that install_action_for will Skip.
         fs::write(src.join("INDEX.md"), "# index\n").unwrap();
         src
     }
 
-    /// Given a cache src, install every non-Skip file into `<project>/...`
-    /// with identical contents, and build a manifest from the cache.
-    fn install_cache_into_project(
-        cache_src: &Path,
-        project_root: &Path,
-    ) -> ProcessKitManifest {
-        let manifest = manifest_from_cache(cache_src).unwrap();
-        for (rel_str, _entry) in manifest.files.iter() {
-            let rel = PathBuf::from(rel_str);
-            if let InstallAction::Install(dst_rel) = install_action_for(&rel) {
-                let src = cache_src.join(&rel);
-                let dst = project_root.join(&dst_rel);
-                if let Some(parent) = dst.parent() {
-                    fs::create_dir_all(parent).unwrap();
-                }
-                fs::copy(&src, &dst).unwrap();
-            }
-        }
-        manifest
+    /// Install the cache into `project_root` AND populate the templates dir
+    /// at `templates_dir`. Returns the templates_dir for use by tests.
+    fn install_and_snapshot(cache_src: &Path, project_root: &Path) -> PathBuf {
+        install_files_from_cache(cache_src, project_root).unwrap();
+        // Stash the templates dir at a fixed version label so the diff
+        // can find it. Use a free-standing path that does not depend on
+        // copy_templates_from_cache writing into project_root — but it
+        // does, so just call the helper.
+        copy_templates_from_cache(cache_src, project_root, "v1.0.0").unwrap();
+        templates_dir_for_version(project_root, "v1.0.0")
     }
 
     // -- three_way_diff unit tests -----------------------------------------
@@ -786,9 +769,9 @@ mod tests {
         let cache_src = build_cache(tmp.path());
         let project = tmp.path().join("project");
         fs::create_dir_all(&project).unwrap();
-        let manifest = install_cache_into_project(&cache_src, &project);
+        let templates = install_and_snapshot(&cache_src, &project);
 
-        let (diffs, _groups) = three_way_diff(&project, &cache_src, &manifest).unwrap();
+        let (diffs, _groups) = three_way_diff(&project, &cache_src, &templates).unwrap();
         assert!(!diffs.is_empty());
         for d in &diffs {
             assert_eq!(
@@ -807,51 +790,43 @@ mod tests {
         let cache_src = build_cache(tmp.path());
         let project = tmp.path().join("project");
         fs::create_dir_all(&project).unwrap();
-        let mut manifest = install_cache_into_project(&cache_src, &project);
+        let templates = install_and_snapshot(&cache_src, &project);
 
-        // 1. ChangedUpstreamOnly: perturb cache file only.
-        fs::write(cache_src.join("PROVENANCE.toml"), "version = \"v1.0.1\"\n").unwrap();
+        // 1. ChangedUpstreamOnly: perturb cache file only — schema.
+        fs::write(
+            cache_src.join("primitives/schemas/workitem.yaml"),
+            "name: workitem-v2\n",
+        )
+        .unwrap();
 
-        // 2. ChangedLocallyOnly: perturb live file only.
-        let live_skill = project.join(".claude/skills/event-log/SKILL.md");
+        // 2. ChangedLocallyOnly: perturb live file only — SKILL.md.
+        let live_skill = project.join("context/skills/event-log/SKILL.md");
         fs::write(&live_skill, "# locally edited\n").unwrap();
 
-        // 3. Conflict: perturb both cache and live for this file.
+        // 3. Conflict: perturb both cache and live for entry.yaml.
         let conflict_cache = cache_src.join("skills/event-log/templates/entry.yaml");
-        let conflict_live = project.join(".claude/skills/event-log/templates/entry.yaml");
+        let conflict_live =
+            project.join("context/skills/event-log/templates/entry.yaml");
         fs::write(&conflict_cache, "name: upstream-edit\n").unwrap();
         fs::write(&conflict_live, "name: local-edit\n").unwrap();
 
-        // 4. NewUpstream: add a new cache file that was not in the manifest.
+        // 4. NewUpstream: add a new cache file that was not in templates.
         let new_file = cache_src.join("skills/event-log/NEW.md");
         fs::write(&new_file, "# brand new\n").unwrap();
 
-        // 5. RemovedUpstream: drop a file from the cache but leave it in the manifest.
+        // 5. RemovedUpstream: drop a file from the cache; templates still has it.
         let removed_cache = cache_src.join("lib/processkit/entity.py");
         fs::remove_file(&removed_cache).unwrap();
-        // lib/processkit/entity.py is already in `manifest` from install time.
 
-        // 6. Unchanged: primitives/schemas/workitem.yaml stays matching on all sides.
-
-        // Make sure the manifest still knows about the removed and the
-        // to-be-conflicted files — it does, because it was built from the
-        // pre-perturbation cache.
-        assert!(manifest.files.contains_key("lib/processkit/entity.py"));
-        // The NEW.md file must NOT be in the manifest.
-        assert!(!manifest.files.contains_key("skills/event-log/NEW.md"));
-        // Force-remove the NEW.md key if it accidentally got in (defensive).
-        manifest.files.remove("skills/event-log/NEW.md");
-
-        let (diffs, _groups) = three_way_diff(&project, &cache_src, &manifest).unwrap();
+        let (diffs, _groups) = three_way_diff(&project, &cache_src, &templates).unwrap();
         let by_path: BTreeMap<&str, FileClassification> = diffs
             .iter()
             .map(|d| (d.cache_rel_path.as_str(), d.classification))
             .collect();
 
         assert_eq!(
-            by_path.get("PROVENANCE.toml"),
+            by_path.get("primitives/schemas/workitem.yaml"),
             Some(&FileClassification::ChangedUpstreamOnly),
-            "PROVENANCE.toml should be upstream-only"
         );
         assert_eq!(
             by_path.get("skills/event-log/SKILL.md"),
@@ -869,10 +844,6 @@ mod tests {
             by_path.get("lib/processkit/entity.py"),
             Some(&FileClassification::RemovedUpstream),
         );
-        assert_eq!(
-            by_path.get("primitives/schemas/workitem.yaml"),
-            Some(&FileClassification::Unchanged),
-        );
     }
 
     #[test]
@@ -881,12 +852,11 @@ mod tests {
         let cache_src = build_cache(tmp.path());
         let project = tmp.path().join("project");
         fs::create_dir_all(&project).unwrap();
-        let manifest = install_cache_into_project(&cache_src, &project);
-        let (_diffs, groups) = three_way_diff(&project, &cache_src, &manifest).unwrap();
+        let templates = install_and_snapshot(&cache_src, &project);
+        let (_diffs, groups) = three_way_diff(&project, &cache_src, &templates).unwrap();
 
         assert!(groups.contains_key("skills/event-log"));
         assert!(groups.contains_key("lib"));
-        assert!(groups.contains_key("PROVENANCE"));
         assert!(groups.contains_key("primitives/schemas/workitem"));
 
         // Every skills/event-log file should be in that bucket.
@@ -902,10 +872,11 @@ mod tests {
         let cache_src = build_cache(tmp.path());
         let project = tmp.path().join("project");
         fs::create_dir_all(&project).unwrap();
-        let manifest = install_cache_into_project(&cache_src, &project);
-        let (diffs, _) = three_way_diff(&project, &cache_src, &manifest).unwrap();
+        let templates = install_and_snapshot(&cache_src, &project);
+        let (diffs, _) = three_way_diff(&project, &cache_src, &templates).unwrap();
 
-        // INDEX.md is Skip per install_action_for and must not appear in the diff.
+        // INDEX.md is Skip per install_action_for and must not appear in the diff,
+        // even though it lives in the templates dir.
         assert!(
             diffs.iter().all(|d| d.cache_rel_path != "INDEX.md"),
             "INDEX.md should not appear in diff"
@@ -983,8 +954,8 @@ mod tests {
 
     // -- write_migration_document ------------------------------------------
 
-    fn sample_lock() -> ProcessKitLock {
-        ProcessKitLock {
+    fn sample_lock() -> AiboxLock {
+        AiboxLock {
             source: "https://github.com/example/processkit.git".to_string(),
             version: "v1.0.0".to_string(),
             src_path: "src".to_string(),
@@ -1000,14 +971,14 @@ mod tests {
         let lock = sample_lock();
         let diffs = vec![
             FileDiff {
-                cache_rel_path: "PROVENANCE.toml".to_string(),
-                project_path: Some(PathBuf::from("context/.aibox/processkit-provenance.toml")),
-                group: Some("PROVENANCE".to_string()),
+                cache_rel_path: "primitives/schemas/workitem.yaml".to_string(),
+                project_path: Some(PathBuf::from("context/schemas/workitem.yaml")),
+                group: Some("primitives/schemas/workitem".to_string()),
                 classification: FileClassification::ChangedUpstreamOnly,
             },
             FileDiff {
                 cache_rel_path: "skills/event-log/NEW.md".to_string(),
-                project_path: Some(PathBuf::from(".claude/skills/event-log/NEW.md")),
+                project_path: Some(PathBuf::from("context/skills/event-log/NEW.md")),
                 group: Some("skills/event-log".to_string()),
                 classification: FileClassification::NewUpstream,
             },
@@ -1030,7 +1001,7 @@ mod tests {
         assert!(body.contains("state: pending"));
         assert!(body.contains("generated_by: aibox sync"));
         assert!(body.contains("skills/event-log"));
-        assert!(body.contains("PROVENANCE.toml"));
+        assert!(body.contains("primitives/schemas/workitem.yaml"));
         assert!(body.contains("changed-upstream-only"));
         assert!(body.contains("new-upstream"));
 
@@ -1046,9 +1017,9 @@ mod tests {
         let tmp = TempDir::new().unwrap();
         let lock = sample_lock();
         let diffs = vec![FileDiff {
-            cache_rel_path: "PROVENANCE.toml".to_string(),
-            project_path: Some(PathBuf::from("context/.aibox/processkit-provenance.toml")),
-            group: Some("PROVENANCE".to_string()),
+            cache_rel_path: "primitives/schemas/workitem.yaml".to_string(),
+            project_path: Some(PathBuf::from("context/schemas/workitem.yaml")),
+            group: Some("primitives/schemas/workitem".to_string()),
             classification: FileClassification::ChangedUpstreamOnly,
         }];
         let summary = DiffSummary::from_diffs(&diffs);
@@ -1078,9 +1049,9 @@ mod tests {
         fs::write(in_progress.join("MIG-existing.md"), pre).unwrap();
 
         let diffs = vec![FileDiff {
-            cache_rel_path: "PROVENANCE.toml".to_string(),
-            project_path: Some(PathBuf::from("context/.aibox/processkit-provenance.toml")),
-            group: Some("PROVENANCE".to_string()),
+            cache_rel_path: "primitives/schemas/workitem.yaml".to_string(),
+            project_path: Some(PathBuf::from("context/schemas/workitem.yaml")),
+            group: Some("primitives/schemas/workitem".to_string()),
             classification: FileClassification::ChangedUpstreamOnly,
         }];
         let summary = DiffSummary::from_diffs(&diffs);
@@ -1088,16 +1059,5 @@ mod tests {
             write_migration_document(tmp.path(), &lock, "v1.0.1", None, &summary, &diffs)
                 .unwrap();
         assert!(out.is_none(), "should be no-op due to in-progress match");
-    }
-
-    // -- Silence unused-entry warning ---------------------------------------
-
-    #[test]
-    fn manifest_entry_sanity() {
-        // Referenced only to guarantee the type is in scope for this module.
-        let _ = ManifestEntry {
-            upstream_sha: "x".to_string(),
-            group: None,
-        };
     }
 }

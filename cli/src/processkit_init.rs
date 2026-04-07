@@ -7,7 +7,15 @@
 //! and copies files into the project per the mapping in
 //! [`crate::processkit_install::install_action_for`].
 //!
-//! Writes the lock and manifest under `context/.aibox/`.
+//! Two pieces of state are written next to the live install:
+//!
+//! 1. **`aibox.lock`** at the project root — pinned `(source, version,
+//!    commit)`. Cargo-style, top level, git-tracked.
+//! 2. **`context/templates/processkit/<version>/...`** — a verbatim copy
+//!    of the cache `<src_path>/` (modulo `.git`, `__pycache__`, dotfiles
+//!    and `*.pyc`). This is the immutable "as-installed" reference used
+//!    by the 3-way diff in `processkit_diff` to detect upstream-vs-local
+//!    edits without needing a SHA manifest.
 //!
 //! ## Error policy
 //!
@@ -25,17 +33,18 @@
 //! installed files is a no-op for file content (same bytes land in the
 //! same places), but the lock file is always rewritten with a fresh
 //! `installed_at` timestamp so callers can tell when the last install
-//! ran.
+//! ran. The templates dir for the version is wiped and re-copied so it
+//! always reflects the current cache exactly.
 
 use std::collections::BTreeSet;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 use chrono::Utc;
 
 use crate::config::{AiboxConfig, PROCESSKIT_VERSION_UNSET};
-use crate::manifest::{self, ProcessKitLock, group_for_path};
+use crate::lock::{self, AiboxLock, group_for_path, should_skip_entry};
 use crate::processkit_install::{InstallAction, install_action_for};
 use crate::processkit_source;
 
@@ -82,21 +91,17 @@ pub fn install_processkit(
         )
     })?;
 
-    // 3. Walk and install.
+    // 3. Walk cache and install live files.
     let (files_installed, files_skipped, groups_touched) =
         install_files_from_cache(&fetched.src_path, project_root)?;
 
-    // 4. Build the manifest from the cache.
-    let built_manifest = manifest::manifest_from_cache(&fetched.src_path)
-        .with_context(|| {
-            format!(
-                "failed to build manifest from cache {}",
-                fetched.src_path.display()
-            )
-        })?;
+    // 4. Copy the full cache verbatim into context/templates/processkit/<version>/
+    //    so the 3-way diff has an immutable "as-installed" reference.
+    copy_templates_from_cache(&fetched.src_path, project_root, &pk.version)
+        .context("failed to copy cache to templates dir")?;
 
-    // 5. Write the lock file (always — fresh installed_at every run).
-    let lock = ProcessKitLock {
+    // 5. Write the top-level aibox.lock (always — fresh installed_at every run).
+    let aibox_lock = AiboxLock {
         source: pk.source.clone(),
         version: pk.version.clone(),
         src_path: pk.src_path.clone(),
@@ -104,14 +109,8 @@ pub fn install_processkit(
         resolved_commit: fetched.resolved_commit.clone(),
         installed_at: Utc::now().to_rfc3339(),
     };
-    manifest::write_lock(project_root, &lock)
-        .context("failed to write processkit.lock")?;
+    lock::write_lock(project_root, &aibox_lock).context("failed to write aibox.lock")?;
 
-    // 6. Write the manifest file.
-    manifest::write_manifest(project_root, &built_manifest)
-        .context("failed to write processkit.manifest")?;
-
-    // 7. Return the report.
     Ok(InstallReport {
         files_installed,
         files_skipped,
@@ -156,7 +155,79 @@ pub fn install_files_from_cache(
     Ok((files_installed, files_skipped, groups.len()))
 }
 
-/// Recursive walker mirroring `manifest::manifest_from_cache`'s skip rules.
+/// Compute the templates dir for a given processkit version.
+pub fn templates_dir_for_version(project_root: &Path, version: &str) -> PathBuf {
+    project_root
+        .join("context/templates/processkit")
+        .join(version)
+}
+
+/// Copy the entire cache `src_path/` (modulo `.git`, `__pycache__`,
+/// dotfiles, and `*.pyc`) into `<project_root>/context/templates/processkit/<version>/`.
+///
+/// If a templates dir already exists for this version it is removed first
+/// so the result is always a clean mirror of the cache. The full upstream
+/// tree is preserved (including `INDEX.md`, `FORMAT.md`, `packages/...`,
+/// and `PROVENANCE.toml`) so users can browse the reference directly with
+/// any file viewer — no tooling required to see "what shipped".
+pub fn copy_templates_from_cache(
+    cache_src_path: &Path,
+    project_root: &Path,
+    version: &str,
+) -> Result<()> {
+    if !cache_src_path.is_dir() {
+        anyhow::bail!(
+            "copy_templates_from_cache: {} is not a directory",
+            cache_src_path.display()
+        );
+    }
+    let dest = templates_dir_for_version(project_root, version);
+    if dest.exists() {
+        fs::remove_dir_all(&dest)
+            .with_context(|| format!("failed to clear stale templates dir {}", dest.display()))?;
+    }
+    fs::create_dir_all(&dest)
+        .with_context(|| format!("failed to create templates dir {}", dest.display()))?;
+
+    copy_dir_recursive(cache_src_path, &dest)?;
+    Ok(())
+}
+
+/// Recursive directory copy that honours [`should_skip_entry`].
+fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<()> {
+    for entry in fs::read_dir(src)
+        .with_context(|| format!("failed to read directory {}", src.display()))?
+    {
+        let entry = entry?;
+        let name = entry.file_name();
+        let name_str = name.to_string_lossy().to_string();
+        if should_skip_entry(&name_str) {
+            continue;
+        }
+        let from = entry.path();
+        let to = dst.join(&name);
+        let ft = entry
+            .file_type()
+            .with_context(|| format!("failed to stat {}", from.display()))?;
+        if ft.is_dir() {
+            fs::create_dir_all(&to)
+                .with_context(|| format!("failed to create {}", to.display()))?;
+            copy_dir_recursive(&from, &to)?;
+        } else if ft.is_file() {
+            if let Some(parent) = to.parent() {
+                fs::create_dir_all(parent)
+                    .with_context(|| format!("failed to create {}", parent.display()))?;
+            }
+            fs::copy(&from, &to).with_context(|| {
+                format!("failed to copy {} -> {}", from.display(), to.display())
+            })?;
+        }
+        // symlinks/fifos: ignore
+    }
+    Ok(())
+}
+
+/// Recursive walker mirroring the diff walker's skip rules.
 fn walk_and_install(
     root: &Path,
     dir: &Path,
@@ -235,21 +306,6 @@ fn walk_and_install(
     Ok(())
 }
 
-/// Skip-rules matching `manifest::manifest_from_cache` (which we rely on
-/// to build the manifest from the same cache).
-fn should_skip_entry(name: &str) -> bool {
-    if name == ".git" || name == "__pycache__" || name == ".fetch-complete" {
-        return true;
-    }
-    if name.starts_with('.') {
-        return true;
-    }
-    if name.ends_with(".pyc") {
-        return true;
-    }
-    false
-}
-
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -260,9 +316,8 @@ mod tests {
     use std::fs;
     use tempfile::TempDir;
 
-    /// Build a synthetic processkit-shaped src tree under `root`. Mirrors
-    /// the shape used by the manifest module's tests, plus extras to
-    /// exercise skip rules (INDEX.md, skills/FORMAT.md, packages/...).
+    /// Build a synthetic processkit-shaped src tree under `root`. Includes
+    /// extras to exercise skip rules (INDEX.md, skills/FORMAT.md, packages/).
     fn synth_cache(root: &Path) {
         fs::create_dir_all(root.join("skills/event-log/templates")).unwrap();
         fs::create_dir_all(root.join("skills/workitem-management")).unwrap();
@@ -272,8 +327,7 @@ mod tests {
         fs::create_dir_all(root.join("processes")).unwrap();
         fs::create_dir_all(root.join("packages")).unwrap();
 
-        // Installed files.
-        fs::write(root.join("PROVENANCE.toml"), "version = \"v0.4.0\"\n").unwrap();
+        // Files that map to Install.
         fs::write(root.join("skills/event-log/SKILL.md"), "# event log\n").unwrap();
         fs::write(
             root.join("skills/event-log/templates/entry.yaml"),
@@ -295,11 +349,12 @@ mod tests {
             "name: workflow\n",
         )
         .unwrap();
-        fs::write(root.join("primitives/FORMAT.md"), "# primitives format\n").unwrap();
         fs::write(root.join("lib/processkit/entity.py"), "print('x')\n").unwrap();
         fs::write(root.join("processes/release.md"), "# release\n").unwrap();
 
-        // Skipped files.
+        // Files that map to Skip.
+        fs::write(root.join("PROVENANCE.toml"), "version = \"v0.4.0\"\n").unwrap();
+        fs::write(root.join("primitives/FORMAT.md"), "# primitives format\n").unwrap();
         fs::write(root.join("INDEX.md"), "# top index\n").unwrap();
         fs::write(root.join("skills/INDEX.md"), "# skills index\n").unwrap();
         fs::write(root.join("skills/FORMAT.md"), "# skills format\n").unwrap();
@@ -354,15 +409,15 @@ mod tests {
         assert_eq!(report.files_installed, 0);
         assert_eq!(report.files_skipped, 0);
         assert_eq!(report.fetched_version, PROCESSKIT_VERSION_UNSET);
-        // No lock, no manifest — we did no I/O.
-        assert!(!manifest::lock_path(tmp.path()).exists());
-        assert!(!manifest::manifest_path(tmp.path()).exists());
+        // No lock, no templates dir — we did no I/O.
+        assert!(!lock::lock_path(tmp.path()).exists());
+        assert!(!tmp.path().join("context/templates/processkit").exists());
     }
 
     // -- install_files_from_cache -------------------------------------------
 
     #[test]
-    fn install_copies_skill_files_under_claude_skills() {
+    fn install_copies_skill_files_under_context_skills() {
         let tmp = TempDir::new().unwrap();
         let cache = tmp.path().join("cache");
         let proj = tmp.path().join("proj");
@@ -371,15 +426,15 @@ mod tests {
 
         install_files_from_cache(&cache, &proj).unwrap();
 
-        assert!(proj.join(".claude/skills/event-log/SKILL.md").exists());
+        assert!(proj.join("context/skills/event-log/SKILL.md").exists());
         assert!(
-            proj.join(".claude/skills/event-log/templates/entry.yaml").exists()
+            proj.join("context/skills/event-log/templates/entry.yaml").exists()
         );
-        assert!(proj.join(".claude/skills/workitem-management/SKILL.md").exists());
+        assert!(proj.join("context/skills/workitem-management/SKILL.md").exists());
     }
 
     #[test]
-    fn install_copies_lib_files_under_claude_skills_lib() {
+    fn install_copies_lib_files_under_context_skills_lib() {
         let tmp = TempDir::new().unwrap();
         let cache = tmp.path().join("cache");
         let proj = tmp.path().join("proj");
@@ -389,13 +444,13 @@ mod tests {
         install_files_from_cache(&cache, &proj).unwrap();
 
         assert!(
-            proj.join(".claude/skills/_lib/processkit/entity.py").exists(),
-            "lib file should land under .claude/skills/_lib/processkit/"
+            proj.join("context/skills/_lib/processkit/entity.py").exists(),
+            "lib file should land under context/skills/_lib/processkit/"
         );
     }
 
     #[test]
-    fn install_copies_primitive_schemas_under_aibox_dir() {
+    fn install_copies_primitive_schemas_under_context_schemas() {
         let tmp = TempDir::new().unwrap();
         let cache = tmp.path().join("cache");
         let proj = tmp.path().join("proj");
@@ -404,15 +459,12 @@ mod tests {
 
         install_files_from_cache(&cache, &proj).unwrap();
 
-        assert!(proj.join("context/.aibox/schemas/workitem.yaml").exists());
-        assert!(
-            proj.join("context/.aibox/state-machines/workflow.yaml").exists()
-        );
-        assert!(proj.join("context/.aibox/primitives-FORMAT.md").exists());
+        assert!(proj.join("context/schemas/workitem.yaml").exists());
+        assert!(proj.join("context/state-machines/workflow.yaml").exists());
     }
 
     #[test]
-    fn install_copies_provenance_with_renamed_path() {
+    fn install_copies_processes_under_context_processes() {
         let tmp = TempDir::new().unwrap();
         let cache = tmp.path().join("cache");
         let proj = tmp.path().join("proj");
@@ -421,10 +473,25 @@ mod tests {
 
         install_files_from_cache(&cache, &proj).unwrap();
 
-        let dest = proj.join("context/.aibox/processkit-provenance.toml");
-        assert!(dest.exists(), "provenance should be installed at renamed path");
-        let body = fs::read_to_string(dest).unwrap();
-        assert!(body.contains("v0.4.0"));
+        assert!(proj.join("context/processes/release.md").exists());
+    }
+
+    #[test]
+    fn install_does_not_copy_provenance_or_format_to_live_tree() {
+        let tmp = TempDir::new().unwrap();
+        let cache = tmp.path().join("cache");
+        let proj = tmp.path().join("proj");
+        synth_cache(&cache);
+        fs::create_dir_all(&proj).unwrap();
+
+        install_files_from_cache(&cache, &proj).unwrap();
+
+        // PROVENANCE.toml and primitives/FORMAT.md are processkit-internal —
+        // they live in the templates dir but never in the live tree.
+        assert!(!proj.join("PROVENANCE.toml").exists());
+        assert!(!proj.join("context/PROVENANCE.toml").exists());
+        assert!(!proj.join("context/primitives-FORMAT.md").exists());
+        assert!(!proj.join("context/schemas/FORMAT.md").exists());
     }
 
     #[test]
@@ -437,11 +504,9 @@ mod tests {
 
         install_files_from_cache(&cache, &proj).unwrap();
 
-        // None of the INDEX.md files should have been copied anywhere
-        // under the project root.
         for rel in [
-            ".claude/skills/INDEX.md",
-            "context/.aibox/INDEX.md",
+            "context/skills/INDEX.md",
+            "context/INDEX.md",
             "INDEX.md",
         ] {
             assert!(
@@ -462,51 +527,10 @@ mod tests {
 
         install_files_from_cache(&cache, &proj).unwrap();
 
-        // packages/* files should not exist anywhere under the project.
+        // packages/* files should not exist anywhere under the live tree.
         assert!(!proj.join("packages").exists());
-        // And definitely no accidental copy under .claude/skills or
-        // context/.aibox.
-        assert!(!proj.join(".claude/skills/packages").exists());
-        assert!(!proj.join("context/.aibox/packages").exists());
-    }
-
-    #[test]
-    fn install_writes_lock_and_manifest_via_helpers() {
-        // Unit test for the lock/manifest write path — we call the
-        // helpers directly since install_processkit's full path requires
-        // a real fetch. This gives us end-to-end assurance that the
-        // manifest/lock files land where expected.
-        let tmp = TempDir::new().unwrap();
-        let cache = tmp.path().join("cache");
-        let proj = tmp.path().join("proj");
-        synth_cache(&cache);
-        fs::create_dir_all(&proj).unwrap();
-
-        install_files_from_cache(&cache, &proj).unwrap();
-
-        let mf = manifest::manifest_from_cache(&cache).unwrap();
-        manifest::write_manifest(&proj, &mf).unwrap();
-
-        let lock = ProcessKitLock {
-            source: "https://github.com/projectious-work/processkit.git".to_string(),
-            version: "v0.4.0".to_string(),
-            src_path: "src".to_string(),
-            branch: None,
-            resolved_commit: Some("deadbeef".to_string()),
-            installed_at: Utc::now().to_rfc3339(),
-        };
-        manifest::write_lock(&proj, &lock).unwrap();
-
-        assert!(proj.join("context/.aibox/processkit.lock").exists());
-        assert!(proj.join("context/.aibox/processkit.manifest").exists());
-
-        // Round-trip: reread the manifest and confirm it has the
-        // expected files.
-        let back = manifest::read_manifest(&proj).unwrap().unwrap();
-        assert!(back.files.contains_key("PROVENANCE.toml"));
-        assert!(back.files.contains_key("skills/event-log/SKILL.md"));
-        let entry = back.files.get("PROVENANCE.toml").unwrap();
-        assert!(!entry.upstream_sha.is_empty());
+        assert!(!proj.join("context/skills/packages").exists());
+        assert!(!proj.join("context/packages").exists());
     }
 
     #[test]
@@ -520,16 +544,16 @@ mod tests {
         let (installed, skipped, groups) =
             install_files_from_cache(&cache, &proj).unwrap();
 
-        // 9 installed files (PROVENANCE, 2 event-log, workitem-mgmt SKILL,
-        // workitem schema, workflow state machine, FORMAT, lib/entity.py,
-        // release.md).
-        assert_eq!(installed, 9, "unexpected installed count");
-        // 6 skipped: 3 INDEX.md, skills/FORMAT.md, 2 packages.
-        assert_eq!(skipped, 6, "unexpected skipped count");
-        // Groups: PROVENANCE, skills/event-log, skills/workitem-management,
+        // 7 installed: 2 event-log files, 1 workitem-mgmt SKILL, 1 schema,
+        // 1 state-machine, 1 lib/entity.py, 1 release.md.
+        assert_eq!(installed, 7, "unexpected installed count");
+        // 8 skipped: PROVENANCE.toml, primitives/FORMAT.md, 3 INDEX.md,
+        // skills/FORMAT.md, 2 packages.
+        assert_eq!(skipped, 8, "unexpected skipped count");
+        // 6 groups: skills/event-log, skills/workitem-management,
         // primitives/schemas/workitem, primitives/state-machines/workflow,
-        // primitives (FORMAT.md), lib, processes/release — 8 total.
-        assert_eq!(groups, 8, "unexpected group count");
+        // lib, processes/release.
+        assert_eq!(groups, 6, "unexpected group count");
     }
 
     #[test]
@@ -539,7 +563,6 @@ mod tests {
         let proj = tmp.path().join("proj");
         // Build a minimal cache with one deeply-nested file.
         fs::create_dir_all(cache.join("skills/deep/nested/path")).unwrap();
-        fs::write(cache.join("PROVENANCE.toml"), "version = \"x\"\n").unwrap();
         fs::write(
             cache.join("skills/deep/nested/path/SKILL.md"),
             "# deep\n",
@@ -549,7 +572,7 @@ mod tests {
 
         install_files_from_cache(&cache, &proj).unwrap();
 
-        let dest = proj.join(".claude/skills/deep/nested/path/SKILL.md");
+        let dest = proj.join("context/skills/deep/nested/path/SKILL.md");
         assert!(
             dest.exists(),
             "parent directories should have been created for {}",
@@ -568,7 +591,7 @@ mod tests {
         fs::create_dir_all(&proj).unwrap();
 
         install_files_from_cache(&cache, &proj).unwrap();
-        let dest = proj.join(".claude/skills/event-log/SKILL.md");
+        let dest = proj.join("context/skills/event-log/SKILL.md");
         assert_eq!(fs::read_to_string(&dest).unwrap(), "# event log\n");
 
         // Corrupt the installed file.
@@ -603,8 +626,68 @@ mod tests {
 
         // Nothing from .git or __pycache__ should land in the project.
         assert!(!proj.join(".git").exists());
-        assert!(
-            !proj.join(".claude/skills/event-log/__pycache__").exists()
-        );
+        assert!(!proj.join("context/skills/event-log/__pycache__").exists());
+    }
+
+    // -- copy_templates_from_cache ------------------------------------------
+
+    #[test]
+    fn templates_dir_path_is_under_context_templates_processkit_version() {
+        let tmp = TempDir::new().unwrap();
+        let dir = templates_dir_for_version(tmp.path(), "v0.4.0");
+        assert_eq!(dir, tmp.path().join("context/templates/processkit/v0.4.0"));
+    }
+
+    #[test]
+    fn copy_templates_mirrors_full_cache_minus_skip_rules() {
+        let tmp = TempDir::new().unwrap();
+        let cache = tmp.path().join("cache");
+        let proj = tmp.path().join("proj");
+        synth_cache(&cache);
+        // Add some noise the copy must skip.
+        fs::create_dir_all(cache.join(".git/objects")).unwrap();
+        fs::write(cache.join(".git/objects/foo"), b"git internals").unwrap();
+        fs::create_dir_all(cache.join("skills/event-log/__pycache__")).unwrap();
+        fs::write(cache.join("skills/event-log/__pycache__/x.pyc"), b"junk").unwrap();
+        fs::create_dir_all(&proj).unwrap();
+
+        copy_templates_from_cache(&cache, &proj, "v0.4.0").unwrap();
+
+        let base = proj.join("context/templates/processkit/v0.4.0");
+        // Files that the live install would skip are still in templates —
+        // the templates dir is the *full* upstream reference.
+        assert!(base.join("PROVENANCE.toml").exists());
+        assert!(base.join("primitives/FORMAT.md").exists());
+        assert!(base.join("skills/FORMAT.md").exists());
+        assert!(base.join("INDEX.md").exists());
+        assert!(base.join("skills/INDEX.md").exists());
+        assert!(base.join("packages/minimal.yaml").exists());
+        // Files that the live install would copy are also in templates.
+        assert!(base.join("skills/event-log/SKILL.md").exists());
+        assert!(base.join("primitives/schemas/workitem.yaml").exists());
+        assert!(base.join("lib/processkit/entity.py").exists());
+        assert!(base.join("processes/release.md").exists());
+        // .git, __pycache__, .pyc are skipped by should_skip_entry.
+        assert!(!base.join(".git").exists());
+        assert!(!base.join("skills/event-log/__pycache__").exists());
+    }
+
+    #[test]
+    fn copy_templates_clears_stale_dir_on_reinstall() {
+        let tmp = TempDir::new().unwrap();
+        let cache = tmp.path().join("cache");
+        let proj = tmp.path().join("proj");
+        synth_cache(&cache);
+        fs::create_dir_all(&proj).unwrap();
+
+        copy_templates_from_cache(&cache, &proj, "v0.4.0").unwrap();
+        // Pollute the templates dir with a stale file.
+        let stale = proj.join("context/templates/processkit/v0.4.0/stale.md");
+        fs::write(&stale, b"x").unwrap();
+        assert!(stale.exists());
+
+        // Re-running should wipe the stale file.
+        copy_templates_from_cache(&cache, &proj, "v0.4.0").unwrap();
+        assert!(!stale.exists(), "re-copy should clear stale templates dir");
     }
 }

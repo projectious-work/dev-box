@@ -625,13 +625,13 @@ pub fn cmd_sync(config_path: &Option<String>, no_cache: bool, no_build: bool) ->
 
     // Three-way processkit diff (A6).
     //
-    // If the project doesn't yet have a processkit.lock (i.e. nobody has run
+    // If the project doesn't yet have an aibox.lock (i.e. nobody has run
     // `aibox init` against this project after A5 landed, OR the version is
     // "unset"), skip — there's nothing to compare against. Any failure is
     // warned-and-continued so a network glitch doesn't break the rest of
     // sync's work.
     match std::env::current_dir() {
-        Ok(cwd) => match crate::manifest::read_lock(&cwd) {
+        Ok(cwd) => match crate::lock::read_lock(&cwd) {
             Ok(Some(lock)) => {
                 output::info("Comparing processkit cache against project...");
                 match crate::processkit_diff::run_processkit_sync(&cwd, &lock) {

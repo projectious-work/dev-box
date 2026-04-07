@@ -15,7 +15,7 @@ mod doctor;
 mod env;
 mod generate;
 #[allow(dead_code)]
-mod manifest;
+mod lock;
 mod migration;
 mod output;
 #[allow(dead_code)]
