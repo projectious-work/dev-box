@@ -1,11 +1,16 @@
-//! Install processkit content into a project at `aibox init` time.
+//! Install content-source payload into a project at `aibox init` time.
 //!
 //! Called by `cmd_init` after the existing init pipeline (aibox.toml,
 //! .devcontainer/, context/ scaffold) has succeeded. Reads the
-//! [processkit] section from the just-written config, fetches the
-//! configured source@version into the user's cache, walks the cache,
-//! and copies files into the project per the mapping in
-//! [`crate::processkit_install::install_action_for`].
+//! `[processkit]` section from the just-written config (today's only
+//! content source), fetches the configured `source@version` into the
+//! user's cache, walks the cache, and copies files into the project
+//! per the mapping in [`crate::content_install::install_action_for`].
+//!
+//! The fetcher and the install mapping are content-source-neutral —
+//! they don't know or care that the content happens to be processkit.
+//! When aibox grows additional content sources (community packs,
+//! company forks, …), they will reuse this same machinery.
 //!
 //! Two pieces of state are written next to the live install:
 //!
@@ -14,18 +19,21 @@
 //! 2. **`context/templates/processkit/<version>/...`** — a verbatim copy
 //!    of the cache `<src_path>/` (modulo `.git`, `__pycache__`, dotfiles
 //!    and `*.pyc`). This is the immutable "as-installed" reference used
-//!    by the 3-way diff in `processkit_diff` to detect upstream-vs-local
-//!    edits without needing a SHA manifest.
+//!    by the 3-way diff in `content_diff` to detect upstream-vs-local
+//!    edits without needing a SHA manifest. (The path still mentions
+//!    `processkit` because today's only content source is processkit;
+//!    the layout will generalise to `<source-id>/<version>/` when
+//!    multi-source support lands.)
 //!
 //! ## Error policy
 //!
-//! The public entry point [`install_processkit`] propagates fetch and
-//! I/O errors to its caller (`cmd_init`), which then decides whether to
-//! warn-and-continue or fail hard. The install itself is best-effort
-//! for individual files only in the sense that *unrecognized* files in
-//! the cache are silently skipped (that's the install-mapping contract
-//! in [`crate::processkit_install`]); once a file has been chosen for
-//! install, any copy failure aborts the run.
+//! The public entry point [`install_content_source`] propagates fetch
+//! and I/O errors to its caller (`cmd_init`), which then decides
+//! whether to warn-and-continue or fail hard. The install itself is
+//! best-effort for individual files only in the sense that
+//! *unrecognized* files in the cache are silently skipped (that's the
+//! install-mapping contract in [`crate::content_install`]); once a
+//! file has been chosen for install, any copy failure aborts the run.
 //!
 //! ## Idempotency
 //!
@@ -45,10 +53,10 @@ use chrono::Utc;
 
 use crate::config::{AiboxConfig, PROCESSKIT_VERSION_UNSET};
 use crate::lock::{self, AiboxLock, group_for_path, should_skip_entry};
-use crate::processkit_install::{InstallAction, install_action_for};
-use crate::processkit_source;
+use crate::content_install::{InstallAction, install_action_for};
+use crate::content_source;
 
-/// Result of a processkit install run, for reporting.
+/// Result of a content-source install run, for reporting.
 #[derive(Debug, Default, Clone)]
 pub struct InstallReport {
     pub files_installed: usize,
@@ -59,9 +67,13 @@ pub struct InstallReport {
     pub skipped_due_to_unset: bool,
 }
 
-/// Install processkit content into the given project root, based on the
-/// given config. See module docs for error policy and idempotency notes.
-pub fn install_processkit(
+/// Install content-source payload into the given project root, based
+/// on the given config. Today this reads `config.processkit` (the only
+/// configured content source); when multi-source support lands the
+/// signature will accept a content-source descriptor instead.
+///
+/// See module docs for error policy and idempotency notes.
+pub fn install_content_source(
     project_root: &Path,
     config: &AiboxConfig,
 ) -> Result<InstallReport> {
@@ -78,7 +90,7 @@ pub fn install_processkit(
     }
 
     // 2. Fetch into cache.
-    let fetched = processkit_source::fetch(
+    let fetched = content_source::fetch(
         &pk.source,
         &pk.version,
         pk.branch.as_deref(),
@@ -125,9 +137,9 @@ pub fn install_processkit(
 /// each file, and copy Install files into `project_root`. Returns
 /// `(files_installed, files_skipped, groups_touched)`.
 ///
-/// This function is extracted from [`install_processkit`] so it can be
+/// This function is extracted from [`install_content_source`] so it can be
 /// exercised in unit tests with a synthetic cache directory, without
-/// needing to run [`processkit_source::fetch`].
+/// needing to run [`content_source::fetch`].
 pub fn install_files_from_cache(
     cache_src_path: &Path,
     project_root: &Path,
@@ -402,10 +414,10 @@ mod tests {
     // -- sentinel skip ------------------------------------------------------
 
     #[test]
-    fn install_processkit_skips_on_unset_sentinel() {
+    fn install_content_source_skips_on_unset_sentinel() {
         let tmp = TempDir::new().unwrap();
         let cfg = config_with_version(PROCESSKIT_VERSION_UNSET);
-        let report = install_processkit(tmp.path(), &cfg).unwrap();
+        let report = install_content_source(tmp.path(), &cfg).unwrap();
         assert!(report.skipped_due_to_unset);
         assert_eq!(report.files_installed, 0);
         assert_eq!(report.files_skipped, 0);

@@ -20,8 +20,8 @@
 //! the "as-installed" reference, SHAs are computed on the fly by the diff,
 //! and nothing needs to be persisted beyond the lock.
 //!
-//! See `cli/src/processkit_install.rs` for the cache-to-project install
-//! mapping, and `cli/src/processkit_init.rs` / `cli/src/processkit_diff.rs`
+//! See `cli/src/content_install.rs` for the cache-to-project install
+//! mapping, and `cli/src/content_init.rs` / `cli/src/content_diff.rs`
 //! for the consumers of this module.
 
 use anyhow::{Context, Result};

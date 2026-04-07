@@ -21,13 +21,13 @@ mod output;
 #[allow(dead_code)]
 mod process_registry;
 #[allow(dead_code)]
-mod processkit_diff;
-mod processkit_init;
+mod content_diff;
+mod content_init;
 #[allow(dead_code)]
-mod processkit_install;
-mod processkit_migration;
+mod content_install;
+mod content_migration;
 #[allow(dead_code)]
-mod processkit_source;
+mod content_source;
 mod reset;
 mod runtime;
 mod seed;
@@ -160,16 +160,16 @@ fn dispatch(cli: cli::Cli) -> anyhow::Result<()> {
             let cwd = std::env::current_dir()?;
             match action {
                 cli::MigrateAction::Continue => {
-                    processkit_migration::cmd_migrate_continue(&cwd)
+                    content_migration::cmd_migrate_continue(&cwd)
                 }
                 cli::MigrateAction::Start { id } => {
-                    processkit_migration::cmd_migrate_start(&cwd, &id)
+                    content_migration::cmd_migrate_start(&cwd, &id)
                 }
                 cli::MigrateAction::Apply { id } => {
-                    processkit_migration::cmd_migrate_apply(&cwd, &id)
+                    content_migration::cmd_migrate_apply(&cwd, &id)
                 }
                 cli::MigrateAction::Reject { id, reason } => {
-                    processkit_migration::cmd_migrate_reject(&cwd, &id, &reason)
+                    content_migration::cmd_migrate_reject(&cwd, &id, &reason)
                 }
             }
         }

@@ -1,6 +1,6 @@
-//! Three-way comparison between the project's installed processkit content
-//! (live working tree), a freshly-fetched cache, and the immutable
-//! reference templates dir written by [`crate::processkit_init`].
+//! Three-way comparison between the project's installed content-source
+//! payload (live working tree), a freshly-fetched cache, and the
+//! immutable reference templates dir written by [`crate::content_init`].
 //!
 //! Used by `aibox sync` to detect what changed upstream and what changed
 //! locally, and to write Migration documents for the user to review.
@@ -34,8 +34,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::lock::{AiboxLock, group_for_path, sha256_of_file, should_skip_entry};
-use crate::processkit_init::templates_dir_for_version;
-use crate::processkit_install::{InstallAction, install_action_for};
+use crate::content_init::templates_dir_for_version;
+use crate::content_install::{InstallAction, install_action_for};
 
 // ---------------------------------------------------------------------------
 // Per-file classification
@@ -83,7 +83,7 @@ pub struct FileDiff {
     /// Path relative to the cache `<src_path>/`. The same key used to
     /// look up the file in the templates dir.
     pub cache_rel_path: String,
-    /// Where the file would be installed in the project (from `processkit_install`).
+    /// Where the file would be installed in the project (from `content_install`).
     pub project_path: Option<PathBuf>,
     /// Logical group from `lock::group_for_path`.
     pub group: Option<String>,
@@ -138,7 +138,7 @@ pub fn classify(
 ///   - `templates_src_path` — the immutable reference dir, normally
 ///     `<project_root>/context/templates/processkit/<lock.version>/`. Must
 ///     contain a verbatim mirror of the cache `<src_path>/` from the
-///     previous install (this is what `processkit_init::copy_templates_from_cache`
+///     previous install (this is what `content_init::copy_templates_from_cache`
 ///     writes).
 ///
 /// Returns the full per-file diff plus a grouped view.
@@ -604,24 +604,24 @@ fn parse_yaml_scalar_value(s: &str) -> String {
 // Top-level run entry used by `cmd_sync`
 // ---------------------------------------------------------------------------
 
-/// Run the full processkit sync-diff flow:
+/// Run the full content-source sync-diff flow:
 ///
 /// 1. Fetch the cache for the version pinned in the lock (idempotent).
 /// 2. Resolve the templates reference dir for that version.
 /// 3. Three-way diff against cache + templates + live.
 /// 4. If there are user-relevant changes, write a Migration document.
 /// 5. Return a `SyncReport` summarizing the outcome.
-pub fn run_processkit_sync(
+pub fn run_content_sync(
     project_root: &Path,
     lock: &AiboxLock,
 ) -> Result<SyncReport> {
-    let fetched = crate::processkit_source::fetch(
+    let fetched = crate::content_source::fetch(
         &lock.source,
         &lock.version,
         lock.branch.as_deref(),
         &lock.src_path,
     )
-    .with_context(|| "failed to fetch processkit cache".to_string())?;
+    .with_context(|| "failed to fetch content-source cache".to_string())?;
 
     let templates_dir = templates_dir_for_version(project_root, &lock.version);
 
@@ -654,7 +654,7 @@ pub fn run_processkit_sync(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::processkit_init::{copy_templates_from_cache, install_files_from_cache};
+    use crate::content_init::{copy_templates_from_cache, install_files_from_cache};
     use std::collections::BTreeMap;
     use tempfile::TempDir;
 

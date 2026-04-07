@@ -584,7 +584,7 @@ pub fn cmd_init(config_path: &Option<String>, params: InitParams) -> Result<()> 
     output::info("Installing processkit content...");
     let project_root = std::env::current_dir()
         .map_err(|e| anyhow::anyhow!("failed to resolve current directory: {}", e))?;
-    match crate::processkit_init::install_processkit(&project_root, &config) {
+    match crate::content_init::install_content_source(&project_root, &config) {
         Ok(report) if report.skipped_due_to_unset => {
             output::warn(&format!(
                 "Skipped processkit install — [processkit] version is \"{}\". \
@@ -670,7 +670,7 @@ pub fn cmd_sync(config_path: &Option<String>, no_cache: bool, no_build: bool) ->
         Ok(cwd) => match crate::lock::read_lock(&cwd) {
             Ok(Some(lock)) => {
                 output::info("Comparing processkit cache against project...");
-                match crate::processkit_diff::run_processkit_sync(&cwd, &lock) {
+                match crate::content_diff::run_content_sync(&cwd, &lock) {
                     Ok(report) => {
                         if report.summary.has_user_relevant_changes() {
                             output::info(&format!(

@@ -517,7 +517,7 @@ mod tests {
             ".claude/skills/code-review/references/checklist.md",
             // context::generate_aibox_md
             "context/AIBOX.md",
-            // processkit_diff::write_migration_document
+            // content_diff::write_migration_document
             "context/migrations/pending/MIG-20260407T120000.md",
         ];
 
