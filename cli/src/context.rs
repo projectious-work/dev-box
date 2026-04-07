@@ -1250,7 +1250,15 @@ pub(crate) fn update_gitignore(addons: &AddonsSection) -> Result<()> {
     content.push_str(".aibox-version\n");
     content.push_str(".aibox/\n");
     content.push_str(".aibox-backup/\n");
-    content.push_str(".aibox-env/\n\n");
+    content.push_str(".aibox-env/\n");
+    // processkit cache-mirror content (installed by `aibox init` / refreshed by
+    // `aibox sync`). Reproducible from context/.aibox/processkit.lock + manifest,
+    // both of which ARE git-tracked. Only the cache mirror itself is ignored.
+    content.push_str("context/.aibox/schemas/\n");
+    content.push_str("context/.aibox/state-machines/\n");
+    content.push_str("context/.aibox/processes/\n");
+    content.push_str("context/.aibox/primitives-FORMAT.md\n");
+    content.push_str("context/.aibox/processkit-provenance.toml\n\n");
 
     // OS generated
     content.push_str(
@@ -1367,6 +1375,14 @@ fn ensure_aibox_entries(gitignore_path: &Path) -> Result<()> {
         ".aibox-version",
         ".aibox-backup/",
         ".aibox-env/",
+        // processkit cache-mirror (DISC-002 A5/A6) — installed by aibox init,
+        // refreshed by aibox sync, reproducible from processkit.lock + manifest
+        // (which ARE git-tracked).
+        "context/.aibox/schemas/",
+        "context/.aibox/state-machines/",
+        "context/.aibox/processes/",
+        "context/.aibox/primitives-FORMAT.md",
+        "context/.aibox/processkit-provenance.toml",
     ];
 
     let existing = fs::read_to_string(gitignore_path).context("Failed to read .gitignore")?;
