@@ -435,6 +435,14 @@ pub struct ProcessKitSection {
     /// pinned tag (discouraged but supported).
     #[serde(default)]
     pub branch: Option<String>,
+    /// URL template for the release-asset tarball, with `{source}`,
+    /// `{version}`, `{org}`, and `{name}` placeholders. When unset, the
+    /// fetcher uses the GitHub-style default
+    /// `{source}/releases/download/{version}/{name}-{version}.tar.gz`.
+    /// Set this to point at non-GitHub hosts (Gitea, GitLab, self-hosted)
+    /// that serve release assets at a different URL shape.
+    #[serde(default)]
+    pub release_asset_url_template: Option<String>,
 }
 
 fn default_processkit_source() -> String {
@@ -459,6 +467,7 @@ impl Default for ProcessKitSection {
             version: default_processkit_version(),
             src_path: default_processkit_src_path(),
             branch: None,
+            release_asset_url_template: None,
         }
     }
 }

@@ -2,20 +2,25 @@
 
 Inverse chronological. Each decision has a rationale and alternatives considered.
 
-## DEC-025 — Consume processkit via release-asset tarballs (2026-04-07)
+## DEC-025 — Generic content-source release-asset fetcher (2026-04-07)
 
-**Decision:** Going forward, aibox consumes processkit primarily via a `src/`-only release-asset tarball (`processkit-<version>.tar.gz`) attached to each processkit GitHub Release, with bit-exact reproducibility via a sibling `.sha256` checksum file. Git tarball + git clone remain as fallback paths for users who pin to a branch or an unreleased commit.
+**Decision:** aibox consumes content sources (today: processkit; tomorrow: any processkit-compatible producer) via a **generic release-asset fetcher** that prefers a purpose-built `<name>-<version>.tar.gz` attached to the producer's release, with bit-exact reproducibility via a sibling `.sha256` checksum file. Host auto-tarball and `git clone` remain as fallback paths. The fetcher is content-source-neutral by construction — processkit gets no special treatment, just a default URL template that happens to point at the canonical processkit repo when no consumer override is set.
 
-**Rationale:** The current "fetch the git auto-tarball, walk the entire repo, skip `.git`/`__pycache__`/`tests`/dotfiles" approach pushes the "what counts as shippable?" decision into aibox's walker. That logic belongs to processkit. A purpose-built release artifact gives an explicit shippable contract, dramatically smaller downloads (no `tests/`, `docs-site/`, `.git/`), no skip rules in the consumer at all on the happy path, and a clean place to attach checksums and signatures. The templates dir at `context/templates/processkit/<version>/` becomes a verbatim mirror of *exactly* what the producer chose to ship — nothing more, nothing less — which is the "transparent reference" property the consumer relies on.
+**Rationale:** The previous "fetch the git auto-tarball, walk the entire repo, skip `.git`/`__pycache__`/`tests`/dotfiles" approach pushed the "what counts as shippable?" decision into aibox's walker. That logic belongs to the producer. A purpose-built release artifact gives an explicit shippable contract, dramatically smaller downloads (no `tests/`, `docs-site/`, `.git/`), no skip rules in the consumer on the happy path, and a clean place to attach checksums (and, future, signatures). The templates dir at `context/templates/processkit/<version>/` becomes a verbatim mirror of *exactly* what the producer chose to ship — nothing more, nothing less — which is the "transparent reference" property the consumer relies on.
 
 **Alternatives:**
-- *Keep git-tarball-only* — works today, but couples consumer-side correctness to producer-side repo hygiene; every new top-level file in processkit risks accidentally landing in consumer projects unless aibox's walker is updated.
-- *Replace git fetch entirely* — loses the ability to test against `version = "main"` or a SHA before a release is cut. Rejected: the dev/test ergonomics are worth the modest fetcher complexity.
-- *Pin via Cargo-style registry* — too heavyweight for one consumer. The release-asset path is the lightest-weight thing that provides the explicit-contract guarantee.
+- *Keep git-tarball-only* — works today, but couples consumer correctness to producer repo hygiene; every new top-level file in the producer risks landing in consumer projects unless aibox's walker is updated.
+- *Replace git fetch entirely* — loses the ability to test against `version = "main"` or a SHA before a release is cut. Rejected: dev/test ergonomics are worth the modest fetcher complexity.
+- *Pin via Cargo-style registry* — too heavyweight for the current scale. The release-asset path is the lightest-weight thing that provides the explicit-contract guarantee.
+- *Make the fetcher processkit-specific* — would violate the "no special treatment" principle. Rejected in favor of a generic fetcher with a configurable URL template.
 
-**Implementation:** BACK-106. Hybrid fetcher (release asset → git tarball → git clone), `release_asset_sha256` recorded in `aibox.lock` when used, `release_asset_url_template` configurable in `[processkit]` for non-GitHub hosts.
+**What is generic vs processkit-specific:**
+- **Generic** (lives in `cli/src/content_*.rs`): the fetch strategy ladder (branch → release-asset → host-tarball → git-clone), the URL template expansion (`{source}`, `{version}`, `{org}`, `{name}`), checksum verification, the wrapped-vs-flat tarball auto-detect, the install path mapping, the 3-way diff, the Migration document lifecycle.
+- **Processkit-specific** (lives in `[processkit]` config + `ensure_processkit_section_in()` migration): the consumer-side configuration block. Today's only content source. When multi-source support lands, additional `[content_sources.*]` blocks will sit alongside it.
 
-**Source:** Discussion 2026-04-07 following the full-templates rework (commit `4c8bde3`). Briefing handed to the processkit-side agent the same day.
+**Implementation:** BACK-106 (landed in v0.15.0). Hybrid fetcher with the four-step ladder, `release_asset_sha256` recorded in `aibox.lock` when the asset path was used, `release_asset_url_template` configurable in `[processkit]` for non-GitHub hosts. SHA256 mismatch is a hard error (no fallback), since it indicates either tampering or a producer bug — both situations the user must be told about.
+
+**Source:** Discussion 2026-04-07 following the full-templates rework (commit `4c8bde3`) and the user pushback "handle processkit like any other derived project, no special treatment".
 
 ## DEC-024 — Directory sharding per entity type (2026-04-06)
 

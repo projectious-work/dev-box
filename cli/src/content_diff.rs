@@ -611,15 +611,22 @@ fn parse_yaml_scalar_value(s: &str) -> String {
 /// 3. Three-way diff against cache + templates + live.
 /// 4. If there are user-relevant changes, write a Migration document.
 /// 5. Return a `SyncReport` summarizing the outcome.
+///
+/// `config` is read for the current `release_asset_url_template` so a
+/// user who has updated their template (e.g. switched from a fork URL
+/// to a different host) gets the new template applied immediately
+/// without having to re-init.
 pub fn run_content_sync(
     project_root: &Path,
     lock: &AiboxLock,
+    config: &crate::config::AiboxConfig,
 ) -> Result<SyncReport> {
     let fetched = crate::content_source::fetch(
         &lock.source,
         &lock.version,
         lock.branch.as_deref(),
         &lock.src_path,
+        config.processkit.release_asset_url_template.as_deref(),
     )
     .with_context(|| "failed to fetch content-source cache".to_string())?;
 
@@ -961,6 +968,7 @@ mod tests {
             src_path: "src".to_string(),
             branch: None,
             resolved_commit: Some("dead".to_string()),
+            release_asset_sha256: None,
             installed_at: "2026-04-06T00:00:00Z".to_string(),
         }
     }

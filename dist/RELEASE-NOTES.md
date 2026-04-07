@@ -1,140 +1,183 @@
-# aibox v0.14.4
+# aibox v0.15.0
 
-CLI patch release. Three usability tweaks based on real-world use of v0.14.3:
+CLI minor release. The "processkit consumption layer" that landed in v0.14.x
+gets finalised: provider-neutral install paths, a documented & enforced sync
+perimeter, AGENTS.md as the canonical agent entry file, and a generic
+release-asset fetcher with bit-exact reproducibility. Plus archive previews
+in yazi and a fix for emoji rendering in LuaLaTeX.
 
-1. **Yazi default ratio** changed from `[1, 3, 4]` to `[3, 5, 18]` — a much
-   more preview-heavy split that makes the file preview the dominant pane.
-2. **`ai` layout proportions** flipped from yazi 40% / AI 60% to **yazi 60%
-   / AI 40%** — yazi gets the bigger half because file navigation is the
-   primary surface in the AI-first layout.
-3. **New `cowork-swap` layout** — a re-arrangement of `cowork` for users
-   who prefer the editor on the right.
+This is the release that lets **processkit dogfood aibox** to manage its own
+devcontainer.
 
-## 1. Yazi default ratio: `[3, 5, 18]`
+## Highlights
 
-The new default gives:
+### 1. Generic content-source release-asset fetcher (BACK-106 / DEC-025)
 
-- 3/26 width to the parent column (≈ 12%)
-- 5/26 width to the current directory column (≈ 19%)
-- **18/26 width to the preview column** (≈ 69%)
+`aibox init` (and `aibox sync`'s diff path) now fetch processkit content via
+a four-step strategy ladder, in priority order:
 
-This is a sharper, preview-heavy split. To get the previous behavior back,
-edit `.aibox-home/.config/yazi/yazi.toml`:
+1. **Branch override** — `git clone --branch <name>` for testing pre-release work.
+2. **Release-asset tarball** — downloads a purpose-built `.tar.gz` attached
+   to the release (e.g.
+   `https://github.com/projectious-work/processkit/releases/download/v0.5.1/processkit-v0.5.1.tar.gz`).
+   When a sibling `<asset>.sha256` file is present, the tarball bytes are
+   verified against it BEFORE extraction. The verified SHA256 is recorded
+   in `aibox.lock` as `release_asset_sha256` for bit-exact reproducibility.
+   A SHA256 mismatch is a hard error — does NOT fall through.
+3. **Host auto-tarball** — falls back to GitHub / GitLab's auto-generated
+   `archive/refs/tags/<version>.tar.gz` when no release asset is available.
+4. **Git clone** of the tag — last resort for hosts that serve neither
+   tarball form (typical for self-hosted git over SSH).
+
+The fetcher is **content-source-neutral**: it doesn't know or care that
+the only currently-configured content source is processkit. The new
+`[processkit] release_asset_url_template` field lets non-GitHub hosts
+(Gitea, GitLab, self-hosted) override the URL pattern. Placeholders:
+`{source}` (`.git` stripped), `{version}`, `{org}`, `{name}`.
+
+The Rust modules in `cli/src/` were renamed accordingly:
+
+| Before                       | After                  |
+|------------------------------|------------------------|
+| `processkit_source.rs`       | `content_source.rs`    |
+| `processkit_install.rs`      | `content_install.rs`   |
+| `processkit_init.rs`         | `content_init.rs`      |
+| `processkit_diff.rs`         | `content_diff.rs`      |
+| `processkit_migration.rs`    | `content_migration.rs` |
+
+The `[processkit]` config block stays processkit-named — it's the
+consumer-side configuration of the (currently sole) content source.
+
+### 2. Documented & enforced `aibox sync` perimeter (closes #34)
+
+Downstream projects (like processkit, when it dogfoods this release) need
+a hard guarantee that `aibox sync` will never touch their hand-written
+files. The sync perimeter is now both **documented** and **enforced**:
+
+```
+aibox.toml                          (one-time schema migrations)
+.aibox-version                      (CLI version tracking)
+.aibox-home/**                      (runtime config seed; gitignored)
+.devcontainer/Dockerfile            (regenerated)
+.devcontainer/docker-compose.yml    (regenerated)
+.devcontainer/devcontainer.json     (regenerated)
+.claude/skills/**                   (skill deployment, write-if-missing)
+context/AIBOX.md                    (universal baseline, regenerated)
+context/migrations/**               (additive migration documents)
+```
+
+Anything else (`README.md`, `AGENTS.md`, `src/`, `tests/`,
+`context/BACKLOG.md`, `context/skills/` install destinations, …) is **out
+of perimeter and will never be touched**, in any release, under any
+configuration.
+
+Two layers of enforcement:
+
+- **Static**: a unit test (`all_known_sync_write_targets_are_in_perimeter`)
+  walks every known sync write site and asserts each is in perimeter.
+  Adding a new sync write outside the perimeter fails CI immediately.
+- **Runtime**: `aibox sync` snapshots a set of representative
+  out-of-perimeter sentinel files (`README.md`, `AGENTS.md`, `CLAUDE.md`,
+  `context/BACKLOG.md`, `LICENSE`, …) before running, and verifies after
+  the sync work that none were touched. A violation aborts with an error
+  naming the offending path BEFORE the slow image build runs.
+
+See `aibox sync --help` and `docs-site/docs/reference/cli-commands.md`.
+
+### 3. AGENTS.md as canonical, providers as thin pointers (closes #33)
+
+`aibox init` now scaffolds `AGENTS.md` as the canonical, provider-neutral
+agent entry document, with provider-specific files (`CLAUDE.md`, future
+`CODEX.md`, …) as **thin pointers** by default — matching the
+[agents.md](https://agents.md/) ecosystem convention.
+
+New `[agents]` config block:
 
 ```toml
-[mgr]
-ratio = [1, 3, 4]   # previous default
+[agents]
+canonical     = "AGENTS.md"     # default; almost no one should override
+provider_mode = "pointer"       # "pointer" (default) | "full"
 ```
 
-`aibox sync` will not overwrite a hand-edited yazi.toml — only newly
-seeded files (and the migration from `[manager]` → `[mgr]`) touch it.
+- **`pointer` mode (default)**: `CLAUDE.md` is ~10 lines saying "see
+  `AGENTS.md`". Every harness reads the same canonical document.
+- **`full` mode**: `CLAUDE.md` keeps the existing rich Claude-flavoured
+  content. Use only when a project genuinely needs different instructions
+  per harness.
 
-## 2. `ai` layout: yazi 60% / AI 40%
+Existing files are **never overwritten** (write-if-missing). Migration
+from a hand-written rich `CLAUDE.md` to the new `AGENTS.md` + thin pointer
+split is manual.
 
-The previous v0.14.2/3 split was yazi 40% / AI 60%. The new split
-emphasizes file navigation as the primary surface — the AI agent column
-is still wide enough to read responses, and yazi's preview column gets
-more room.
+### 4. Provider-neutral install layout (carries forward from v0.14.4)
 
-```
-┌────────────────────────────────┬──────────────────────┐
-│                                │                      │
-│  yazi (60%)                    │  claude (40%)        │
-│  parent | current | preview    │                      │
-│  (with the new [3,5,18] ratio  │                      │
-│   yazi's preview column is     │                      │
-│   the visual centerpiece)      │                      │
-│                                │                      │
-├────────────────────────────────┴──────────────────────┤
-│  status-bar                                           │
-└───────────────────────────────────────────────────────┘
-```
+The full-templates rework that landed in v0.14.4 (commit `4c8bde3`)
+becomes the headline architectural change in v0.15.0:
 
-If you prefer the old proportions, you can override after `aibox sync` by
-hand-editing `.aibox-home/.config/zellij/layouts/ai.kdl` — but that file
-is regenerated on every sync, so the cleaner path is to wait for a future
-release that adds per-layout pane-size config.
+- Skills install to `context/skills/<name>/...` (was `.claude/skills/`)
+- Schemas → `context/schemas/`
+- State machines → `context/state-machines/`
+- Processes → `context/processes/`
+- Lib → `context/skills/_lib/processkit/`
+- Reference templates verbatim at `context/templates/processkit/<version>/`
+- Lock at top-level `aibox.lock` (Cargo-style)
 
-## 3. New layout: `cowork-swap`
+`aibox sync`'s 3-way diff reads SHAs on the fly from the templates dir —
+no more SHA manifest. Users can browse "what shipped" with plain `ls`
+and `diff`.
 
-A re-arrangement of `cowork` for users who prefer the editor on the right
-(the bigger pane). The outer split is **40/60 instead of cowork's 50/50**,
-and the editor and AI panes swap roles.
+## Smaller improvements
 
-```
-┌──────────────────┬────────────────────────────────────────┐
-│  yazi   (40%)    │                                        │
-│                  │                                        │
-├──────────────────┤  vim editor (60%)                      │
-│  AI agent (60%)  │                                        │
-│                  │                                        │
-├──────────────────┴────────────────────────────────────────┤
-│  status-bar                                               │
-└───────────────────────────────────────────────────────────┘
+### Archive previews in yazi
 
-  Tab 1: cowork-swap   Tab 2: git   Tab 3: shell
-```
+Selecting an archive in yazi previously prompted "asks for 7zip installed".
+Yazi 26.x already has a built-in archive previewer that calls `7z` to list
+contents — the binary was just missing from the base image. Now in:
 
-When multiple AI providers are configured, they stack in the bottom-left
-pane (same convention as `cowork`, `browse`, and `ai`).
+- **`p7zip-full`** apt package — feeds yazi's built-in archive previewer
+  so zip / 7z / tar / tar.gz / tar.bz2 / tar.xz / iso files show their
+  file tree in the preview pane (no plugin required).
+- **`ouch`** static binary in `/usr/local/bin/ouch` — uniform shell-side
+  archive extraction for all common formats.
 
-When no AI provider is configured, the layout degenerates to a simple
-yazi-left + vim-right shape (same as `dev`, with the `cowork-swap` tab
-name preserved).
+### Emoji rendering in LuaLaTeX (closes #32)
 
-Select with:
+The latex addon now installs `fonts-noto-color-emoji`. Wire it up in
+your preamble:
 
-```bash
-aibox start --layout cowork-swap
+```latex
+\directlua{luaotfload.add_fallback("emojifallback",{"NotoColorEmoji:mode=harf;"})}
+\setmainfont{FreeSans}[Scale=0.95,RawFeature={fallback=emojifallback}]
 ```
 
-or set as default in `aibox.toml`:
+### `ai` layout proportions
 
-```toml
-[customization]
-layout = "cowork-swap"
-```
+The horizontal split changed from yazi 60% / AI 40% to **yazi 53% / AI 47%**
+based on real-world feedback from a derived project.
 
-## Tests
+## Upgrade path
 
-314 tests pass. Five new tests for `cowork-swap`, plus the `ai_layout_*`
-tests updated for the new 60/40 proportions:
+For existing aibox-managed projects:
 
-- `cowork_swap_layout_single_provider`
-- `cowork_swap_layout_multiple_providers_stacked`
-- `cowork_swap_layout_no_providers`
-- `cowork_swap_layout_editor_right_of_files`
-- `cowork_swap_layout_ai_below_files_in_left_stack`
+1. Update the CLI (download the binary or run `aibox update` if you
+   already have a recent version).
+2. Run `aibox sync` — the new perimeter tripwire is active immediately
+   and verifies nothing outside the documented set is touched.
+3. To pick up the new `AGENTS.md` scaffolding: re-run `aibox init` in a
+   throwaway worktree to see the new layout, then copy `AGENTS.md` and
+   the thin `CLAUDE.md` pointer over manually if you want the new shape.
+   `aibox init` against an existing project will not overwrite anything.
+4. To consume the release-asset path: bump `[processkit] version` to a
+   release that ships an asset (processkit v0.5.1 is the first one).
+   The fetcher tries the release asset first and falls back to the git
+   path automatically — no config change needed for github.com sources.
 
-## Container Images
+## Issues closed
 
-- `ghcr.io/projectious-work/aibox:base-debian-v0.14.4`
-- `ghcr.io/projectious-work/aibox:base-debian-latest`
+- #32 — latex addon: missing emoji font
+- #33 — aibox init: scaffold AGENTS.md as canonical, providers as thin pointers
+- #34 — Document and enforce the aibox sync perimeter
 
-The base image is rebuilt with the new yazi `[mgr]` ratio default
-(`[3, 5, 18]`). All other content is identical to v0.14.3.
+## Test surface
 
-## CLI Binaries
-
-- `aibox-v0.14.4-aarch64-unknown-linux-gnu.tar.gz`
-- `aibox-v0.14.4-x86_64-unknown-linux-gnu.tar.gz`
-- `aibox-v0.14.4-aarch64-apple-darwin.tar.gz` (added in Phase 2)
-- `aibox-v0.14.4-x86_64-apple-darwin.tar.gz` (added in Phase 2)
-
-## Upgrading
-
-```bash
-# Install the new CLI
-curl -fsSL https://raw.githubusercontent.com/projectious-work/aibox/main/scripts/install.sh | bash
-
-# Or on macOS, follow Phase 2 instructions on the host
-
-# In each project, run sync — the cowork-swap.kdl layout will be added,
-# and ai.kdl will be regenerated with the new 60/40 proportions:
-cd <project>
-aibox sync
-```
-
-The yazi.toml ratio is left alone if you've already hand-edited it; new
-projects (created via `aibox init` after upgrading) will get the new
-`[3, 5, 18]` default.
+426 unit + 41 e2e + 16 integration tests; clippy clean.

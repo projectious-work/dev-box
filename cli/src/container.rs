@@ -434,6 +434,15 @@ fn serialize_config_with_comments(config: &AiboxConfig) -> String {
         Some(branch) => out.push_str(&format!("branch   = \"{}\"\n", branch)),
         None => out.push_str("# branch = \"main\"   # optional — for tracking a moving branch (discouraged)\n"),
     }
+    out.push_str("#\n");
+    out.push_str("# Optional release-asset URL template for non-GitHub hosts (Gitea, GitLab,\n");
+    out.push_str("# self-hosted). When unset, the fetcher uses the GitHub-style default:\n");
+    out.push_str("#   {source}/releases/download/{version}/{name}-{version}.tar.gz\n");
+    out.push_str("# Placeholders: {source} (.git stripped), {version}, {org}, {name}.\n");
+    match &config.processkit.release_asset_url_template {
+        Some(t) => out.push_str(&format!("release_asset_url_template = \"{}\"\n", t)),
+        None => out.push_str("# release_asset_url_template = \"https://gitea.example.com/{org}/{name}/releases/download/{version}/payload.tar.gz\"\n"),
+    }
 
     // [agents] section
     out.push('\n');
@@ -670,7 +679,7 @@ pub fn cmd_sync(config_path: &Option<String>, no_cache: bool, no_build: bool) ->
         Ok(cwd) => match crate::lock::read_lock(&cwd) {
             Ok(Some(lock)) => {
                 output::info("Comparing processkit cache against project...");
-                match crate::content_diff::run_content_sync(&cwd, &lock) {
+                match crate::content_diff::run_content_sync(&cwd, &lock, &config) {
                     Ok(report) => {
                         if report.summary.has_user_relevant_changes() {
                             output::info(&format!(

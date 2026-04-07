@@ -134,6 +134,57 @@ AI provider configuration. Providers listed here are automatically installed as 
 |-------|------|----------|---------|-------------|
 | `providers` | Array of strings | No | `["claude"]` | AI providers: `claude`, `aider`, `gemini`, `mistral` |
 
+### [processkit]
+
+Configures the **content source** the project consumes (skills,
+primitives, processes). The default upstream is the canonical
+[projectious-work/processkit](https://github.com/projectious-work/processkit)
+repo, but any processkit-compatible source works (forks, self-hosted,
+private mirrors).
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `source` | String | No | `https://github.com/projectious-work/processkit.git` | Git URL of the content source. |
+| `version` | String | No | `unset` | Semver tag to consume. The sentinel `unset` skips fetching until a real tag is set. |
+| `src_path` | String | No | `src` | Subdirectory inside the source repo containing the shippable payload. Auto-detected for flat release-asset tarballs. |
+| `branch` | String | No | _(none)_ | Optional branch override for testing pre-release work. Discouraged but supported. |
+| `release_asset_url_template` | String | No | _(GitHub-style default)_ | URL template for the release-asset tarball. Placeholders: `{source}` (`.git` stripped), `{version}`, `{org}`, `{name}`. Set this for non-GitHub hosts. |
+
+#### Fetch strategy
+
+The fetcher tries strategies in priority order:
+
+1. **Branch override** (if `branch` is set) — `git clone --branch <name>`.
+2. **Release-asset tarball** — downloads a purpose-built `.tar.gz` from
+   the URL built from `release_asset_url_template` (or the GitHub-style
+   default `{source}/releases/download/{version}/{name}-{version}.tar.gz`).
+   When a sibling `<asset>.sha256` file is present, the tarball bytes
+   are verified against it before extraction. The verified SHA256 is
+   recorded in `aibox.lock` as `release_asset_sha256` for bit-exact
+   reproducibility.
+3. **Host auto-tarball** — falls back to GitHub / GitLab's auto-generated
+   `archive/refs/tags/<version>.tar.gz` when no release asset is
+   available.
+4. **Git clone** of the tag — last resort for hosts that serve neither
+   tarball form (typical for self-hosted git over SSH).
+
+The release-asset path lets producers (processkit and any compatible
+content source) ship a smaller, explicit shippable artifact. Consumers
+get bit-exact reproducibility for free.
+
+A SHA256 mismatch is a hard error (does NOT fall through), since it
+indicates either tampering or a producer bug; both are situations the
+user should be told about.
+
+#### Example: consume a Gitea-hosted fork
+
+```toml
+[processkit]
+source                     = "https://gitea.acme.com/platform/processkit-acme.git"
+version                    = "v1.2.0"
+release_asset_url_template = "https://gitea.acme.com/{org}/{name}/releases/download/{version}/{name}-{version}.tar.gz"
+```
+
 ### [agents]
 
 Controls how `aibox init` scaffolds the canonical agent entry document

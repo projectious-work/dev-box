@@ -44,8 +44,20 @@ pub struct AiboxLock {
     pub source: String,
     pub version: String,
     pub src_path: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub branch: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub resolved_commit: Option<String>,
+    /// SHA256 hex digest of the release-asset tarball, when the release-
+    /// asset fetch strategy was used and a sibling `.sha256` file was
+    /// available for verification. Bit-exact reproducibility marker:
+    /// re-fetching the same `(source, version)` must yield a tarball with
+    /// the same SHA256.
+    ///
+    /// `None` for fetches that took the git-tarball or git-clone path
+    /// (those use `resolved_commit` for reproducibility instead).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub release_asset_sha256: Option<String>,
     /// ISO 8601 UTC timestamp of the install (e.g. "2026-04-06T12:34:56Z").
     pub installed_at: String,
 }
@@ -248,8 +260,24 @@ mod tests {
             src_path: "src".to_string(),
             branch: None,
             resolved_commit: Some("deadbeefcafebabe".to_string()),
+            release_asset_sha256: None,
             installed_at: "2026-04-06T12:00:00Z".to_string(),
         }
+    }
+
+    #[test]
+    fn lock_round_trip_with_release_asset_sha256() {
+        let tmp = TempDir::new().unwrap();
+        let mut lock = sample_lock();
+        lock.resolved_commit = None;
+        lock.release_asset_sha256 = Some(
+            "abc123def456ghi789jkl012mno345pqr678stu901vwx234yz567abc890def123".to_string(),
+        );
+        write_lock(tmp.path(), &lock).unwrap();
+        let back = read_lock(tmp.path()).unwrap().unwrap();
+        assert_eq!(back, lock);
+        assert!(back.release_asset_sha256.is_some());
+        assert!(back.resolved_commit.is_none());
     }
 
     // -- Lock round trip ---------------------------------------------------

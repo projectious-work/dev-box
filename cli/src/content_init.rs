@@ -95,6 +95,7 @@ pub fn install_content_source(
         &pk.version,
         pk.branch.as_deref(),
         &pk.src_path,
+        pk.release_asset_url_template.as_deref(),
     )
     .with_context(|| {
         format!(
@@ -119,6 +120,7 @@ pub fn install_content_source(
         src_path: pk.src_path.clone(),
         branch: pk.branch.clone(),
         resolved_commit: fetched.resolved_commit.clone(),
+        release_asset_sha256: fetched.release_asset_sha256.clone(),
         installed_at: Utc::now().to_rfc3339(),
     };
     lock::write_lock(project_root, &aibox_lock).context("failed to write aibox.lock")?;
@@ -384,7 +386,7 @@ mod tests {
         };
         AiboxConfig {
             aibox: AiboxSection {
-                version: "0.14.4".to_string(),
+                version: "0.15.0".to_string(),
                 base: crate::config::BaseImage::Debian,
             },
             container: ContainerSection {
