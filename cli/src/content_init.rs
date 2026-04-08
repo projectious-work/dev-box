@@ -44,7 +44,7 @@
 //! ran. The templates dir for the version is wiped and re-copied so it
 //! always reflects the current cache exactly.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashMap};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -55,6 +55,7 @@ use crate::config::{AiboxConfig, PROCESSKIT_VERSION_UNSET};
 use crate::lock::{self, AiboxLock, group_for_path, should_skip_entry};
 use crate::content_install::{InstallAction, install_action_for};
 use crate::content_source;
+use crate::context;
 
 /// Result of a content-source install run, for reporting.
 #[derive(Debug, Default, Clone)]
@@ -104,9 +105,12 @@ pub fn install_content_source(
         )
     })?;
 
-    // 3. Walk cache and install live files.
+    // 3. Walk cache and install live files. Templated files are
+    //    rendered through the Class A substitution vocabulary at copy
+    //    time — see DEC-032.
+    let template_vars = context::build_substitution_map(config);
     let (files_installed, files_skipped, groups_touched) =
-        install_files_from_cache(&fetched.src_path, project_root)?;
+        install_files_from_cache_with_vars(&fetched.src_path, project_root, &template_vars)?;
 
     // 4. Copy the full cache verbatim into context/templates/processkit/<version>/
     //    so the 3-way diff has an immutable "as-installed" reference.
@@ -139,12 +143,30 @@ pub fn install_content_source(
 /// each file, and copy Install files into `project_root`. Returns
 /// `(files_installed, files_skipped, groups_touched)`.
 ///
-/// This function is extracted from [`install_content_source`] so it can be
-/// exercised in unit tests with a synthetic cache directory, without
-/// needing to run [`content_source::fetch`].
+/// This is the **back-compat shim** for tests and any caller that
+/// doesn't need template substitution. It calls
+/// [`install_files_from_cache_with_vars`] with an empty vocabulary,
+/// which means any [`InstallAction::InstallTemplated`] file is
+/// installed verbatim (placeholders pass through). Real callers (i.e.
+/// [`install_content_source`]) should use the `_with_vars` form so
+/// templated files render correctly.
+#[allow(dead_code)] // used by tests and by content_diff::tests
 pub fn install_files_from_cache(
     cache_src_path: &Path,
     project_root: &Path,
+) -> Result<(usize, usize, usize)> {
+    let empty: HashMap<&'static str, String> = HashMap::new();
+    install_files_from_cache_with_vars(cache_src_path, project_root, &empty)
+}
+
+/// Walk `cache_src_path` recursively, consult the install mapping for
+/// each file, copy `Install` files verbatim, and render `InstallTemplated`
+/// files through `template_vars` before writing. Returns
+/// `(files_installed, files_skipped, groups_touched)`.
+pub fn install_files_from_cache_with_vars(
+    cache_src_path: &Path,
+    project_root: &Path,
+    template_vars: &HashMap<&'static str, String>,
 ) -> Result<(usize, usize, usize)> {
     if !cache_src_path.is_dir() {
         anyhow::bail!(
@@ -161,6 +183,7 @@ pub fn install_files_from_cache(
         cache_src_path,
         cache_src_path,
         project_root,
+        template_vars,
         &mut files_installed,
         &mut files_skipped,
         &mut groups,
@@ -246,6 +269,7 @@ fn walk_and_install(
     root: &Path,
     dir: &Path,
     project_root: &Path,
+    template_vars: &HashMap<&'static str, String>,
     files_installed: &mut usize,
     files_skipped: &mut usize,
     groups: &mut BTreeSet<String>,
@@ -270,6 +294,7 @@ fn walk_and_install(
                 root,
                 &path,
                 project_root,
+                template_vars,
                 files_installed,
                 files_skipped,
                 groups,
@@ -303,6 +328,54 @@ fn walk_and_install(
                 fs::copy(&path, &dest).with_context(|| {
                     format!(
                         "failed to copy {} -> {}",
+                        path.display(),
+                        dest.display()
+                    )
+                })?;
+                *files_installed += 1;
+                if let Some(g) = group_for_path(&rel) {
+                    groups.insert(g);
+                }
+            }
+            InstallAction::InstallTemplated(target_rel) => {
+                // Read source, render through the Class A vocabulary,
+                // write to destination — but only if the destination
+                // does not already exist. This is `write_if_missing`
+                // semantics, NOT `fs::copy` semantics: a user who
+                // edits AGENTS.md after init must not have their
+                // edits clobbered by the next sync.
+                //
+                // Limitation (v0.16.4 / DEC-032): upstream improvements
+                // to a templated file (e.g. processkit ships a better
+                // AGENTS.md template in a new release) do NOT
+                // auto-propagate. The three-way diff machinery in
+                // content_diff currently treats templated files as
+                // skipped because the templates mirror holds the
+                // unrendered cache content while live holds the
+                // rendered output, so SHA comparison would always
+                // false-positive. v0.16.5+ will fix this by also
+                // rendering templated files into the templates mirror
+                // and comparing on the rendered side.
+                let dest = project_root.join(&target_rel);
+                if dest.exists() {
+                    // Don't clobber existing user-edited (or
+                    // first-install) content. Skip without counting
+                    // it as a fresh install.
+                    *files_skipped += 1;
+                    continue;
+                }
+                if let Some(parent) = dest.parent() {
+                    fs::create_dir_all(parent).with_context(|| {
+                        format!("failed to create parent directory {}", parent.display())
+                    })?;
+                }
+                let source = fs::read_to_string(&path).with_context(|| {
+                    format!("failed to read templated source {}", path.display())
+                })?;
+                let rendered = context::render(&source, template_vars);
+                fs::write(&dest, rendered).with_context(|| {
+                    format!(
+                        "failed to write rendered template {} -> {}",
                         path.display(),
                         dest.display()
                     )
@@ -510,7 +583,14 @@ mod tests {
     }
 
     #[test]
-    fn install_skips_index_md_files() {
+    fn install_routes_index_md_to_per_directory_destinations() {
+        // Since v0.16.4 (BACK-116), INDEX.md files install where they
+        // belong: top-level INDEX.md → context/INDEX.md;
+        // skills/INDEX.md → context/skills/INDEX.md;
+        // processes/INDEX.md → context/processes/INDEX.md; the schemas
+        // and state-machines INDEX files likewise. The three INDEX.md
+        // files without a sensible destination (primitives/INDEX.md,
+        // scaffolding/INDEX.md, packages/INDEX.md) remain skipped.
         let tmp = TempDir::new().unwrap();
         let cache = tmp.path().join("cache");
         let proj = tmp.path().join("proj");
@@ -519,17 +599,26 @@ mod tests {
 
         install_files_from_cache(&cache, &proj).unwrap();
 
-        for rel in [
-            "context/skills/INDEX.md",
-            "context/INDEX.md",
-            "INDEX.md",
-        ] {
-            assert!(
-                !proj.join(rel).exists(),
-                "INDEX.md should not appear at {}",
-                rel
-            );
-        }
+        // Installed:
+        assert!(
+            proj.join("context/INDEX.md").exists(),
+            "top-level INDEX.md should land at context/INDEX.md"
+        );
+        assert!(
+            proj.join("context/skills/INDEX.md").exists(),
+            "skills/INDEX.md should land under context/skills/"
+        );
+
+        // Still skipped (no destination):
+        assert!(
+            !proj.join("context/primitives/INDEX.md").exists(),
+            "primitives/INDEX.md has no destination — aibox splits primitives \
+             into flat schemas/ and state-machines/"
+        );
+        assert!(
+            !proj.join("context/INDEX.md").is_dir(),
+            "context/INDEX.md must be a file, not a directory"
+        );
     }
 
     #[test]
@@ -559,16 +648,22 @@ mod tests {
         let (installed, skipped, groups) =
             install_files_from_cache(&cache, &proj).unwrap();
 
-        // 7 installed: 2 event-log files, 1 workitem-mgmt SKILL, 1 schema,
-        // 1 state-machine, 1 lib/entity.py, 1 release.md.
-        assert_eq!(installed, 7, "unexpected installed count");
-        // 8 skipped: PROVENANCE.toml, primitives/FORMAT.md, 3 INDEX.md,
-        // skills/FORMAT.md, 2 packages.
-        assert_eq!(skipped, 8, "unexpected skipped count");
-        // 6 groups: skills/event-log, skills/workitem-management,
+        // 9 installed: 2 event-log files, 1 workitem-mgmt SKILL, 1 schema,
+        // 1 state-machine, 1 lib/entity.py, 1 release.md, plus
+        // 2 INDEX.md files (top-level + skills/) since v0.16.4 (BACK-116).
+        assert_eq!(installed, 9, "unexpected installed count");
+        // 6 skipped: PROVENANCE.toml, primitives/FORMAT.md, skills/FORMAT.md,
+        // primitives/INDEX.md (no destination), and 2 packages.
+        // NOT skipped any more: top-level INDEX.md and skills/INDEX.md
+        // (BACK-116 routed them to per-directory destinations).
+        assert_eq!(skipped, 6, "unexpected skipped count");
+        // 7 groups: skills/event-log, skills/workitem-management,
         // primitives/schemas/workitem, primitives/state-machines/workflow,
-        // lib, processes/release.
-        assert_eq!(groups, 6, "unexpected group count");
+        // lib, processes/release, plus skills/INDEX.md (the new
+        // skills-level INDEX install added by BACK-116). Top-level
+        // INDEX.md installs but contributes no group (top-level loose
+        // file → group_for_path returns None).
+        assert_eq!(groups, 7, "unexpected group count");
     }
 
     #[test]

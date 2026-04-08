@@ -2,6 +2,68 @@
 
 Inverse chronological. Each decision has a rationale and alternatives considered.
 
+## DEC-032 — Class A placeholder vocabulary for templated installs (AGENTS.md) (2026-04-08)
+
+**Decision:** aibox extends `cli/src/context.rs::render` from the single-key `{{project_name}}` substitution shipped through v0.16.3 to a **HashMap-based renderer** taking an 11-key **Class A vocabulary**. The vocabulary is the contract aibox commits to render in any installed file marked as templated (today: only `scaffolding/AGENTS.md` from processkit). Three-class model:
+
+- **Class A — aibox-rendered.** 11 placeholders aibox knows from `aibox.toml` + install context. Listed below. Adding a new entry is breaking and requires an aibox release.
+- **Class B — owner-supplied.** Project-specific facts the owner knows (project description, purpose, code style notes, PR conventions, non-obvious gotchas). aibox does **not** render these — they pass through `render()` untouched. processkit's onboarding skill asks the owner to fill them.
+- **Class C — discoverable.** Facts an agent can extract from the codebase (build command, test command, lint command, languages, key files). Same: aibox does not render these. processkit's onboarding skill discovers and proposes; owner confirms.
+
+The Class A vocabulary, locked for v0.16.4:
+
+| Placeholder | Source |
+|---|---|
+| `{{PROJECT_NAME}}` | `[container].name` |
+| `{{CONTAINER_HOSTNAME}}` | `[container].hostname` |
+| `{{CONTAINER_USER}}` | `[container].user` |
+| `{{AIBOX_VERSION}}` | `env!("CARGO_PKG_VERSION")` at render time |
+| `{{AIBOX_BASE}}` | `[aibox].base` |
+| `{{PROCESSKIT_SOURCE}}` | `[processkit].source` |
+| `{{PROCESSKIT_VERSION}}` | `[processkit].version` (empty when "unset") |
+| `{{INSTALL_DATE}}` | current date at render time, `YYYY-MM-DD` |
+| `{{ADDONS}}` | sorted, comma-separated `[addons.X]` keys |
+| `{{AI_PROVIDERS}}` | sorted, comma-separated `[ai].providers` |
+| `{{CONTEXT_PACKAGES}}` | comma-separated `[context].packages` |
+
+The lowercase `{{project_name}}` alias used by the v0.16.3 thin-pointer template is **deliberately removed** in v0.16.4. Existing CLAUDE.md thin pointers using the lowercase form need re-init. Per session decision: clean up, no version compatibility.
+
+**New `InstallAction::InstallTemplated(PathBuf)` variant.** `install_action_for` returns this for files that need rendering before the copy. Today: only `scaffolding/AGENTS.md`. The walker in `walk_and_install` dispatches: `Install` → `fs::copy` (verbatim), `InstallTemplated` → `read → render → write_if_missing`, `Skip` → no-op.
+
+**Templated files use `write_if_missing` semantics.** The first install writes the rendered content; subsequent syncs leave the file alone. This prevents the install path from clobbering owner edits to AGENTS.md (which Strawman D explicitly permits). Trade-off: upstream improvements to a templated file (e.g. processkit ships a better AGENTS.md template in a new release) do NOT auto-propagate. The user re-inits or manually copies from the cache mirror to pick them up.
+
+**Three-way diff treats templated files as skipped.** The `content_diff` walker has a third arm for `InstallTemplated` that returns `Ok(())` (skip) — same shape as the existing `Skip` arm. The reason: the templates mirror holds the unrendered cache content while the live file holds the rendered output, so SHA comparison would always false-positive as "ChangedLocally" forever. v0.16.5+ will fix this properly by also rendering templated files into the templates mirror and comparing on the rendered side.
+
+**processkit's adoption (confirmed in the same session):** processkit's next release uses 6 of the 11 Class A placeholders (`{{PROJECT_NAME}}`, `{{PROCESSKIT_SOURCE}}`, `{{PROCESSKIT_VERSION}}`, `{{CONTEXT_PACKAGES}}`, `{{AI_PROVIDERS}}`, `{{INSTALL_DATE}}`), 5 Class B (`{{PROJECT_DESCRIPTION}}`, `{{PROJECT_PURPOSE}}`, `{{CODE_STYLE_NOTES}}`, `{{PR_CONVENTIONS}}`, `{{NONOBVIOUS_GOTCHAS}}`), and 3 Class C (`{{BUILD_COMMAND}}`, `{{TEST_COMMAND}}`, `{{LINT_COMMAND}}`). Each Class B/C placeholder has an HTML-comment annotation `<!-- PLACEHOLDER:NAME class=B ... -->` documenting how to fill it. processkit defines untagged tokens as defaulting to Class B per its onboarding protocol — aibox doesn't care about the tag, it only knows about Class A names from `build_substitution_map`.
+
+**Rationale:**
+
+The user's three-part design (canonical structure with placeholders + descriptions, instructions to derived project's agent to fill out together with the owner, directions on where to start in `context/`) is the only model that respects the boundary cleanly: processkit cannot know project-specific things, and aibox shouldn't try to ask for them all at init time (would turn `aibox init` into a 30-question interview). The three-class split lets each filling mechanism do what it's best at.
+
+The HashMap-based renderer scales to N placeholders without growing the function signature. Unknown placeholders (Class B/C, typos, future Class A additions) survive unchanged because `render` only replaces keys that are in the map — the implementation is a 3-line `String::replace` loop, no parser needed.
+
+`write_if_missing` semantics for templated files is the safest choice for v0.16.4: it makes the install path a one-shot "scaffold a starting point" operation, identical in spirit to how `CLAUDE.md` is scaffolded. The user gets a working AGENTS.md on first install and full edit-in-place freedom thereafter. The cost is upstream-template improvements not auto-propagating, but template improvements are rare (it's a stable document) and the cache mirror still has the upstream version available for reference.
+
+**Alternatives:**
+
+- *Render templated files unconditionally (clobber on every sync).* Rejected: violates Strawman D, surprises users who edit AGENTS.md.
+- *Render templated files into the templates mirror too, then run the three-way diff against rendered content.* The proper long-term answer. Rejected for v0.16.4 because it requires non-trivial diff machinery changes (`copy_templates_from_cache` needs to dispatch on InstallAction, two new branches in the diff, plus tests). Queued for v0.16.5 along with the MCP registration work.
+- *Pin INSTALL_DATE to first-render-only via a side file.* Considered. Rejected as overengineering — `write_if_missing` already gives this property: INSTALL_DATE is computed at first render and frozen because subsequent syncs don't re-render. processkit's footer-use of INSTALL_DATE works correctly under this semantics ("when this AGENTS.md was first materialized in this project").
+- *Skip lowercase `{{project_name}}` back-compat.* Confirmed by user: clean up, no version compatibility.
+
+**Implementation:**
+
+- `cli/src/context.rs`: `render()` signature changed to take `&HashMap<&'static str, String>`. New `build_substitution_map(&AiboxConfig)` populates the 11-key Class A map. `CLAUDE_POINTER_TEMPLATE` updated to `{{PROJECT_NAME}}` (uppercase). All call sites updated.
+- `cli/src/content_install.rs`: new `InstallAction::InstallTemplated(PathBuf)` variant. `install_action_for` returns `InstallTemplated("AGENTS.md")` for `scaffolding/AGENTS.md`. Doc-comment table updated.
+- `cli/src/content_init.rs`: new `install_files_from_cache_with_vars` taking the map; back-compat shim `install_files_from_cache` calls it with an empty map. `walk_and_install` has a third arm for `InstallTemplated` that does `read → render → write_if_missing`. `install_content_source` calls `build_substitution_map(config)` and passes the result.
+- `cli/src/content_diff.rs`: both walks (cache and templates mirror) have a third arm for `InstallTemplated` that returns Skip.
+- 7 new context.rs tests covering render() with known/unknown/empty/lowercase-removed placeholders, the build_substitution_map shape, and the INSTALL_DATE format.
+- 1 updated content_install.rs test (`scaffolding_agents_md_installs_templated_at_project_root`) using a new `assert_installs_templated_to` helper.
+
+**Migration impact:** **Mostly backwards compatible.** No config schema changes. The only break is the dropped lowercase `{{project_name}}` alias — any v0.16.3 CLAUDE.md thin pointer using `{{project_name}}` (lowercase) will keep its literal `{{project_name}}` text after a re-render. Users on v0.16.3 who hand-edited CLAUDE.md to drop the placeholder are unaffected. Users with the default v0.16.3 CLAUDE.md text will see the literal `{{project_name}}` if they re-render — they should re-init or upgrade the file by hand. This is deliberate per the session decision.
+
+**Source:** Session 2026-04-08, after the user reported pre-split AGENTS.md content shipping in processkit and asked how to handle placeholder filling for project-specific facts that processkit cannot know. Three-class model proposed by Claude, refined by user, locked Class A vocabulary at 11 entries, processkit confirmed adoption with their template choice in the same session.
+
 ## DEC-031 — Ship an xdg-open shim in the base image for headless OAuth flows (2026-04-08)
 
 **Decision:** The aibox base image (`images/base-debian/Dockerfile`) ships a 30-line `/usr/local/bin/xdg-open` shim that prints the URL with copy-to-host instructions and exits 0, instead of attempting to launch a real browser (which can never succeed in a headless dev container). The shim replaces the missing-binary error path with a clean, framed message that any tool calling `xdg-open` (gh auth login, git credential helpers, opencode, claude code device-flow, etc.) sees as a successful browser launch.

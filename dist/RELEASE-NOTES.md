@@ -1,231 +1,162 @@
-# aibox v0.16.3 — quality-of-life patch (9 fixes from real v0.16.2 use)
+# aibox v0.16.4 — INDEX.md install fix + AGENTS.md placeholder vocabulary
 
-Patch release. Every fix in v0.16.3 came from a real `aibox init` →
-`aibox sync` → `aibox start` user run after v0.16.2 shipped, plus a
-formalisation of a long-standing visibility-tier discussion.
+Patch release. Two fixes that came out of the parallel processkit
+cleanup session:
 
-## Container lifecycle UX
+## Bug fix — INDEX.md files are now installed (BACK-116)
 
-### `aibox start` error message — name both fixes, not just one
+processkit ships INDEX.md files at every content level
+(top-level, `skills/`, `processes/`, `primitives/schemas/`,
+`primitives/state-machines/`, `scaffolding/`, `packages/`, plus the
+`primitives/` parent). They're tracked in `PROVENANCE.toml` and are
+explicitly part of the shipping contract — agents browsing a project's
+`context/` directory expect to find them.
 
-When the existing container's image label disagrees with `aibox.toml`,
-v0.16.2 said "Run `aibox sync` to rebuild the image at the configured
-version, then try again." But the most common cause is the *opposite*:
-sync already rebuilt the image, the container is stale. The error now
-names both fixes:
+v0.16.0's `install_action_for` incorrectly classified them as
+"processkit-internal docs" and skipped all 8 files via a blanket
+`parts.last() == "INDEX.md" → Skip` rule. v0.16.4 drops the blanket
+skip and routes each INDEX.md to its parent directory's destination:
 
-```
-Version mismatch: the existing container was built from image v0.14.1
-but aibox.toml pins v0.16.3.
+| Cache path | Live install destination |
+|---|---|
+| `INDEX.md` (top of src) | `context/INDEX.md` |
+| `skills/INDEX.md` | `context/skills/INDEX.md` |
+| `processes/INDEX.md` | `context/processes/INDEX.md` |
+| `primitives/schemas/INDEX.md` | `context/schemas/INDEX.md` |
+| `primitives/state-machines/INDEX.md` | `context/state-machines/INDEX.md` |
 
-Likely cause: an old container survived an aibox upgrade. Recreate it:
+The remaining three (`primitives/INDEX.md`, `scaffolding/INDEX.md`,
+`packages/INDEX.md`) have no sensible live destination and remain
+skipped — but they're still present in the immutable cache mirror at
+`context/templates/processkit/<version>/`, so no information is lost.
 
-    aibox remove && aibox start
+8 new tests in `content_install::tests` covering each routing case,
+plus the synth-cache count tests in `content_init::tests` updated for
+the new install/skip totals.
 
-If you have not yet rebuilt the image at the new version, run
-`aibox sync` first to rebuild it, then the recreate command above.
-```
+## Feature — Class A placeholder vocabulary for templated AGENTS.md (DEC-032 / BACK-117)
 
-### `aibox sync` warns about a stale running container
+processkit's next release ships an `AGENTS.md` template using the
+**three-class placeholder model**:
 
-After the build step, `cmd_sync` checks whether a container exists for
-the project AND its image label disagrees with the freshly-built
-image. If so, it prints a warning so the next `aibox start` isn't a
-surprise:
+- **Class A — aibox-rendered** (11 placeholders, locked contract).
+  Substituted by aibox at install time from `aibox.toml` + install
+  context.
+- **Class B — owner-supplied.** Project-specific facts processkit's
+  onboarding skill asks the owner to fill in conversation. aibox does
+  not touch these.
+- **Class C — discoverable.** Facts the agent extracts from the
+  codebase and the owner confirms. aibox does not touch these.
 
-```
-! Container 'processkit' is still running on image v0.14.1 but the
-  freshly-built image is v0.16.3.
-  The current container will keep running on the old image until you
-  recreate it. To upgrade:
+v0.16.4 extends `cli/src/context.rs::render` from the single-key
+`{{project_name}}` substitution shipped through v0.16.3 to a
+HashMap-based renderer taking the locked Class A vocabulary:
 
-      aibox remove && aibox start
-
-  Existing in-flight work in the container (open editors, running
-  processes) will be lost on recreation; project files under
-  /workspace are mounted from the host and survive.
-```
-
-Best-effort: any failure to read runtime state is silently swallowed.
-
-## Addon UX
-
-### `[addons.X.tools]` populated with defaults at init time
-
-v0.16.2 wrote empty `[addons.python.tools]` sections — users had to
-know to uncomment the example block to get a working config. v0.16.3
-populates every selected addon's tools sub-table with all
-`default_enabled: true` tools at their `default_version`:
-
-```toml
-[addons.python.tools]
-python = { version = "3.13" }
-uv = { version = "0.7" }
+```text
+{{PROJECT_NAME}}        {{CONTAINER_HOSTNAME}}    {{CONTAINER_USER}}
+{{AIBOX_VERSION}}       {{AIBOX_BASE}}            {{PROCESSKIT_SOURCE}}
+{{PROCESSKIT_VERSION}}  {{INSTALL_DATE}}          {{ADDONS}}
+{{AI_PROVIDERS}}        {{CONTEXT_PACKAGES}}
 ```
 
-### Interactive per-tool version picker
+Unknown placeholders (Class B/C, future Class A additions, typos)
+**pass through `render()` untouched** so processkit's onboarding skill
+can find and fill them with the project owner.
 
-After the addon MultiSelect, for every `default_enabled` tool with
-more than one entry in `supported_versions`, `aibox init` now prompts
-with a `dialoguer::Select`:
+### New `InstallAction::InstallTemplated` variant
 
-```
-? python.python version › 3.13 (default)
-                          3.14
-                          3.12
-```
+`install_action_for` returns this for files that need rendering
+before the copy. Today: only `scaffolding/AGENTS.md`. The walker in
+`install_files_from_cache_with_vars` dispatches:
 
-Tools with a single supported version (e.g. `docusaurus = ["3"]`)
-get no prompt — silent default. Tools that aren't `default_enabled`
-are skipped entirely.
+- `Install` → `fs::copy` (verbatim, as before)
+- `InstallTemplated` → `read → render → write_if_missing`
+- `Skip` → no-op
 
-### `--addon-tool` CLI flag
+### Templated files use write_if_missing semantics
 
-New repeatable flag for scripted overrides. Format:
-`addon:tool=version`. Skips the interactive picker for that tool.
+The first install writes the rendered content; subsequent syncs leave
+the file alone. This prevents the install path from clobbering owner
+edits to AGENTS.md (which Strawman D explicitly permits). Trade-off:
+upstream improvements to a templated file do NOT auto-propagate. The
+user re-inits or manually copies from the cache mirror to pick them
+up. v0.16.5+ will fix this properly with rendered-mirror three-way
+diff.
 
-```bash
-aibox init --addons python node \
-  --addon-tool python:python=3.14 \
-  --addon-tool python:uv=0.8 \
-  --addon-tool node:node=20
-```
+### Three-way diff treats templated files as skipped
 
-Parsed by a new pure helper `parse_addon_tool_override` with five
-unit tests covering happy path, dotted versions, missing equals,
-missing colon, and empty components.
+`content_diff.rs` has a third arm for `InstallTemplated` that returns
+Skip. The reason: the templates mirror holds the unrendered cache
+content while the live file holds the rendered output, so SHA
+comparison would always false-positive as "ChangedLocally". Fixed
+properly in v0.16.5+.
 
-### Transitive addon dependencies are auto-resolved
+### Lowercase `{{project_name}}` alias removed
 
-Selecting `docs-docusaurus` (which `requires: [node]`) without also
-selecting `node` used to error out at sync time with
-*"Addon 'docs-docusaurus' requires 'node' addon"*. v0.16.3 expands
-the `requires` graph transitively at both `aibox init` time AND
-`aibox addon add` time, prints a notice for each auto-added addon,
-and writes the complete addon set to `aibox.toml` so sync sees a
-valid graph from the start.
-
-The expansion is a pure helper (`expand_addon_requires`) shared
-between both call sites.
-
-## Privacy tier — DEC-030
-
-`.gitignore` generated by `aibox init` now includes a privacy tier
-rule (and `aibox sync` appends it to existing `.gitignore` files via
-the existing append-missing-entries path):
-
-```
-# ── Privacy tier (DEC-030) ──────────────────────────────────────────────
-# Any directory named `private` under context/ is never tracked.
-# Use this for personal notes, drafts, secrets, and per-user state.
-context/**/private/
-context/private/
-```
-
-The three-tier model formalised in **DEC-030** is:
-
-| Tier | Visible to | Mechanism |
-|---|---|---|
-| **public** | the world (git-tracked, on docs site, on GitHub) | default location, no marker |
-| **project-private** | anyone working on the project (git-tracked, not published) | default location under `context/`, no marker |
-| **user-private** | only the individual user (never git-tracked) | any directory named `private/` under `context/` |
-
-Mechanism is **directory-based**, not frontmatter-based, per the
-explicit owner preference: any directory named `private` anywhere
-under `context/` is excluded recursively. No new schema, no
-per-file markers, no parser required — every tool that walks the
-filesystem already understands directory names.
-
-A companion processkit issue (**`projectious-work/processkit#1`**)
-tracks the related processkit-side decisions:
-- Should processkit primitives carry an optional
-  `metadata.privacy: public | project | user` frontmatter field?
-- How does the docs-site build filter private subtrees?
-- For multi-user projects, do users get per-user
-  `context/private/<username>/` subdirectories?
-
-aibox owns the gitignore part; processkit owns the
-schema/docs/per-user parts.
-
-## Headless OAuth flows — DEC-031
-
-The base-debian image now ships a 40-line `xdg-open` shim at
-`/usr/local/bin/xdg-open`. Without it, every CLI tool that tries to
-launch a browser inside a container (`gh auth login`, git credential
-helpers, opencode, claude code device-flow) errors out with the
-confusing:
-
-```
-! Failed opening a web browser at https://github.com/login/device
-  exec: "xdg-open,x-www-browser,www-browser,wslview": executable
-  file not found in $PATH
-```
-
-The shim renders the URL with clear copy-to-host instructions and
-exits 0, so the calling tool thinks the browser opened and continues
-its OAuth polling loop. The user copies the URL into their host
-browser, authorises, returns to the container — auth completes
-normally.
-
-```
-
-  ┃ Headless container — no browser available here.
-  ┃ Open this URL in your host machine's browser:
-
-      https://github.com/login/device
-
-  (the calling tool is now waiting for you to authorize in the browser)
-
-```
-
-POSIX `/bin/sh`, no apt package, no `xdg-utils` install (which would
-trade one confusing error for another). Lands in the
-`ghcr.io/projectious-work/aibox:base-debian-v0.16.3` image — pulled
-during Phase 2 of this release.
-
-A future host-forwarding feature (forwarding `xdg-open` calls to the
-host's browser via `lemonade` or similar) is on the v0.17+ backlog;
-the shim is the universal baseline that the forwarder will fall back
-to when the host daemon isn't running.
+The v0.16.3 thin-pointer template used `{{project_name}}` (lowercase).
+v0.16.4 normalizes to uppercase per the locked vocabulary; the
+lowercase alias is **deliberately removed**. Existing v0.16.3 CLAUDE.md
+thin pointers will need re-init or a manual edit. Per session
+decision: clean up, no version compatibility.
 
 ## Documentation
 
-`context/work-instructions/RELEASE-PROCESS.md` — the documented
-`gh auth refresh` command for Phase 2 was missing the `write:packages`
-scope. Hit by the v0.16.2 release. Fixed.
+`context/notes/session-handover-2026-04-08.md` — comprehensive
+session handover document written this session. Captures the
+post-v0.16.x project state, the aibox/processkit boundary, common
+principles, the release ritual, the four-release session log
+(v0.16.0 → v0.16.3), open work, and references for the next agent
+picking up the project.
+
+## New backlog item
+
+**BACK-118** — Implement `[skills].include` / `[skills].exclude`
+filtering. Discovered while designing MCP registration (C4 review):
+these fields exist in the schema and parse correctly but are
+reserved/no-op in v0.16.x. When implemented, the install pipeline
+filters per-skill-name and the MCP registration step (queued for
+v0.16.5) will follow automatically.
 
 ## Quality gates
 
-- 454/454 tests pass (was 443 in v0.16.2) — 11 new tests:
-  - Addon: 9 (`parse_addon_tool_override` × 5,
-    `build_tool_overrides` × 2, `expand_addon_requires` × 2)
-  - Gitignore: 2 (`update_gitignore_creates_privacy_tier_rules`,
-    `ensure_aibox_entries_appends_privacy_tier_to_existing`)
+- 467/467 tests pass (was 460 in v0.16.3) — 7 new render/build_map
+  tests + 6 new INDEX.md routing tests
 - `cargo clippy --all-targets -- -D warnings` clean
 - `cargo audit` clean
 
 ## Migration impact
 
-**Backwards compatible.** No config schema changes. No CLI breaking
-changes. Existing v0.16.2 projects pick up:
+**Mostly backwards compatible.** No config schema changes. The only
+break is the dropped lowercase `{{project_name}}` alias — any v0.16.3
+CLAUDE.md thin pointer using the lowercase form will see the literal
+`{{project_name}}` text after a re-render. Re-init or hand-edit to
+fix.
 
-- The `cmd_start` improved error message and `cmd_sync` stale-container
-  warning on the next CLI invocation.
-- The privacy gitignore rule on the next `aibox sync` (via the
-  existing append-missing-entries path).
-- The xdg-open shim on the next `aibox sync` after Phase 2 builds and
-  pushes the new base image.
+Existing v0.16.3 projects pick up:
+- INDEX.md files on the next `aibox sync` (which auto-installs
+  processkit content per v0.16.1's BACK-110 path)
+- The render extension transparently — no user action needed
 
-The addon UX improvements affect new `aibox init` runs only — they
-don't retroactively populate existing aibox.toml files (which already
-have the addons the user wanted, just possibly with empty tools
-sub-tables).
+## What's next (v0.16.5)
+
+- MCP server registration: aibox walks `context/skills/*/mcp/mcp-config.json`
+  and writes the harness-specific config file (`.mcp.json` for Claude
+  Code, `.codex/mcp.json` for Codex CLI, etc.) with non-destructive
+  merge for user-added entries.
+- Survey of harness-specific MCP config shapes (Claude Code, Codex CLI,
+  Cursor, Continue, OpenCode) to confirm whether processkit can ship a
+  single shape or aibox needs per-harness translators.
+- Bake `python3` + `uv` into the base-debian image (currently in the
+  python addon) so PEP 723 MCP server scripts work out of the box for
+  any project that consumes processkit.
+- Rendered-mirror three-way diff for templated files (proper fix for
+  the v0.16.4 limitation above).
 
 ## Linked decisions
 
-- **DEC-031** — xdg-open shim in base image for headless OAuth flows
-- **DEC-030** — Three-tier privacy model: public / project-private /
-  user-private
+- **DEC-032** — Class A placeholder vocabulary for templated installs
+- **DEC-031** — xdg-open shim in base image
+- **DEC-030** — three-tier privacy model
 - **DEC-029** — list_versions GitHub fallback + sync perimeter catch-up
 - **DEC-028** — sync auto-installs processkit, init picks the version
 - **DEC-027** — aibox v0.16.0: rip the bundled process layer

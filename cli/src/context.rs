@@ -21,6 +21,7 @@
 //! by processkit and arrives via the content-source install pipeline.
 
 use anyhow::{Context, Result};
+use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
@@ -36,7 +37,7 @@ use crate::output;
 /// in `AGENTS.md` (shipped by processkit). Claude Code auto-loads
 /// `CLAUDE.md`, so this pointer file exists solely to satisfy that
 /// convention without duplicating instructions.
-const CLAUDE_POINTER_TEMPLATE: &str = r#"# CLAUDE.md — {{project_name}}
+const CLAUDE_POINTER_TEMPLATE: &str = r#"# CLAUDE.md — {{PROJECT_NAME}}
 
 > **Pointer file.** Canonical instructions live in [`AGENTS.md`](./AGENTS.md).
 >
@@ -51,13 +52,100 @@ agent (or human) working on this project.
 "#;
 
 // ---------------------------------------------------------------------------
-// File I/O helpers
+// Template rendering — Class A placeholder vocabulary (DEC-032 / BACK-117)
 // ---------------------------------------------------------------------------
 
-/// Replace `{{project_name}}` in template content.
-pub(crate) fn render(template: &str, project_name: &str) -> String {
-    template.replace("{{project_name}}", project_name)
+/// Render a template by substituting `{{NAME}}` placeholders from a
+/// vocabulary map. **Unknown placeholders are left literal** so the
+/// agent's onboarding protocol can find and fill them with the project
+/// owner — see DEC-032 for the three-class model (A: aibox-rendered,
+/// B: owner-supplied, C: discoverable).
+///
+/// Implementation: simple `str::replace` per known key. Class B/C
+/// placeholders aren't in the map, so they survive unchanged.
+pub(crate) fn render(template: &str, vars: &HashMap<&'static str, String>) -> String {
+    let mut out = template.to_string();
+    for (key, value) in vars {
+        let placeholder = format!("{{{{{}}}}}", key);
+        out = out.replace(&placeholder, value);
+    }
+    out
 }
+
+/// Build the Class A substitution vocabulary from an `AiboxConfig`.
+///
+/// The 11 entries below are the contract aibox commits to render in
+/// any installed file marked as templated. Adding a new entry is a
+/// coordination step (requires an aibox release); processkit's
+/// AGENTS.md template can use these freely. Class B (owner-supplied)
+/// and Class C (discoverable) placeholders are NOT in the map and
+/// survive `render()` unchanged.
+///
+/// See DEC-032 for the design and the full rationale.
+pub(crate) fn build_substitution_map(
+    config: &AiboxConfig,
+) -> HashMap<&'static str, String> {
+    let mut m: HashMap<&'static str, String> = HashMap::new();
+
+    // 1. PROJECT_NAME — the container name doubles as the project name.
+    m.insert("PROJECT_NAME", config.container.name.clone());
+
+    // 2. CONTAINER_HOSTNAME
+    m.insert("CONTAINER_HOSTNAME", config.container.hostname.clone());
+
+    // 3. CONTAINER_USER — the Unix user inside the container.
+    m.insert("CONTAINER_USER", config.container.user.clone());
+
+    // 4. AIBOX_VERSION — the CLI version that performed the install.
+    //    Re-evaluated on every `aibox sync` (because render runs at
+    //    install time, not at template-author time).
+    m.insert("AIBOX_VERSION", env!("CARGO_PKG_VERSION").to_string());
+
+    // 5. AIBOX_BASE — base image flavor (currently always "debian").
+    m.insert("AIBOX_BASE", config.aibox.base.to_string());
+
+    // 6. PROCESSKIT_SOURCE — full URL of the configured upstream.
+    m.insert("PROCESSKIT_SOURCE", config.processkit.source.clone());
+
+    // 7. PROCESSKIT_VERSION — pinned tag, or empty string when unset.
+    let pk_version = if config.processkit.version
+        == crate::config::PROCESSKIT_VERSION_UNSET
+    {
+        String::new()
+    } else {
+        config.processkit.version.clone()
+    };
+    m.insert("PROCESSKIT_VERSION", pk_version);
+
+    // 8. INSTALL_DATE — current date at render time, YYYY-MM-DD.
+    m.insert(
+        "INSTALL_DATE",
+        chrono::Utc::now().format("%Y-%m-%d").to_string(),
+    );
+
+    // 9. ADDONS — sorted, comma-separated [addons.X] keys.
+    let mut addon_names: Vec<String> = config.addons.addons.keys().cloned().collect();
+    addon_names.sort();
+    m.insert("ADDONS", addon_names.join(", "));
+
+    // 10. AI_PROVIDERS — sorted, comma-separated [ai].providers.
+    let mut providers: Vec<String> =
+        config.ai.providers.iter().map(|p| p.to_string()).collect();
+    providers.sort();
+    m.insert("AI_PROVIDERS", providers.join(", "));
+
+    // 11. CONTEXT_PACKAGES — comma-separated [context].packages.
+    m.insert(
+        "CONTEXT_PACKAGES",
+        config.context.packages.join(", "),
+    );
+
+    m
+}
+
+// ---------------------------------------------------------------------------
+// File I/O helpers
+// ---------------------------------------------------------------------------
 
 /// Write `content` to `path` only if the file does not already exist.
 /// Creates parent directories as needed.
@@ -104,7 +192,6 @@ pub(crate) fn write_if_changed(path: &Path, content: &str) -> Result<bool> {
 /// the bare project skeleton, then processkit fills it with skills,
 /// primitives, processes, and the canonical `AGENTS.md`.
 pub fn scaffold_context(config: &AiboxConfig) -> Result<()> {
-    let project_name = &config.container.name;
     let addons = &config.addons;
 
     output::info("Scaffolding project skeleton...");
@@ -112,7 +199,7 @@ pub fn scaffold_context(config: &AiboxConfig) -> Result<()> {
     // 1. Provider thin pointers (CLAUDE.md, future CODEX.md, …) per
     //    [ai].providers. The pointers reference AGENTS.md, which
     //    processkit installs in the same init pass.
-    scaffold_provider_pointers(config, project_name)?;
+    scaffold_provider_pointers(config)?;
 
     // 2. context/ directory exists so processkit content has a home.
     //    A .gitkeep keeps the directory present until processkit
@@ -194,11 +281,12 @@ pub fn scaffold_context(config: &AiboxConfig) -> Result<()> {
 ///
 /// The pointer points at `AGENTS.md`, which processkit installs into
 /// the project root in the same init pass.
-fn scaffold_provider_pointers(config: &AiboxConfig, project_name: &str) -> Result<()> {
+fn scaffold_provider_pointers(config: &AiboxConfig) -> Result<()> {
+    let vars = build_substitution_map(config);
     for provider in &config.ai.providers {
         match provider {
             AiProvider::Claude => {
-                let body = render(CLAUDE_POINTER_TEMPLATE, project_name);
+                let body = render(CLAUDE_POINTER_TEMPLATE, &vars);
                 write_if_missing(Path::new("CLAUDE.md"), &body)?;
                 output::ok("Created CLAUDE.md (pointer to AGENTS.md)");
             }
@@ -482,17 +570,126 @@ mod tests {
         let _ = std::env::set_current_dir(&original);
     }
 
+    /// Helper: build a tiny vars map for tests that don't need a full
+    /// `AiboxConfig`.
+    fn vars(pairs: &[(&'static str, &str)]) -> HashMap<&'static str, String> {
+        pairs.iter().map(|(k, v)| (*k, v.to_string())).collect()
+    }
+
     #[test]
-    fn render_replaces_project_name() {
-        assert_eq!(render("Hello {{project_name}}!", "my-app"), "Hello my-app!");
+    fn render_replaces_known_class_a_placeholder() {
+        let v = vars(&[("PROJECT_NAME", "my-app")]);
+        assert_eq!(
+            render("Hello {{PROJECT_NAME}}!", &v),
+            "Hello my-app!"
+        );
     }
 
     #[test]
     fn render_replaces_multiple_occurrences() {
+        let v = vars(&[("PROJECT_NAME", "foo")]);
         assert_eq!(
-            render("{{project_name}} is {{project_name}}", "foo"),
+            render("{{PROJECT_NAME}} is {{PROJECT_NAME}}", &v),
             "foo is foo"
         );
+    }
+
+    #[test]
+    fn render_leaves_unknown_placeholders_literal() {
+        // Class B/C placeholders are filled by processkit's onboarding
+        // skill in conversation with the project owner — aibox MUST
+        // pass them through untouched.
+        let v = vars(&[("PROJECT_NAME", "foo")]);
+        let out = render(
+            "{{PROJECT_NAME}} — {{PROJECT_DESCRIPTION}} ({{BUILD_COMMAND}})",
+            &v,
+        );
+        assert_eq!(
+            out,
+            "foo — {{PROJECT_DESCRIPTION}} ({{BUILD_COMMAND}})"
+        );
+    }
+
+    #[test]
+    fn render_leaves_lowercase_legacy_placeholder_literal() {
+        // The pre-v0.16.4 lowercase {{project_name}} alias was dropped
+        // (per session decision: clean up, no version compatibility).
+        // Existing pointer files using the lowercase form will need
+        // re-init.
+        let v = vars(&[("PROJECT_NAME", "foo")]);
+        assert_eq!(
+            render("{{project_name}}", &v),
+            "{{project_name}}",
+            "lowercase alias was deliberately removed"
+        );
+    }
+
+    #[test]
+    fn render_handles_empty_template() {
+        let v = vars(&[("PROJECT_NAME", "foo")]);
+        assert_eq!(render("", &v), "");
+    }
+
+    #[test]
+    fn render_handles_template_with_no_placeholders() {
+        let v = vars(&[("PROJECT_NAME", "foo")]);
+        assert_eq!(
+            render("Plain text with no markers.", &v),
+            "Plain text with no markers."
+        );
+    }
+
+    #[test]
+    fn build_substitution_map_includes_all_class_a_keys() {
+        // The 11-key Class A vocabulary is the contract aibox commits
+        // to render. Adding/removing entries is breaking and requires
+        // a coordination step with processkit (DEC-032).
+        let config = crate::config::test_config();
+        let map = build_substitution_map(&config);
+        for key in [
+            "PROJECT_NAME",
+            "CONTAINER_HOSTNAME",
+            "CONTAINER_USER",
+            "AIBOX_VERSION",
+            "AIBOX_BASE",
+            "PROCESSKIT_SOURCE",
+            "PROCESSKIT_VERSION",
+            "INSTALL_DATE",
+            "ADDONS",
+            "AI_PROVIDERS",
+            "CONTEXT_PACKAGES",
+        ] {
+            assert!(
+                map.contains_key(key),
+                "Class A vocabulary missing key: {}",
+                key
+            );
+        }
+        assert_eq!(
+            map.len(),
+            11,
+            "Class A vocabulary must be exactly 11 entries; \
+             update DEC-032 + RELEASE-NOTES + this test together"
+        );
+    }
+
+    #[test]
+    fn build_substitution_map_processkit_version_unset_renders_empty() {
+        let mut config = crate::config::test_config();
+        config.processkit.version = crate::config::PROCESSKIT_VERSION_UNSET.to_string();
+        let map = build_substitution_map(&config);
+        assert_eq!(map["PROCESSKIT_VERSION"], "");
+    }
+
+    #[test]
+    fn build_substitution_map_install_date_is_yyyy_mm_dd() {
+        let config = crate::config::test_config();
+        let map = build_substitution_map(&config);
+        let date = &map["INSTALL_DATE"];
+        // YYYY-MM-DD: 10 chars, two dashes at fixed positions
+        assert_eq!(date.len(), 10, "INSTALL_DATE should be YYYY-MM-DD");
+        assert_eq!(&date[4..5], "-");
+        assert_eq!(&date[7..8], "-");
     }
 
     #[test]

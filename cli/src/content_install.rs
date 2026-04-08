@@ -21,19 +21,42 @@
 //!
 //! | Cache path                          | Project install path                       |
 //! |-------------------------------------|--------------------------------------------|
+//! | `INDEX.md` (top of src/)            | `context/INDEX.md`                         |
 //! | `skills/<name>/...`                 | `context/skills/<name>/...`                |
+//! | `skills/INDEX.md`                   | `context/skills/INDEX.md`                  |
 //! | `lib/processkit/...`                | `context/skills/_lib/processkit/...`       |
 //! | `primitives/schemas/<f>.yaml`       | `context/schemas/<f>.yaml`                 |
+//! | `primitives/schemas/INDEX.md`       | `context/schemas/INDEX.md`                 |
 //! | `primitives/state-machines/<f>.yaml`| `context/state-machines/<f>.yaml`          |
+//! | `primitives/state-machines/INDEX.md`| `context/state-machines/INDEX.md`          |
 //! | `processes/<f>.md`                  | `context/processes/<f>.md`                 |
+//! | `processes/INDEX.md`                | `context/processes/INDEX.md`               |
 //! | `scaffolding/AGENTS.md`             | `AGENTS.md` (project root)                 |
+//! | `scaffolding/INDEX.md`              | skipped (no `context/scaffolding/` dest)   |
+//! | `primitives/INDEX.md`               | skipped (aibox splits primitives into     |
+//! |                                     |   flat `context/{schemas,state-machines}/` |
+//! |                                     |   so there is no `context/primitives/`)   |
 //! | `primitives/FORMAT.md`              | skipped (internal reference)               |
 //! | `skills/FORMAT.md`                  | skipped (internal reference)               |
 //! | `PROVENANCE.toml` (top of src/)     | skipped (aibox reads from cache)           |
-//! | `INDEX.md` (any level)              | skipped (processkit-internal docs)         |
-//! | `packages/...`                      | skipped (declarative — read from templates)|
-//! | `scaffolding/INDEX.md`              | skipped (processkit-internal)              |
+//! | `packages/...` (incl. INDEX.md)     | skipped (declarative — read from templates)|
 //! | anything unrecognized               | skipped                                    |
+//!
+//! ## Why INDEX.md installs (since v0.16.4 — BACK-116)
+//!
+//! processkit ships INDEX.md files as navigation documents at every
+//! content level (top-level, skills/, processes/, primitives/schemas/,
+//! primitives/state-machines/). They are tracked in `PROVENANCE.toml`
+//! and are part of the shipping contract — agents browsing a
+//! project's `context/` directory expect to find them. v0.16.0
+//! incorrectly classified them as "processkit-internal docs" and
+//! skipped them blanket; v0.16.4 routes each INDEX.md to its parent
+//! directory's destination. The three INDEX.md files without a
+//! sensible live destination (`primitives/INDEX.md`,
+//! `scaffolding/INDEX.md`, `packages/INDEX.md`) remain skipped from
+//! the live install but are still present in the immutable cache
+//! mirror at `context/templates/processkit/<version>/`, so no
+//! information is lost.
 //!
 //! ## Why every path is under `context/`
 //!
@@ -69,8 +92,15 @@ use std::path::{Path, PathBuf};
 /// What to do with a single file from the processkit cache.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum InstallAction {
-    /// Install at this project-root-relative path.
+    /// Install at this project-root-relative path. The file is copied
+    /// verbatim from the cache to the destination.
     Install(PathBuf),
+    /// Install at this project-root-relative path, but FIRST run the
+    /// content through `crate::context::render` with the Class A
+    /// substitution vocabulary. Used for files that processkit ships
+    /// with `{{PLACEHOLDER}}` markers (e.g. `scaffolding/AGENTS.md`).
+    /// See DEC-032 for the vocabulary contract.
+    InstallTemplated(PathBuf),
     /// Skip this file (processkit-internal, not user-facing).
     Skip,
 }
@@ -92,21 +122,29 @@ pub fn install_action_for(rel_path: &Path) -> InstallAction {
         return InstallAction::Skip;
     }
 
-    // INDEX.md files are processkit-internal docs at every level.
-    if parts.last().copied() == Some("INDEX.md") {
-        return InstallAction::Skip;
-    }
-
     // FORMAT.md files (primitives/FORMAT.md, skills/FORMAT.md) are
-    // processkit-internal reference docs and are not installed.
+    // processkit-internal reference docs that agents don't need at
+    // runtime — the entity file format is self-evident from the
+    // entity files themselves plus the installed JSON schemas.
+    //
+    // (Note: INDEX.md files are NOT blanket-skipped here. They are
+    // routed by the per-directory branches below to their parent
+    // directory's destination. See BACK-116 for the v0.16.4 fix.)
     if parts.last().copied() == Some("FORMAT.md") {
         return InstallAction::Skip;
     }
 
-    // Top-level files. None are currently installed (PROVENANCE.toml is
-    // skipped because aibox reads it from the cache directly).
+    // Top-level files.
+    //   - `INDEX.md` → `context/INDEX.md` (processkit's top-level
+    //     navigation document — agents browsing context/ expect it)
+    //   - `PROVENANCE.toml` → skipped (aibox reads it from the cache
+    //     directly; the templates mirror has it for browsing)
+    //   - anything else → skipped (unknown top-level file)
     if parts.len() == 1 {
-        return InstallAction::Skip;
+        return match parts[0] {
+            "INDEX.md" => InstallAction::Install(PathBuf::from("context/INDEX.md")),
+            _ => InstallAction::Skip,
+        };
     }
 
     match parts[0] {
@@ -173,11 +211,14 @@ pub fn install_action_for(rel_path: &Path) -> InstallAction {
 
         // scaffolding/AGENTS.md  →  AGENTS.md (project root)
         // The canonical agent entry point. processkit owns the template
-        // (with {{PROJECT_NAME}} placeholder); the file is overwritten on
-        // re-install so upstream changes propagate.
+        // (with `{{PLACEHOLDER}}` markers from the Class A vocabulary —
+        // see DEC-032). aibox renders the template through the Class A
+        // substitution map at install time; Class B/C placeholders pass
+        // through untouched so processkit's onboarding skill can find
+        // and fill them with the project owner.
         // scaffolding/INDEX.md and any other scaffolding files are skipped.
         "scaffolding" if parts.len() == 2 && parts[1] == "AGENTS.md" => {
-            InstallAction::Install(PathBuf::from("AGENTS.md"))
+            InstallAction::InstallTemplated(PathBuf::from("AGENTS.md"))
         }
         "scaffolding" => InstallAction::Skip,
 
@@ -198,6 +239,13 @@ mod tests {
         match install(input) {
             InstallAction::Install(p) => assert_eq!(p, PathBuf::from(expected)),
             other => panic!("expected Install({}), got {:?}", expected, other),
+        }
+    }
+
+    fn assert_installs_templated_to(input: &str, expected: &str) {
+        match install(input) {
+            InstallAction::InstallTemplated(p) => assert_eq!(p, PathBuf::from(expected)),
+            other => panic!("expected InstallTemplated({}), got {:?}", expected, other),
         }
     }
 
@@ -290,15 +338,61 @@ mod tests {
         assert_skipped("PROVENANCE.toml");
     }
 
+    // ── INDEX.md routing (BACK-116, v0.16.4) ──────────────────────────
+    //
+    // processkit ships INDEX.md at every content level. Five of the
+    // eight have a sensible live destination and install there; three
+    // have no destination and remain skipped (but live in the cache
+    // mirror at context/templates/processkit/<version>/).
+
     #[test]
-    fn index_md_at_every_level_is_skipped() {
-        assert_skipped("INDEX.md");
+    fn top_level_index_md_installs_at_context_index_md() {
+        assert_installs_to("INDEX.md", "context/INDEX.md");
+    }
+
+    #[test]
+    fn skills_index_md_installs_under_context_skills() {
+        assert_installs_to("skills/INDEX.md", "context/skills/INDEX.md");
+    }
+
+    #[test]
+    fn processes_index_md_installs_under_context_processes() {
+        assert_installs_to("processes/INDEX.md", "context/processes/INDEX.md");
+    }
+
+    #[test]
+    fn primitive_schemas_index_md_installs_under_context_schemas() {
+        assert_installs_to(
+            "primitives/schemas/INDEX.md",
+            "context/schemas/INDEX.md",
+        );
+    }
+
+    #[test]
+    fn primitive_state_machines_index_md_installs_under_context_state_machines() {
+        assert_installs_to(
+            "primitives/state-machines/INDEX.md",
+            "context/state-machines/INDEX.md",
+        );
+    }
+
+    #[test]
+    fn primitives_top_level_index_md_is_skipped() {
+        // aibox splits primitives into flat context/{schemas,state-machines}/
+        // — there is no context/primitives/ destination for a primitives-
+        // level INDEX.md. The contents are still browsable in the
+        // cache mirror.
         assert_skipped("primitives/INDEX.md");
-        assert_skipped("primitives/schemas/INDEX.md");
-        assert_skipped("primitives/state-machines/INDEX.md");
-        assert_skipped("skills/INDEX.md");
+    }
+
+    // (scaffolding/INDEX.md skip is asserted by the existing
+    // `scaffolding_index_md_is_skipped` test from v0.16.0 — see above.)
+
+    #[test]
+    fn packages_index_md_is_skipped() {
+        // packages/* are not live-installed; the templates mirror has
+        // them for declarative reads.
         assert_skipped("packages/INDEX.md");
-        assert_skipped("processes/INDEX.md");
     }
 
     #[test]
@@ -309,8 +403,12 @@ mod tests {
     }
 
     #[test]
-    fn scaffolding_agents_md_installs_at_project_root() {
-        assert_installs_to("scaffolding/AGENTS.md", "AGENTS.md");
+    fn scaffolding_agents_md_installs_templated_at_project_root() {
+        // v0.16.4: AGENTS.md is the only templated install today.
+        // The Class A vocabulary substitutions happen at install time
+        // via render(); Class B/C placeholders pass through untouched
+        // for the agent's onboarding protocol to fill. See DEC-032.
+        assert_installs_templated_to("scaffolding/AGENTS.md", "AGENTS.md");
     }
 
     #[test]

@@ -163,6 +163,15 @@ pub fn three_way_diff(
         let project_install = match action {
             InstallAction::Skip => return Ok(()),
             InstallAction::Install(p) => p,
+            // Templated files (e.g. scaffolding/AGENTS.md) are skipped
+            // by the v0.16.4 diff because the templates mirror holds
+            // the unrendered cache content while the live file holds
+            // the rendered output — SHA comparison would always
+            // false-positive as "ChangedLocally". The install path
+            // uses write_if_missing semantics for these, so user edits
+            // are safe. v0.16.5+ will fix this by rendering templated
+            // files into the templates mirror too. See DEC-032.
+            InstallAction::InstallTemplated(_) => return Ok(()),
         };
         let rel_str = path_to_forward_slash(rel_path);
         seen_cache_keys.insert(rel_str.clone());
@@ -214,6 +223,9 @@ pub fn three_way_diff(
             let project_install = match install_action_for(rel_path) {
                 InstallAction::Skip => return Ok(()),
                 InstallAction::Install(p) => p,
+                // Templated files: same skip rationale as the cache
+                // walk above. v0.16.5+ will handle these properly.
+                InstallAction::InstallTemplated(_) => return Ok(()),
             };
             let rel_str = path_to_forward_slash(rel_path);
             if seen_cache_keys.contains(&rel_str) {
@@ -751,8 +763,11 @@ mod tests {
         )
         .unwrap();
         fs::write(src.join("lib/processkit/entity.py"), "print(1)\n").unwrap();
-        // A file that install_action_for will Skip.
-        fs::write(src.join("INDEX.md"), "# index\n").unwrap();
+        // A file that install_action_for will Skip. PROVENANCE.toml is
+        // always skipped (aibox reads it from the cache directly). Note:
+        // INDEX.md is NOT skipped any more as of v0.16.4 (BACK-116) — it
+        // installs at context/INDEX.md.
+        fs::write(src.join("PROVENANCE.toml"), "version = \"v1.0.0\"\n").unwrap();
         src
     }
 
@@ -882,11 +897,15 @@ mod tests {
         let templates = install_and_snapshot(&cache_src, &project);
         let (diffs, _) = three_way_diff(&project, &cache_src, &templates).unwrap();
 
-        // INDEX.md is Skip per install_action_for and must not appear in the diff,
-        // even though it lives in the templates dir.
+        // PROVENANCE.toml is Skip per install_action_for and must not
+        // appear in the diff, even though it lives in the templates
+        // dir. (Until v0.16.3 this test used INDEX.md as the canonical
+        // skipped file; v0.16.4 / BACK-116 routes INDEX.md to its
+        // per-directory destinations, so we use PROVENANCE.toml here
+        // — it remains the unconditional skip target.)
         assert!(
-            diffs.iter().all(|d| d.cache_rel_path != "INDEX.md"),
-            "INDEX.md should not appear in diff"
+            diffs.iter().all(|d| d.cache_rel_path != "PROVENANCE.toml"),
+            "PROVENANCE.toml should not appear in diff"
         );
     }
 
