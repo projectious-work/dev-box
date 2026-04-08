@@ -1,5 +1,6 @@
 name: docs-zensical
 version: "1.0.0"
+description: "Zensical – Python docs site"
 requires:
   - python
 

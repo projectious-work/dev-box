@@ -1,5 +1,6 @@
 mod addon_cmd;
 mod addon_loader;
+mod kit;
 #[allow(dead_code)]
 mod addon_registry;
 mod dirs;
@@ -113,7 +114,7 @@ fn dispatch(cli: cli::Cli) -> anyhow::Result<()> {
         }
         cli::Commands::Stop => container::cmd_stop(config_path),
         cli::Commands::Remove => container::cmd_remove(config_path),
-        cli::Commands::Status => container::cmd_status(config_path),
+        cli::Commands::Status { format } => container::cmd_status(config_path, format),
         cli::Commands::Doctor => doctor::cmd_doctor(config_path),
         cli::Commands::Completions { shell } => {
             let mut cmd = cli::Cli::command();
@@ -129,7 +130,7 @@ fn dispatch(cli: cli::Cli) -> anyhow::Result<()> {
             cli::EnvAction::Switch { name, yes } => {
                 env::cmd_env_switch(config_path, &name, yes || global_yes)
             }
-            cli::EnvAction::List => env::cmd_env_list(),
+            cli::EnvAction::List { format } => env::cmd_env_list(format),
             cli::EnvAction::Delete { name, yes } => env::cmd_env_delete(&name, yes || global_yes),
             cli::EnvAction::Status => env::cmd_env_status(config_path),
         },
@@ -151,10 +152,10 @@ fn dispatch(cli: cli::Cli) -> anyhow::Result<()> {
             cli::AudioAction::Setup { port } => audio::cmd_audio_setup(port),
         },
         cli::Commands::Addon { action } => match action {
-            cli::AddonAction::List => addon_cmd::cmd_addon_list(config_path),
+            cli::AddonAction::List { format } => addon_cmd::cmd_addon_list(config_path, format),
             cli::AddonAction::Add { name, no_build } => addon_cmd::cmd_addon_add(config_path, &name, no_build),
             cli::AddonAction::Remove { name, no_build } => addon_cmd::cmd_addon_remove(config_path, &name, no_build),
-            cli::AddonAction::Info { name } => addon_cmd::cmd_addon_info(&name),
+            cli::AddonAction::Info { name, format } => addon_cmd::cmd_addon_info(&name, format),
         },
         cli::Commands::Migrate { action } => {
             let cwd = std::env::current_dir()?;
@@ -173,5 +174,33 @@ fn dispatch(cli: cli::Cli) -> anyhow::Result<()> {
                 }
             }
         }
+        cli::Commands::Kit { action } => match action {
+            cli::KitAction::List { format } => kit::cmd_kit_list(config_path, format),
+            cli::KitAction::Skill { action } => match action {
+                cli::KitSkillAction::List { all, category, format } => {
+                    kit::cmd_kit_skill_list(config_path, category.as_deref(), all, format)
+                }
+                cli::KitSkillAction::Categories { format } => {
+                    kit::cmd_kit_skill_categories(config_path, format)
+                }
+                cli::KitSkillAction::Info { name, format } => {
+                    kit::cmd_kit_skill_info(config_path, &name, format)
+                }
+                cli::KitSkillAction::Install { name } => {
+                    kit::cmd_kit_skill_install(config_path, &name)
+                }
+                cli::KitSkillAction::Uninstall { name } => {
+                    kit::cmd_kit_skill_uninstall(config_path, &name)
+                }
+            },
+            cli::KitAction::Process { action } => match action {
+                cli::KitProcessAction::List { all, format } => {
+                    kit::cmd_kit_process_list(config_path, all, format)
+                }
+                cli::KitProcessAction::Info { name, format } => {
+                    kit::cmd_kit_process_info(config_path, &name, format)
+                }
+            },
+        },
     }
 }

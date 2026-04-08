@@ -1,5 +1,6 @@
 name: cloud-gcp
 version: "1.0.0"
+description: "Google Cloud SDK (gcloud)"
 builder_weight: null
 
 tools:

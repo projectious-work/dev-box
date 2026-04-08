@@ -1,0 +1,22 @@
+name: ai-continue
+version: "1.0.0"
+description: "Continue CLI – provider-agnostic coding agent"
+builder_weight: null
+
+tools:
+  - name: cn
+    default_enabled: true
+    default_version: ""
+    supported_versions: []
+
+builder: null
+
+runtime: |
+  # Addon: ai-continue
+  # Continue CLI: https://github.com/continuedev/continue
+  # npm package: @continuedev/cli | Binary: cn | Config: ~/.continue/
+  # Provider-agnostic (Anthropic, OpenAI, Gemini, Ollama, …), headless-native.
+  # Headless mode: cn -p "prompt" | Auth: per-provider API key via CONTINUE_API_KEY
+  USER aibox
+  RUN npm install -g @continuedev/cli
+  USER root

@@ -230,12 +230,12 @@ pub fn regenerate_mcp_configs(
     let managed = managed_set(&specs);
     let providers: HashSet<&AiProvider> = config.ai.providers.iter().collect();
 
-    // 1. Claude / Mistral / Cursor / Gemini all use the Claude-shape
-    //    `mcpServers` JSON object. Same writer, three destinations.
-    //    Mistral routes to .mcp.json (same file as Claude — opt-in
-    //    file convention for Mistral SDK consumers).
-    let writes_dot_mcp_json =
-        providers.contains(&AiProvider::Claude) || providers.contains(&AiProvider::Mistral);
+    // 1. Claude / Mistral / Copilot use the Claude-shape `mcpServers` JSON
+    //    object at `.mcp.json`. Mistral routes there so SDK consumers can
+    //    read it; Copilot CLI reads `.mcp.json` natively.
+    let writes_dot_mcp_json = providers.contains(&AiProvider::Claude)
+        || providers.contains(&AiProvider::Mistral)
+        || providers.contains(&AiProvider::Copilot);
     if writes_dot_mcp_json {
         let path = project_root.join(".mcp.json");
         write_mcp_servers_json(&specs, &managed, &path)?;
@@ -293,7 +293,7 @@ pub fn regenerate_mcp_configs(
             "`aider` is in [ai].providers but does not have a built-in MCP client. \
              processkit's MCP-based skills (workitem-management, decision-record, …) \
              will not be available when using Aider. Consider also listing one of: \
-             claude, cursor, gemini, codex, continue, mistral.",
+             claude, cursor, gemini, codex, continue, copilot, mistral.",
         );
     }
 

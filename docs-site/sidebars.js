@@ -20,7 +20,7 @@ const sidebars = {
     },
     {
       type: 'category', label: 'AI Providers',
-      items: ['providers/ai-claude', 'providers/ai-aider', 'providers/ai-gemini', 'providers/ai-mistral'],
+      items: ['providers/ai-claude', 'providers/ai-aider', 'providers/ai-gemini', 'providers/ai-codex', 'providers/ai-copilot', 'providers/ai-continue', 'providers/ai-mistral'],
     },
     {
       type: 'category', label: 'Context System',

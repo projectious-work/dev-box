@@ -1,5 +1,6 @@
 name: rust
 version: "1.0.0"
+description: "Rust toolchain via rustup"
 builder_weight: "medium"
 
 skills:

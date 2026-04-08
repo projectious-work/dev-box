@@ -1,5 +1,6 @@
 name: docs-hugo
 version: "1.0.0"
+description: "Hugo static site generator (Go)"
 skills:
   - documentation
 

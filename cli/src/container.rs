@@ -526,21 +526,45 @@ pub fn cmd_remove(config_path: &Option<String>) -> Result<()> {
     Ok(())
 }
 
-pub fn cmd_status(config_path: &Option<String>) -> Result<()> {
+pub fn cmd_status(config_path: &Option<String>, format: crate::cli::OutputFormat) -> Result<()> {
     let config = AiboxConfig::from_cli_option(config_path)?;
     let runtime = Runtime::detect()?;
     let name = &config.container.name;
 
     let state = runtime.container_status(name)?;
-    match state {
-        ContainerState::Running => {
-            output::ok(&format!("Container '{}' is running", name));
+    let state_str = match state {
+        ContainerState::Running => "running",
+        ContainerState::Stopped => "stopped",
+        ContainerState::Missing => "missing",
+    };
+
+    match format {
+        crate::cli::OutputFormat::Json => {
+            let obj = serde_json::json!({
+                "container": name,
+                "state": state_str,
+            });
+            println!("{}", serde_json::to_string_pretty(&obj)?);
         }
-        ContainerState::Stopped => {
-            output::warn(&format!("Container '{}' is stopped", name));
+        crate::cli::OutputFormat::Yaml => {
+            let obj = serde_json::json!({
+                "container": name,
+                "state": state_str,
+            });
+            print!("{}", serde_yaml::to_string(&obj)?);
         }
-        ContainerState::Missing => {
-            output::warn(&format!("Container '{}' does not exist", name));
+        crate::cli::OutputFormat::Table => {
+            match state {
+                ContainerState::Running => {
+                    output::ok(&format!("Container '{}' is running", name));
+                }
+                ContainerState::Stopped => {
+                    output::warn(&format!("Container '{}' is stopped", name));
+                }
+                ContainerState::Missing => {
+                    output::warn(&format!("Container '{}' does not exist", name));
+                }
+            }
         }
     }
 
@@ -687,6 +711,11 @@ fn serialize_config_with_comments(config: &AiboxConfig) -> String {
     out.push_str("# Selected addons land here pre-populated with default-enabled tools at\n");
     out.push_str("# their default versions; edit the version strings to switch.\n");
     out.push_str("#\n");
+    out.push_str("# Version strings:\n");
+    out.push_str("#   \"1.2.3\"  — pin to a specific version\n");
+    out.push_str("#   \"latest\" — always install the newest version (skips pinning)\n");
+    out.push_str("#   \"\"       — use the addon's built-in default version\n");
+    out.push_str("#\n");
     out.push_str("# Run `aibox addon list` to see all available addons.\n");
     out.push_str("# Run `aibox addon info <name>` to see every supported tool/version per addon.\n");
     out.push_str("#\n");
@@ -716,7 +745,8 @@ fn serialize_config_with_comments(config: &AiboxConfig) -> String {
     out.push_str("# [ai] — AI coding assistant providers\n");
     out.push_str(sep);
     out.push_str("# Each provider listed here is automatically installed as an addon.\n");
-    out.push_str("# Options: claude, aider, gemini, mistral\n");
+    out.push_str("# Options: claude, aider, gemini, mistral, codex, copilot, continue\n");
+    out.push_str("# (cursor is MCP-registration only — host-side IDE, no container CLI)\n");
     out.push_str("[ai]\n");
     out.push_str(&format!(
         "providers = [{}]\n",

@@ -1,5 +1,6 @@
 name: ai-aider
 version: "1.0.0"
+description: "Aider – AI pair programming via CLI"
 builder_weight: null
 
 tools:

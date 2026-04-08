@@ -132,10 +132,9 @@ When you run `aibox sync`, the CLI:
 1. Reads `[addons]` from `aibox.toml`
 2. Looks up each addon definition from YAML files in `~/.config/aibox/addons/`
 3. Merges your tool selections with addon defaults
-4. Collects recommended skills from active addons and deploys them
-5. Generates Dockerfile builder stages (for heavy builds like Rust, LaTeX)
-6. Generates runtime `RUN`/`COPY` commands
-7. Builds the container image
+4. Generates Dockerfile builder stages (for heavy builds like Rust, LaTeX)
+5. Generates runtime `RUN`/`COPY` commands
+6. Builds the container image
 
 Addons that need compilation (Rust, LaTeX, infrastructure, Kubernetes) use **multi-stage Docker builds** -- heavy compilation happens in isolated builder stages, and only the final binaries are copied into the runtime image.
 

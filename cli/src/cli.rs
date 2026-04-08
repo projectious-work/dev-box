@@ -2,6 +2,18 @@ use clap::{Parser, Subcommand, ValueEnum};
 
 use crate::config::{AiProvider, BaseImage, StarshipPreset, Theme};
 
+/// Output format for list commands.
+#[derive(Clone, Debug, Default, ValueEnum)]
+pub enum OutputFormat {
+    /// Human-readable table (default)
+    #[default]
+    Table,
+    /// JSON array
+    Json,
+    /// YAML sequence
+    Yaml,
+}
+
 /// Available Zellij IDE layouts.
 #[derive(Clone, Debug, ValueEnum)]
 pub enum Layout {
@@ -197,7 +209,11 @@ pub enum Commands {
     #[command(alias = "rm")]
     Remove,
     /// Show container status
-    Status,
+    Status {
+        /// Output format
+        #[arg(long, short = 'o', value_enum, default_value = "table")]
+        format: OutputFormat,
+    },
     /// Validate context structure and produce migration artifacts
     ///
     /// Checks: config validity, container runtime, .aibox-home/ directories,
@@ -311,6 +327,27 @@ pub enum Commands {
         #[command(subcommand)]
         action: MigrateAction,
     },
+    /// Query and manage processkit content (skills, processes, schemas)
+    ///
+    /// Inspect what processkit content is installed in this project
+    /// under `context/`. Skills can be selectively installed or
+    /// uninstalled via `[skills].include` / `[skills].exclude` in
+    /// aibox.toml.
+    ///
+    /// Examples:
+    ///   aibox kit list                       Summary of installed content
+    ///   aibox kit skill list                 All installed skills by category
+    ///   aibox kit skill list --all           All available skills with status
+    ///   aibox kit skill list --category ai   Filter by category
+    ///   aibox kit skill categories           Category summary
+    ///   aibox kit skill info python-best-practices
+    ///   aibox kit skill install python-best-practices
+    ///   aibox kit skill uninstall pandas-polars
+    ///   aibox kit process list               List installed processes
+    Kit {
+        #[command(subcommand)]
+        action: KitAction,
+    },
 }
 
 #[derive(Subcommand)]
@@ -349,7 +386,12 @@ pub enum MigrateAction {
 #[derive(Subcommand)]
 pub enum AddonAction {
     /// List all available add-ons and their install status
-    List,
+    #[command(alias = "ls")]
+    List {
+        /// Output format
+        #[arg(long, short = 'o', value_enum, default_value = "table")]
+        format: OutputFormat,
+    },
     /// Add an add-on to aibox.toml and sync
     ///
     /// Inserts the add-on with default-enabled tools into aibox.toml,
@@ -377,6 +419,9 @@ pub enum AddonAction {
     Info {
         /// Add-on name
         name: String,
+        /// Output format
+        #[arg(long, short = 'o', value_enum, default_value = "table")]
+        format: OutputFormat,
     },
 }
 
@@ -425,7 +470,12 @@ pub enum EnvAction {
         yes: bool,
     },
     /// List available environments
-    List,
+    #[command(alias = "ls")]
+    List {
+        /// Output format
+        #[arg(long, short = 'o', value_enum, default_value = "table")]
+        format: OutputFormat,
+    },
     /// Delete a saved environment
     Delete {
         /// Environment to delete
@@ -436,4 +486,103 @@ pub enum EnvAction {
     },
     /// Show current environment info
     Status,
+}
+
+// ---------------------------------------------------------------------------
+// aibox kit subcommands
+// ---------------------------------------------------------------------------
+
+#[derive(Subcommand)]
+pub enum KitAction {
+    /// Show a summary of installed processkit content
+    ///
+    /// Counts of installed skills, processes, schemas, and state machines.
+    List {
+        /// Output format
+        #[arg(long, short = 'o', value_enum, default_value = "table")]
+        format: OutputFormat,
+    },
+    /// Manage and inspect processkit skills
+    Skill {
+        #[command(subcommand)]
+        action: KitSkillAction,
+    },
+    /// Inspect processkit processes
+    Process {
+        #[command(subcommand)]
+        action: KitProcessAction,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum KitSkillAction {
+    /// List processkit skills installed in this project
+    ///
+    /// Without --all: shows skills present in context/skills/.
+    /// With --all: shows all available skills from the processkit templates
+    /// mirror, with installed status.
+    #[command(alias = "ls")]
+    List {
+        /// Show all available skills (requires processkit templates mirror)
+        #[arg(long)]
+        all: bool,
+        /// Filter by category (e.g. language, ai, process, security)
+        #[arg(long)]
+        category: Option<String>,
+        /// Output format
+        #[arg(long, short = 'o', value_enum, default_value = "table")]
+        format: OutputFormat,
+    },
+    /// Show skill categories with counts
+    Categories {
+        /// Output format
+        #[arg(long, short = 'o', value_enum, default_value = "table")]
+        format: OutputFormat,
+    },
+    /// Show details for a specific skill
+    Info {
+        /// Skill name (e.g. python-best-practices)
+        name: String,
+        /// Output format
+        #[arg(long, short = 'o', value_enum, default_value = "table")]
+        format: OutputFormat,
+    },
+    /// Add a skill to the active set (modifies aibox.toml)
+    ///
+    /// Adjusts [skills].include / [skills].exclude so the skill is
+    /// present on the next 'aibox sync'. Does not run sync automatically.
+    Install {
+        /// Skill name
+        name: String,
+    },
+    /// Remove a skill from the active set (modifies aibox.toml)
+    ///
+    /// Adjusts [skills].include / [skills].exclude so the skill is
+    /// excluded on the next 'aibox sync'. Does not run sync automatically.
+    Uninstall {
+        /// Skill name
+        name: String,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum KitProcessAction {
+    /// List processkit processes installed in this project
+    #[command(alias = "ls")]
+    List {
+        /// Show all available processes (requires processkit templates mirror)
+        #[arg(long)]
+        all: bool,
+        /// Output format
+        #[arg(long, short = 'o', value_enum, default_value = "table")]
+        format: OutputFormat,
+    },
+    /// Show details for a specific process
+    Info {
+        /// Process name (filename without .md)
+        name: String,
+        /// Output format
+        #[arg(long, short = 'o', value_enum, default_value = "table")]
+        format: OutputFormat,
+    },
 }

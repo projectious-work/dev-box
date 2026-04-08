@@ -1,5 +1,6 @@
 name: ai-mistral
 version: "1.0.0"
+description: "Mistral AI Python SDK (programmatic use)"
 builder_weight: null
 
 tools:
@@ -12,4 +13,9 @@ builder: null
 
 runtime: |
   # Addon: ai-mistral
+  # NOTE: This addon installs the mistralai Python SDK, not an interactive
+  # coding CLI. It is intended for projects that call the Mistral API
+  # programmatically. For an interactive coding CLI use ai-claude, ai-gemini,
+  # ai-codex, or ai-copilot instead. This will be updated if a Mistral
+  # interactive CLI ships (Le Chat CLI is in development as of 2026-04).
   RUN pip install --no-cache-dir mistralai

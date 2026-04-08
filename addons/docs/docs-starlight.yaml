@@ -1,5 +1,6 @@
 name: docs-starlight
 version: "1.0.0"
+description: "Starlight – Astro-based docs site"
 requires:
   - node
 

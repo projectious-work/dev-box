@@ -208,9 +208,10 @@ fn ai_pane_kdl(providers: &[crate::config::AiProvider]) -> String {
     let panes: Vec<String> = providers
         .iter()
         .map(|p| {
-            let cmd = p.to_string();
+            let name = p.to_string();
+            let cmd = p.binary_name();
             format!(
-                "        pane name=\"{cmd}\" {{\n\
+                "        pane name=\"{name}\" {{\n\
                  \x20           command \"{cmd}\"\n\
                  \x20           cwd \"/workspace\"\n\
                  \x20       }}"
@@ -236,10 +237,11 @@ fn ai_tabs_kdl(providers: &[crate::config::AiProvider]) -> String {
     providers
         .iter()
         .map(|p| {
-            let cmd = p.to_string();
+            let name = p.to_string();
+            let cmd = p.binary_name();
             format!(
-                "    tab name=\"{cmd}\" {{\n\
-                 \x20       pane name=\"{cmd}\" {{\n\
+                "    tab name=\"{name}\" {{\n\
+                 \x20       pane name=\"{name}\" {{\n\
                  \x20           command \"{cmd}\"\n\
                  \x20           cwd \"/workspace\"\n\
                  \x20       }}\n\
@@ -955,14 +957,19 @@ pub fn seed_root_dir(config: &AiboxConfig) -> Result<()> {
             crate::config::AiProvider::Mistral => {
                 dirs.push(root.join(".mistral"));
             }
-            // Cursor/Codex/Continue are host-side editors. They have no
-            // in-container persistence directory under .aibox-home/.
-            // Their MCP registration files are written by
-            // mcp_registration.rs at the project root, not under
-            // .aibox-home/.
-            crate::config::AiProvider::Cursor
-            | crate::config::AiProvider::Codex
-            | crate::config::AiProvider::Continue => {}
+            crate::config::AiProvider::Codex => {
+                dirs.push(root.join(".codex"));
+            }
+            crate::config::AiProvider::Continue => {
+                dirs.push(root.join(".continue"));
+            }
+            crate::config::AiProvider::Copilot => {
+                dirs.push(root.join(".copilot"));
+            }
+            // Cursor is a host-side IDE extension only — no in-container
+            // persistence directory. MCP registration files for all providers
+            // are written by mcp_registration.rs at the project root.
+            crate::config::AiProvider::Cursor => {}
         }
     }
 

@@ -1,5 +1,6 @@
 name: docs-docusaurus
 version: "1.0.0"
+description: "Docusaurus static docs site (React/MDX)"
 requires:
   - node
 

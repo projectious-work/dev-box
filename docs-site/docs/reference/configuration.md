@@ -104,11 +104,9 @@ the installed processkit content is in scope for this project.
 | `research` | `managed` + data science, documentation, research artefacts |
 | `product` | Everything — `software` + design, security, operations, product planning |
 
-> In v0.16.0, `packages` is **declarative metadata only**. aibox installs every
-> skill processkit ships under `src/skills/`, regardless of the selected
-> package(s). Agents read `packages` to decide which skills to *prefer*. The
-> install set may become package-aware in a future release; do not depend on
-> "this skill is not installed" as a guarantee.
+> `packages` is **declarative metadata for agents** — it tells agents which
+> skills to *prefer*, but does not filter what gets installed. Use
+> `[skills].include` / `[skills].exclude` to control the installed skill set.
 
 ### [addons]
 
@@ -120,19 +118,24 @@ python = { version = "3.13" }
 uv = { version = "0.7" }
 ```
 
-Run `aibox addon list` to see all 21 available addons, or `aibox addon info <name>` for tool details and supported versions. See the [Addons page](../addons/overview.md) for full documentation.
+Run `aibox addon list` to see all 25 available addons, or `aibox addon info <name>` for tool details and supported versions. See the [Addons page](../addons/overview.md) for full documentation.
 
 ### [skills]
 
-**Reserved / no-op in v0.16.0.** The TOML parser still accepts a `[skills]`
-table with `include` / `exclude` arrays for forward compatibility, but aibox
-**does not act on it**. Every project gets every processkit skill installed
-under `context/skills/`, and the agent decides which to use based on
-`[context].packages` and the skill's own `description`.
+Controls which skills from processkit are installed into `context/skills/`.
+By default every skill in the processkit version you've pinned is installed.
 
-A future release may re-introduce per-skill include/exclude semantics. Until
-then, treat the section as informational. See the [Skills page](../skills/index.md)
-for the rationale and the full processkit boundary.
+```toml
+[skills]
+include = ["python-best-practices", "fastapi-patterns"]  # install only these
+exclude = ["pandas-polars"]                               # install all except these
+```
+
+`include` and `exclude` are mutually exclusive: use one or the other, not both.
+Both accept skill names (the filename without `.md`). An empty `[skills]` table
+(or omitting the section entirely) installs all skills.
+
+See the [Skills page](../skills/index.md) for the full processkit boundary.
 
 ### [ai]
 
@@ -140,7 +143,7 @@ AI provider configuration. Providers listed here are automatically installed as 
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `providers` | Array of strings | No | `["claude"]` | AI providers: `claude`, `aider`, `gemini`, `mistral` |
+| `providers` | Array of strings | No | `["claude"]` | AI providers: `claude`, `aider`, `gemini`, `mistral`, `codex`, `copilot`, `continue`. `cursor` is MCP-registration only (no container CLI). |
 
 ### [processkit]
 
@@ -219,8 +222,8 @@ auto-loads `CLAUDE.md` at startup, etc.).
 overwrites). When the Claude provider is enabled, it also creates
 `CLAUDE.md`, either as a thin pointer (default) or with the full rich
 content (`provider_mode = "full"`). Other providers (Aider, Gemini,
-Mistral) use config files rather than markdown entries and are not
-affected by this section.
+Mistral, Codex, Copilot, Continue) use config files rather than markdown
+entries and are not affected by this section.
 
 Existing files are never overwritten. If you already have a hand-written
 `AGENTS.md` or `CLAUDE.md`, `aibox init` leaves it alone.

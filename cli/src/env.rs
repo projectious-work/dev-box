@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use crate::cli::OutputFormat;
 use crate::config::AiboxConfig;
 use crate::generate;
 use crate::output;
@@ -297,29 +298,46 @@ pub fn cmd_env_switch(config_path: &Option<String>, name: &str, yes: bool) -> Re
 }
 
 /// List available environments.
-pub fn cmd_env_list() -> Result<()> {
+pub fn cmd_env_list(format: OutputFormat) -> Result<()> {
+    #[derive(Serialize)]
+    struct Row {
+        name: String,
+        current: bool,
+    }
+
     let names = list_env_names()?;
     let state = load_state()?;
 
-    if names.is_empty() {
-        output::info("No environments created yet.");
-        output::info("Create one with: aibox env create <name>");
-        return Ok(());
-    }
+    let rows: Vec<Row> = names
+        .into_iter()
+        .map(|name| {
+            let current = state.current.as_deref() == Some(name.as_str());
+            Row { name, current }
+        })
+        .collect();
 
-    let status_header = "Status";
-    eprintln!("\n  {:<25} {}", "Environment", status_header);
-    eprintln!("  {}", "-".repeat(40));
-
-    for name in &names {
-        let marker = if state.current.as_deref() == Some(name.as_str()) {
-            "\x1b[32m\u{25cf} current\x1b[0m"
-        } else {
-            ""
-        };
-        eprintln!("  {:<25} {}", name, marker);
+    match format {
+        OutputFormat::Json => {
+            println!("{}", serde_json::to_string_pretty(&rows)?);
+        }
+        OutputFormat::Yaml => {
+            print!("{}", serde_yaml::to_string(&rows)?);
+        }
+        OutputFormat::Table => {
+            if rows.is_empty() {
+                output::info("No environments created yet.");
+                output::info("Create one with: aibox env create <name>");
+                return Ok(());
+            }
+            eprintln!("\n  {:<25} Status", "Environment");
+            eprintln!("  {}", "-".repeat(40));
+            for r in &rows {
+                let marker = if r.current { "\x1b[32m\u{25cf} current\x1b[0m" } else { "" };
+                eprintln!("  {:<25} {}", r.name, marker);
+            }
+            eprintln!();
+        }
     }
-    eprintln!();
 
     Ok(())
 }

@@ -1,5 +1,6 @@
 name: typst
 version: "1.0.0"
+description: "Typst – modern typesetting system"
 builder_weight: null
 
 skills:

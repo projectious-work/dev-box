@@ -1,5 +1,6 @@
 name: preview-enhanced
 version: "1.0.0"
+description: "ffmpeg, ImageMagick, Ghostscript"
 builder_weight: "light"
 
 tools:

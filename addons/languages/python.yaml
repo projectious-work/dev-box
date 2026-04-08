@@ -1,5 +1,6 @@
 name: python
 version: "1.0.0"
+description: "Python runtime with uv, poetry, or pdm"
 builder_weight: null
 
 # As of aibox v0.16.5 (DEC-036), python3 (Debian Trixie default, 3.13.x)

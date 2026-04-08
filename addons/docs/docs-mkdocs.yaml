@@ -1,5 +1,6 @@
 name: docs-mkdocs
 version: "1.0.0"
+description: "MkDocs – Python Markdown docs site"
 requires:
   - python
 

@@ -47,10 +47,15 @@ Before every release, check ALL upstream dependencies for updates.
    ```bash
    cd cli && cargo audit
    ```
-6. **Build Linux release binaries** (both architectures — container is aarch64, cross-compile for x86_64):
+6. **Build Linux release binaries — both architectures (Claude owns this, do NOT delegate to user)**:
+   The container runs on aarch64. The x86_64 Linux binary must be cross-compiled here in
+   Phase 1 — it is NOT part of Phase 2. Use the cross-linker that is pre-installed in the
+   dev container:
    ```bash
    cd /workspace/cli
+   # Native aarch64 build
    cargo build --release
+   # Cross-compile for x86_64 — do not skip this step
    CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc \
      cargo build --release --target x86_64-unknown-linux-gnu
    ```

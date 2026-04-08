@@ -31,6 +31,8 @@ pub struct AddonYaml {
     pub name: String,
     pub version: String,
     #[serde(default)]
+    pub description: String,
+    #[serde(default)]
     pub builder_weight: Option<String>,
     #[serde(default)]
     pub tools: Vec<ToolYaml>,
@@ -73,6 +75,10 @@ fn default_true() -> bool {
 pub struct LoadedAddon {
     pub name: String,
     pub addon_version: String,
+    /// Short one-line description from the YAML `description:` field.
+    pub description: String,
+    /// Category derived from the addon's parent directory (ai/, languages/, tools/, docs/).
+    pub category: String,
     pub builder_weight: Option<String>,
     pub tools: Vec<LoadedTool>,
     pub requires: Vec<String>,
@@ -157,16 +163,38 @@ fn load_from_dir(dir: &Path) -> Result<Vec<LoadedAddon>> {
     Ok(addons)
 }
 
+/// Map a parent directory name to a display category string.
+fn category_from_dir_name(dir_name: &str) -> &'static str {
+    match dir_name {
+        "ai" => "AI Providers",
+        "languages" => "Languages",
+        "tools" => "Tools",
+        "docs" => "Documentation",
+        _ => "Other",
+    }
+}
+
 /// Parse a single YAML file into a LoadedAddon.
+/// The category is derived from the file's parent directory name.
 fn load_yaml_file(path: &Path) -> Result<LoadedAddon> {
     let content = fs::read_to_string(path)
         .with_context(|| format!("Failed to read addon file: {}", path.display()))?;
     let yaml: AddonYaml = serde_yaml::from_str(&content)
         .with_context(|| format!("Failed to parse addon YAML: {}", path.display()))?;
 
+    let category = path
+        .parent()
+        .and_then(|p| p.file_name())
+        .and_then(|n| n.to_str())
+        .map(category_from_dir_name)
+        .unwrap_or("Other")
+        .to_string();
+
     Ok(LoadedAddon {
         name: yaml.name,
         addon_version: yaml.version,
+        description: yaml.description,
+        category,
         builder_weight: yaml.builder_weight,
         requires: yaml.requires,
         tools: yaml
@@ -271,20 +299,21 @@ fn build_template_context(
         let enabled = tools
             .get(&tool_def.name)
             .is_some_and(|t| t.enabled);
-        let version = tools
-            .get(&tool_def.name)
-            .and_then(|t| {
-                if t.version.is_empty() {
-                    None
-                } else {
-                    Some(t.version.clone())
-                }
-            })
-            .unwrap_or_else(|| tool_def.default_version.clone());
+
+        // "latest" is a sentinel that explicitly opts out of version pinning.
+        // It maps to an empty version string so templates that check
+        // `{% if tools.X.version %}` skip the pinned install path.
+        let version = match tools.get(&tool_def.name) {
+            Some(t) if t.version == "latest" => String::new(),
+            Some(t) if !t.version.is_empty() => t.version.clone(),
+            _ => tool_def.default_version.clone(),
+        };
+        let pinned = !version.is_empty();
 
         let mut entry = HashMap::new();
         entry.insert("enabled".to_string(), minijinja::Value::from(enabled));
         entry.insert("version".to_string(), minijinja::Value::from(version));
+        entry.insert("pinned".to_string(), minijinja::Value::from(pinned));
         tool_map.insert(tool_def.name.clone(), minijinja::Value::from_serialize(&entry));
     }
 
@@ -413,6 +442,8 @@ runtime: |
         let addon = LoadedAddon {
             name: "test".to_string(),
             addon_version: "1.0.0".to_string(),
+            description: String::new(),
+            category: "Other".to_string(),
             builder_weight: None,
             requires: vec![],
             tools: vec![LoadedTool {
@@ -443,6 +474,8 @@ runtime: |
         let addon = LoadedAddon {
             name: "test".to_string(),
             addon_version: "1.0.0".to_string(),
+            description: String::new(),
+            category: "Other".to_string(),
             builder_weight: None,
             requires: vec![],
             tools: vec![
@@ -487,6 +520,8 @@ runtime: |
         let heavy = LoadedAddon {
             name: "a".to_string(),
             addon_version: "1.0.0".to_string(),
+            description: String::new(),
+            category: "Other".to_string(),
             builder_weight: Some("heavy".to_string()),
             tools: vec![],
             requires: vec![],
@@ -496,6 +531,8 @@ runtime: |
         let medium = LoadedAddon {
             name: "b".to_string(),
             addon_version: "1.0.0".to_string(),
+            description: String::new(),
+            category: "Other".to_string(),
             builder_weight: Some("medium".to_string()),
             tools: vec![],
             requires: vec![],
@@ -505,6 +542,8 @@ runtime: |
         let none = LoadedAddon {
             name: "c".to_string(),
             addon_version: "1.0.0".to_string(),
+            description: String::new(),
+            category: "Other".to_string(),
             builder_weight: None,
             tools: vec![],
             requires: vec![],
@@ -522,6 +561,71 @@ runtime: |
         assert!(result.is_err());
         let err = result.unwrap_err().to_string();
         assert!(err.contains("install script"), "error should mention install: {}", err);
+    }
+
+    #[test]
+    fn latest_version_disables_pinning() {
+        let addon = LoadedAddon {
+            name: "test".to_string(),
+            addon_version: "1.0.0".to_string(),
+            description: String::new(),
+            category: "Other".to_string(),
+            builder_weight: None,
+            requires: vec![],
+            tools: vec![LoadedTool {
+                name: "mytool".to_string(),
+                default_enabled: true,
+                default_version: "1.0".to_string(),
+                supported_versions: vec![],
+            }],
+            builder_template: None,
+            runtime_template: Some(
+                "{% if tools.mytool.version %}RUN install mytool={{ tools.mytool.version }}{% else %}RUN install mytool{% endif %}"
+                    .to_string(),
+            ),
+        };
+
+        // When version = "latest", the template should get an empty version
+        // and take the unpinned branch.
+        let mut tools = HashMap::new();
+        tools.insert(
+            "mytool".to_string(),
+            ToolConfig {
+                enabled: true,
+                version: "latest".to_string(),
+            },
+        );
+
+        let result = render_runtime(&addon, &tools).unwrap();
+        assert_eq!(result.trim(), "RUN install mytool", "got: {}", result);
+
+        // Verify `pinned` is also false
+        let ctx = build_template_context(&addon, &tools);
+        let pinned = ctx
+            .get_attr("tools").unwrap()
+            .get_attr("mytool").unwrap()
+            .get_attr("pinned").unwrap();
+        assert_eq!(pinned.is_true(), false, "pinned should be false for 'latest'");
+    }
+
+    #[test]
+    fn category_derived_from_dir_name() {
+        let dir = tempfile::tempdir().unwrap();
+        write_test_yaml(
+            dir.path(),
+            "ai",
+            "test-ai",
+            r#"
+name: test-ai
+version: "1.0.0"
+description: "Test AI addon"
+tools: []
+"#,
+        );
+
+        let addons = load_from_dir(dir.path()).unwrap();
+        assert_eq!(addons[0].category, "AI Providers");
+        assert_eq!(addons[0].description, "Test AI addon");
     }
 
 }

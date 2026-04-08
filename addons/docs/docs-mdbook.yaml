@@ -1,5 +1,6 @@
 name: docs-mdbook
 version: "1.0.0"
+description: "mdBook – Rust-powered book builder"
 skills:
   - documentation
 

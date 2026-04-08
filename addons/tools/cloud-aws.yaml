@@ -1,5 +1,6 @@
 name: cloud-aws
 version: "1.0.0"
+description: "AWS CLI v2"
 builder_weight: null
 
 tools:

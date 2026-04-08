@@ -1,5 +1,6 @@
 name: ai-gemini
 version: "1.0.0"
+description: "Google Gemini CLI"
 builder_weight: null
 
 tools:

@@ -1,5 +1,6 @@
 name: infrastructure
 version: "1.0.0"
+description: "OpenTofu, Ansible, Packer"
 builder_weight: "medium"
 
 skills:

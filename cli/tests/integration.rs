@@ -92,6 +92,8 @@ fn init_creates_expected_files() {
             "debian",
             "--process",
             "managed",
+            "--processkit-version",
+            "unset", // avoid network fetch in tests
         ],
     );
     assert!(

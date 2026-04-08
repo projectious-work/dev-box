@@ -1,5 +1,6 @@
 name: node
 version: "1.0.0"
+description: "Node.js runtime with pnpm, yarn, or bun"
 builder_weight: null
 
 skills:

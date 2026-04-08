@@ -1,5 +1,6 @@
 name: go
 version: "1.0.0"
+description: "Go programming language toolchain"
 builder_weight: null
 
 skills:

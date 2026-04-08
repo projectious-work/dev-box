@@ -1,5 +1,6 @@
 name: latex
 version: "1.0.0"
+description: "TeX Live LaTeX typesetting system"
 builder_weight: "heavy"
 
 skills:
@@ -40,6 +41,10 @@ tools:
     default_version: ""
     supported_versions: []
   - name: texlive-chemistry
+    default_enabled: false
+    default_version: ""
+    supported_versions: []
+  - name: texlive-linguistics
     default_enabled: false
     default_version: ""
     supported_versions: []
@@ -133,6 +138,10 @@ builder: |
       # texlive-chemistry
       chemfig mhchem \
   {% endif %}
+  {% if tools["texlive-linguistics"].enabled %}
+      # texlive-linguistics
+      linguex gb4e tipa expex covington \
+  {% endif %}
       && mktexlsr \
       && updmap-sys \
       && fmtutil-sys --all
@@ -162,3 +171,10 @@ runtime: |
   RUN ln -sf /usr/local/texlive/bin/*/* /usr/local/bin/ && \
       ln -sf /usr/local/texlive/texmf-dist/fonts/opentype /usr/share/fonts/opentype-texlive && \
       fc-cache -f
+
+  {% if tools["texlive-music"].enabled %}
+  # lilypond — music notation engraving tool (apt; not a tlmgr package)
+  RUN apt-get update && apt-get install -y --no-install-recommends \
+      lilypond \
+      && rm -rf /var/lib/apt/lists/*
+  {% endif %}

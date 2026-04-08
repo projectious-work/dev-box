@@ -1,5 +1,6 @@
 name: kubernetes
 version: "1.0.0"
+description: "kubectl, Helm, Kustomize, k9s"
 builder_weight: "medium"
 
 skills:

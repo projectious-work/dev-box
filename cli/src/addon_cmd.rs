@@ -1,8 +1,10 @@
 use anyhow::{bail, Context, Result};
+use serde::Serialize;
 use std::path::PathBuf;
 
 use crate::addon_loader;
 use crate::addon_registry;
+use crate::cli::OutputFormat;
 use crate::config::AiboxConfig;
 use crate::output;
 
@@ -14,37 +16,84 @@ fn toml_path(config_path: &Option<String>) -> PathBuf {
     }
 }
 
+fn category_order(cat: &str) -> usize {
+    match cat {
+        "AI Providers" => 0,
+        "Languages" => 1,
+        "Documentation" => 2,
+        "Tools" => 3,
+        _ => 4,
+    }
+}
+
 /// List all available add-ons and their install status.
-pub fn cmd_addon_list(config_path: &Option<String>) -> Result<()> {
+pub fn cmd_addon_list(config_path: &Option<String>, format: OutputFormat) -> Result<()> {
+    #[derive(Serialize)]
+    struct Row<'a> {
+        name: &'a str,
+        category: &'a str,
+        description: &'a str,
+        tools: usize,
+        status: &'static str,
+    }
+
     let config = AiboxConfig::from_cli_option(config_path).ok();
+    let addons = addon_loader::all_addons();
 
-    let addons = addon_registry::all_addons();
+    let mut rows: Vec<Row> = addons
+        .iter()
+        .map(|a| {
+            let installed = config.as_ref().is_some_and(|c| c.addons.has_addon(&a.name));
+            Row {
+                name: &a.name,
+                category: &a.category,
+                description: &a.description,
+                tools: a.tools.len(),
+                status: if installed { "installed" } else { "available" },
+            }
+        })
+        .collect();
 
-    // Calculate column widths
-    let max_name = addons.iter().map(|a| a.name.len()).max().unwrap_or(10);
-    let name_width = max_name.max(6); // minimum "ADDON" header width
+    // Sort: category order first, then name alphabetically
+    rows.sort_by(|a, b| {
+        category_order(a.category)
+            .cmp(&category_order(b.category))
+            .then(a.name.cmp(b.name))
+    });
 
-    println!(
-        "  {:<width$}  {:>5}  STATUS",
-        "ADDON",
-        "TOOLS",
-        width = name_width
-    );
+    match format {
+        OutputFormat::Json => {
+            println!("{}", serde_json::to_string_pretty(&rows)?);
+        }
+        OutputFormat::Yaml => {
+            print!("{}", serde_yaml::to_string(&rows)?);
+        }
+        OutputFormat::Table => {
+            let name_width = rows.iter().map(|r| r.name.len()).max().unwrap_or(10).max(5);
+            let desc_width = rows.iter().map(|r| r.description.len()).max().unwrap_or(20).max(11);
 
-    for addon in addons {
-        let installed = config
-            .as_ref()
-            .is_some_and(|c| c.addons.has_addon(addon.name));
-        let status = if installed { "installed" } else { "available" };
-        let tool_count = addon.tools.len();
-
-        println!(
-            "  {:<width$}  {:>5}  {}",
-            addon.name,
-            tool_count,
-            status,
-            width = name_width
-        );
+            // Group by category and print with headers
+            let mut current_cat = "";
+            for r in &rows {
+                if r.category != current_cat {
+                    if !current_cat.is_empty() {
+                        println!();
+                    }
+                    println!("  \x1b[1m{}\x1b[0m", r.category);
+                    println!(
+                        "  {:<nw$}  {:<dw$}  {:>5}  STATUS",
+                        "ADDON", "DESCRIPTION", "TOOLS",
+                        nw = name_width, dw = desc_width
+                    );
+                    current_cat = r.category;
+                }
+                println!(
+                    "  {:<nw$}  {:<dw$}  {:>5}  {}",
+                    r.name, r.description, r.tools, r.status,
+                    nw = name_width, dw = desc_width
+                );
+            }
+        }
     }
 
     Ok(())
@@ -177,65 +226,83 @@ pub fn cmd_addon_remove(config_path: &Option<String>, name: &str, no_build: bool
 }
 
 /// Show detailed info about an add-on.
-pub fn cmd_addon_info(name: &str) -> Result<()> {
-    let addon_def = addon_registry::get_addon(name)
+pub fn cmd_addon_info(name: &str, format: OutputFormat) -> Result<()> {
+    let loaded = addon_loader::get_addon(name)
         .ok_or_else(|| anyhow::anyhow!("Unknown add-on '{}'. Run 'aibox addon list' to see available add-ons.", name))?;
 
-    println!("Add-on: {}", addon_def.name);
-    println!("Recipe version: {}", addon_def.addon_version);
+    match format {
+        OutputFormat::Json | OutputFormat::Yaml => {
+            #[derive(Serialize)]
+            struct ToolRow<'a> {
+                name: &'a str,
+                default_enabled: bool,
+                default_version: &'a str,
+                supported_versions: &'a [String],
+            }
+            #[derive(Serialize)]
+            struct InfoOut<'a> {
+                name: &'a str,
+                category: &'a str,
+                description: &'a str,
+                addon_version: &'a str,
+                requires: &'a [String],
+                tools: Vec<ToolRow<'a>>,
+            }
+            let out = InfoOut {
+                name: &loaded.name,
+                category: &loaded.category,
+                description: &loaded.description,
+                addon_version: &loaded.addon_version,
+                requires: &loaded.requires,
+                tools: loaded.tools.iter().map(|t| ToolRow {
+                    name: &t.name,
+                    default_enabled: t.default_enabled,
+                    default_version: &t.default_version,
+                    supported_versions: &t.supported_versions,
+                }).collect(),
+            };
+            if matches!(format, OutputFormat::Json) {
+                println!("{}", serde_json::to_string_pretty(&out)?);
+            } else {
+                print!("{}", serde_yaml::to_string(&out)?);
+            }
+        }
+        OutputFormat::Table => {
+            println!("Add-on:       {}", loaded.name);
+            println!("Category:     {}", loaded.category);
+            if !loaded.description.is_empty() {
+                println!("Description:  {}", loaded.description);
+            }
+            println!("Version:      {}", loaded.addon_version);
+            if !loaded.requires.is_empty() {
+                println!("Requires:     {}", loaded.requires.join(", "));
+            }
+            println!();
 
-    // Show requires if present (sourced from loader which retains the full data).
-    if let Some(loaded) = addon_loader::get_addon(name)
-        && !loaded.requires.is_empty()
-    {
-        println!("Requires: {}", loaded.requires.join(", "));
-    }
+            if loaded.tools.is_empty() {
+                println!("  (no tools)");
+                return Ok(());
+            }
 
-    println!();
-
-    if addon_def.tools.is_empty() {
-        println!("  (no tools)");
-        return Ok(());
-    }
-
-    // Calculate column widths
-    let max_name = addon_def
-        .tools
-        .iter()
-        .map(|t| t.name.len())
-        .max()
-        .unwrap_or(4);
-    let name_width = max_name.max(4);
-
-    println!(
-        "  {:<nw$}  {:>7}  {:>10}  SUPPORTED",
-        "TOOL",
-        "DEFAULT",
-        "VERSION",
-        nw = name_width
-    );
-
-    for tool in addon_def.tools {
-        let default = if tool.default_enabled { "yes" } else { "no" };
-        let version = if tool.default_version.is_empty() {
-            "-"
-        } else {
-            tool.default_version
-        };
-        let supported = if tool.supported_versions.is_empty() {
-            "-".to_string()
-        } else {
-            tool.supported_versions.join(", ")
-        };
-
-        println!(
-            "  {:<nw$}  {:>7}  {:>10}  {}",
-            tool.name,
-            default,
-            version,
-            supported,
-            nw = name_width
-        );
+            let name_width = loaded.tools.iter().map(|t| t.name.len()).max().unwrap_or(4).max(4);
+            println!(
+                "  {:<nw$}  {:>7}  {:>10}  SUPPORTED",
+                "TOOL", "DEFAULT", "VERSION", nw = name_width
+            );
+            for tool in &loaded.tools {
+                let default = if tool.default_enabled { "yes" } else { "no" };
+                let version = if tool.default_version.is_empty() { "-" } else { &tool.default_version };
+                let supported = if tool.supported_versions.is_empty() {
+                    "-".to_string()
+                } else {
+                    tool.supported_versions.join(", ")
+                };
+                println!(
+                    "  {:<nw$}  {:>7}  {:>10}  {}",
+                    tool.name, default, version, supported, nw = name_width
+                );
+            }
+        }
     }
 
     Ok(())
@@ -338,12 +405,12 @@ uv = { version = "0.7" }
     #[test]
     fn addon_info_finds_known_addon() {
         ensure_loaded();
-        assert!(cmd_addon_info("python").is_ok());
+        assert!(cmd_addon_info("python", OutputFormat::Table).is_ok());
     }
 
     #[test]
     fn addon_info_errors_on_unknown() {
         ensure_loaded();
-        assert!(cmd_addon_info("nonexistent").is_err());
+        assert!(cmd_addon_info("nonexistent", OutputFormat::Table).is_err());
     }
 }

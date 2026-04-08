@@ -125,10 +125,11 @@ pub struct LegacyProcessSection {
 /// MCP-capable providers (have a built-in MCP client and a project-level
 /// config file aibox can write to):
 /// - `Claude` — `.mcp.json` at project root
-/// - `Cursor` — `.cursor/mcp.json` at project root
+/// - `Cursor` — `.cursor/mcp.json` at project root (host-side IDE only)
 /// - `Gemini` — `.gemini/settings.json` (Gemini CLI)
-/// - `Codex` — `.codex/config.toml` (Codex CLI)
-/// - `Continue` — `.continue/mcpServers/<name>.json` (one file per server)
+/// - `Codex` — `.codex/config.toml` (OpenAI Codex CLI, binary: `codex`)
+/// - `Continue` — `.continue/mcpServers/<name>.json` (Continue CLI, binary: `cn`)
+/// - `Copilot` — `.mcp.json` at project root (GitHub Copilot CLI, binary: `copilot`)
 ///
 /// Special MCP routing:
 /// - `Mistral` — has MCP client capability via Python SDK and Le Chat,
@@ -140,6 +141,10 @@ pub struct LegacyProcessSection {
 /// processkit MCP servers; sync emits a warning):
 /// - `Aider` — no native MCP client. Third-party experimental bridges
 ///   exist but are not yet stable.
+///
+/// Note: `Cursor` is a host-side IDE extension only — it has no container
+/// CLI binary and no in-container persistence directory. All other providers
+/// have a corresponding `ai-<name>` addon that installs their CLI in the image.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash, clap::ValueEnum)]
 #[serde(rename_all = "kebab-case")]
 #[clap(rename_all = "kebab-case")]
@@ -151,6 +156,7 @@ pub enum AiProvider {
     Cursor,
     Codex,
     Continue,
+    Copilot,
 }
 
 impl std::fmt::Display for AiProvider {
@@ -163,6 +169,27 @@ impl std::fmt::Display for AiProvider {
             AiProvider::Cursor => write!(f, "cursor"),
             AiProvider::Codex => write!(f, "codex"),
             AiProvider::Continue => write!(f, "continue"),
+            AiProvider::Copilot => write!(f, "copilot"),
+        }
+    }
+}
+
+impl AiProvider {
+    /// Returns the actual CLI binary name for this provider.
+    ///
+    /// This differs from `Display` for providers where the display name and
+    /// binary name diverge (e.g. `Continue` displays as `"continue"` but the
+    /// binary is `cn`). Use this wherever a shell command is needed.
+    pub fn binary_name(&self) -> &'static str {
+        match self {
+            AiProvider::Claude => "claude",
+            AiProvider::Aider => "aider",
+            AiProvider::Gemini => "gemini",
+            AiProvider::Mistral => "mistral",
+            AiProvider::Cursor => "cursor",
+            AiProvider::Codex => "codex",
+            AiProvider::Continue => "cn",
+            AiProvider::Copilot => "copilot",
         }
     }
 }
@@ -1303,6 +1330,20 @@ tool = {}
         assert_eq!(format!("{}", AiProvider::Aider), "aider");
         assert_eq!(format!("{}", AiProvider::Gemini), "gemini");
         assert_eq!(format!("{}", AiProvider::Mistral), "mistral");
+        assert_eq!(format!("{}", AiProvider::Codex), "codex");
+        assert_eq!(format!("{}", AiProvider::Continue), "continue");
+        assert_eq!(format!("{}", AiProvider::Copilot), "copilot");
+    }
+
+    #[test]
+    fn ai_provider_binary_name() {
+        // Most providers: binary name matches display name.
+        assert_eq!(AiProvider::Claude.binary_name(), "claude");
+        assert_eq!(AiProvider::Aider.binary_name(), "aider");
+        assert_eq!(AiProvider::Codex.binary_name(), "codex");
+        assert_eq!(AiProvider::Copilot.binary_name(), "copilot");
+        // Continue is the exception: display = "continue", binary = "cn".
+        assert_eq!(AiProvider::Continue.binary_name(), "cn");
     }
 
     #[test]
@@ -1320,6 +1361,28 @@ providers = ["claude", "aider", "gemini", "mistral"]
         let config = parse_toml(toml).unwrap();
         assert_eq!(config.ai.providers.len(), 4);
         assert_eq!(config.ai.providers[3], AiProvider::Mistral);
+    }
+
+    #[test]
+    fn parse_new_ai_providers() {
+        let toml = r#"
+[aibox]
+version = "0.9.0"
+
+[container]
+name = "test"
+
+[ai]
+providers = ["codex", "copilot", "continue"]
+"#;
+        let config = AiboxConfig::from_str(toml).unwrap();
+        assert_eq!(config.ai.providers.len(), 3);
+        assert_eq!(config.ai.providers[0], AiProvider::Codex);
+        assert_eq!(config.ai.providers[1], AiProvider::Copilot);
+        assert_eq!(config.ai.providers[2], AiProvider::Continue);
+        assert!(config.addons.has_addon("ai-codex"));
+        assert!(config.addons.has_addon("ai-copilot"));
+        assert!(config.addons.has_addon("ai-continue"));
     }
 
     #[test]

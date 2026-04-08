@@ -1,5 +1,6 @@
 name: ai-claude
 version: "1.0.0"
+description: "Claude Code CLI (Anthropic)"
 builder_weight: null
 
 tools:

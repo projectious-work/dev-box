@@ -1,5 +1,6 @@
 name: cloud-azure
 version: "1.0.0"
+description: "Azure CLI"
 builder_weight: null
 
 tools:

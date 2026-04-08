@@ -239,31 +239,22 @@ and discuss each action item with the project owner.
 
 {action_items}
 
-## New Skills Available
+## processkit Content Changes
 
-Check the skills catalog for new skills added in v{to}. Add desired skills
-to `[skills] include` in aibox.toml.
+Skills, processes, and primitives are installed from processkit (not bundled
+in aibox). To pick up new or changed content, pin a newer processkit version
+in `[processkit].version` and run `aibox sync`. The three-way diff will show
+which installed files changed and let you review conflicts before overwriting.
 
-## Changed Skills
-
-Skills with updated content will be automatically updated on next `aibox sync`
-if the local file has not been modified. Modified skills are left untouched.
-
-## Deprecated Skills
-
-Check the release notes for any removed or renamed skills.
-
-## Context File Changes
-
-Review `context/AIBOX.md` for the updated baseline document.
+Use `[skills].include` / `[skills].exclude` in aibox.toml to control which
+skills are installed.
 
 ## Verification Checklist
 
 - [ ] `aibox sync` completes without errors
 - [ ] Container builds successfully (`aibox build`)
-- [ ] Context files are intact
-- [ ] Skills are correctly deployed
-- [ ] Agent entry point (CLAUDE.md etc.) points to context/AIBOX.md
+- [ ] Context files are intact (`AGENTS.md`, `context/skills/`, `context/processes/`)
+- [ ] `AGENTS.md` is present and points to `context/` correctly
 
 ## Rollback
 
@@ -648,8 +639,7 @@ installed_at = \"2026-04-01T00:00:00Z\"
         assert!(doc.contains("## Verification Checklist"));
         assert!(doc.contains("- [ ] `aibox sync` completes without errors"));
         assert!(doc.contains("- [ ] Container builds successfully"));
-        assert!(doc
-            .contains("- [ ] Agent entry point (CLAUDE.md etc.) points to context/AIBOX.md"));
+        assert!(doc.contains("- [ ] `AGENTS.md` is present"));
 
         // Rollback section
         assert!(doc.contains("## Rollback"));
@@ -657,10 +647,7 @@ installed_at = \"2026-04-01T00:00:00Z\"
 
         // Other required sections
         assert!(doc.contains("## Breaking Changes"));
-        assert!(doc.contains("## New Skills Available"));
-        assert!(doc.contains("## Changed Skills"));
-        assert!(doc.contains("## Deprecated Skills"));
-        assert!(doc.contains("## Context File Changes"));
+        assert!(doc.contains("## processkit Content Changes"));
         assert!(doc.contains("## Known Issues"));
     }
 

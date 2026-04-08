@@ -1,0 +1,21 @@
+name: ai-copilot
+version: "1.0.0"
+description: "GitHub Copilot CLI"
+builder_weight: null
+
+tools:
+  - name: copilot
+    default_enabled: true
+    default_version: ""
+    supported_versions: []
+
+builder: null
+
+runtime: |
+  # Addon: ai-copilot
+  # GitHub Copilot CLI: https://github.com/github/copilot-cli
+  # npm package: @github/copilot | Binary: copilot | Config: ~/.copilot/
+  # Requires a GitHub Copilot subscription. First-launch auth: copilot /login
+  USER aibox
+  RUN npm install -g @github/copilot
+  USER root
