@@ -2,6 +2,44 @@
 
 Inverse chronological. Each decision has a rationale and alternatives considered.
 
+## DEC-029 — list_versions GitHub fallback + sync perimeter catch-up (2026-04-08)
+
+**Decision:** v0.16.2 closes two real-run footguns from v0.16.1, both surfaced by the first end-to-end `aibox init` → `aibox sync` user run after the v0.16.1 release shipped.
+
+1. **`content_source::list_versions` falls back to `git ls-remote` on any GitHub Releases API failure.** The unauthenticated GitHub API is capped at 60 requests/hour per IP, and the v0.16.1 implementation called `list_github_releases` with no fallback — when the limit was hit, the picker silently fell through to `unset` with a warning, leaving the user with the same v0.16.0 footgun the v0.16.1 release was supposed to fix. The new implementation tries the API first (gives nicer release metadata when it works) and falls through to `git ls-remote --tags --refs <https url>` on any failure, including HTTP 403 / network / JSON parse / empty result. Same fallback shape as the install.sh fix from earlier today.
+
+2. **The sync perimeter catches up with the v0.16.1 auto-install behavior.** v0.16.1 wired `cmd_sync` to call `install_content_source` when `[processkit].version != "unset"` AND the lock disagreed (BACK-110). The install correctly fetched processkit content and copied 262 files including `AGENTS.md` at the project root, `aibox.lock`, and the `context/{skills,schemas,state-machines,processes,templates}/` subtrees. But `cli/src/sync_perimeter.rs::SYNC_PERIMETER` and `TRIPWIRE_SENTINELS` were not updated to match — the perimeter still reflected v0.16.0's narrower contract ("sync never installs processkit; only init does"). The result was a runtime tripwire firing on the very first sync that materialized processkit content, with the misleading message *"these out-of-perimeter paths were modified during sync, which is a bug: AGENTS.md (absent → present, 4719 bytes)"*. The auto-install path was right; the perimeter was stale. v0.16.2 brings the perimeter into agreement:
+
+   - **`SYNC_PERIMETER` additions:** `aibox.lock`, `AGENTS.md`, `context/skills/`, `context/schemas/`, `context/state-machines/`, `context/processes/`, `context/templates/`.
+   - **`TRIPWIRE_SENTINELS` removal:** `AGENTS.md` is no longer a sentinel — sync legitimately writes it on the first install. `README.md`, `CLAUDE.md`, `LICENSE`, `CHANGELOG.md`, `.gitignore`, and the user-owned `context/{BACKLOG,DECISIONS,PRD,PROJECTS,STANDUPS,OWNER}.md` remain in the sentinel set.
+   - Module doc-comment in `sync_perimeter.rs` rewritten to spell out the v0.16.1 perimeter expansion and explain *why* the install destinations are now sync-managed (the three-way diff in `content_diff.rs` catches local edits and surfaces them as migration documents — they are never silently clobbered).
+   - `all_known_sync_write_targets_are_in_perimeter` extended with 9 new install-time write targets (aibox.lock, AGENTS.md, the five `context/` subtree samples, plus two `context/templates/processkit/v0.5.1/` samples).
+
+**Rationale:**
+
+These are both *specification catching up with implementation* fixes. The implementations that shipped in v0.16.1 (the auto-install, the version picker) were correct in spirit; the bug was that two adjacent layers (the API fallback contract, the sync perimeter contract) had not been updated together. The right fix is to update those layers so the implementation no longer surprises them.
+
+For (1) specifically, the fact that I shipped the same bug in both `scripts/install.sh` and `content_source.rs::list_versions` on the same day suggests the underlying lesson is "any unauthenticated GitHub API call is a footgun; default to the smart-HTTP git path". I'm leaving the API as the *primary* path (it gives explicit release metadata that's nicer than raw tags), but the fallback now means users will never be stuck because of rate limits.
+
+For (2), the fact that the tripwire fired on the *first* successful auto-install is a sign that the sync_perimeter unit tests should have been updated together with the cmd_sync change in v0.16.1 — the static `is_within_perimeter` test for the install destinations was missing. v0.16.2 adds it (`processkit_install_destinations_are_in_perimeter`, `processkit_templates_mirror_is_in_perimeter`, `aibox_lock_is_in_perimeter`, `agents_md_is_in_perimeter`) so any future regression of this kind will fail at `cargo test` time, not at the user's first sync.
+
+**Alternatives:**
+
+- *For (1): switch to GitHub API authenticated calls (e.g. honor a `GH_TOKEN` env var).* Rejected: introduces a credentials path that the rest of aibox doesn't have, complicates the install story, and still rate-limits authenticated calls (5000/hour) — just to a higher ceiling. The git fallback is unconditional and works for everyone.
+- *For (1): drop the API path entirely and always use git ls-remote.* Considered. The argument for keeping the API as primary is purely future-facing — if we ever want release metadata (publication date, draft/prerelease flags, asset list) we'll already have the code. If that future never comes, the API path is dead code we can remove in a follow-up. The fallback architecture means the user sees no behavioral difference when the API works vs when it doesn't.
+- *For (2): instead of expanding the perimeter, gate the install path with a "tripwire suppression" flag.* Rejected: tripwires that can be locally suppressed defeat their own purpose. The clean answer is to make the perimeter accurately reflect what sync legitimately writes.
+- *For (2): keep `AGENTS.md` in the tripwire and exempt it only when an install is in progress.* Rejected: a stateful tripwire is harder to reason about and harder to test. A simpler invariant — "sentinels are files sync NEVER writes; everything else is in-perimeter or doesn't matter" — is the right shape.
+
+**Implementation:**
+
+- `cli/src/content_source.rs::list_versions` now matches on `list_github_releases` result, falling through to `list_git_tags` on `Err` or empty `Ok`. `tracing::debug!` records the fallback so test runs and `RUST_LOG=debug` users can see why the git path was taken.
+- `cli/src/sync_perimeter.rs`: 7 new entries in `SYNC_PERIMETER`, `AGENTS.md` removed from `TRIPWIRE_SENTINELS`, module doc-comment rewritten. 6 new tests, the existing tripwire-fires-on-AGENTS.md test inverted to assert it does NOT fire, a new positive control `tripwire_fires_when_readme_is_created`. Full sync_perimeter test count: 33 (was 27).
+- 443/443 total tests pass; clippy clean; cargo audit clean.
+
+**Migration impact:** **Backwards compatible.** No config schema changes, no breaking API changes. Existing v0.16.1 projects pick up the fixes on the next `aibox sync`. If a project hit the v0.16.1 tripwire and aborted, upgrading to v0.16.2 and re-running sync fixes it.
+
+**Source:** Session 2026-04-08, reported by user after the v0.16.1 install completed and they ran `aibox init` (which fell through to `unset` because of the API rate limit), then edited aibox.toml to v0.5.1 and ran `aibox sync` (which installed correctly but tripped the perimeter tripwire on AGENTS.md). Both bugs reported in the same session message; both fixed in the same release.
+
 ## DEC-028 — aibox sync auto-installs processkit; init offers a version picker (2026-04-08)
 
 **Decision:** v0.16.1 closes a v0.16.0 bug and adds two related ergonomics.

@@ -262,11 +262,18 @@ fn base_cache_dir() -> Result<PathBuf> {
 
 /// List the versions available at `source`, newest first.
 ///
-/// For GitHub-hosted sources (host == `github.com`) the GitHub Releases
-/// API is used so that draft and prerelease tags can be filtered later
-/// if needed. For any other host the path is `git ls-remote --tags
-/// <source>`, which works against GitLab, Gitea, self-hosted, file://,
-/// and SSH URLs without needing host-specific API knowledge.
+/// Strategy:
+///
+/// 1. **GitHub-hosted sources** (host == `github.com`): try the GitHub
+///    Releases API first (`/repos/<org>/<name>/releases?per_page=100`),
+///    which gives explicit released-tag metadata. **On any failure
+///    (network, 403 rate limit, JSON parse, empty result) fall through
+///    to `git ls-remote`.** The unauthenticated GitHub API is capped at
+///    60 requests/hour per IP — a real footgun on shared NATs and CI
+///    runners. The git smart-HTTP protocol has a much higher rate limit
+///    and works without any API key.
+/// 2. **Anything else** (GitLab, Gitea, self-hosted, file://, SSH,
+///    scp-like): `git ls-remote --tags --refs <source>` directly.
 ///
 /// Filtering: only tags that parse as semver (with an optional leading
 /// `v`) are returned. Sorted descending by semver. Duplicates after the
@@ -277,7 +284,33 @@ fn base_cache_dir() -> Result<PathBuf> {
 pub fn list_versions(source: &str) -> Result<Vec<String>> {
     let parsed = parse_source(source)?;
     if parsed.host == "github.com" {
-        list_github_releases(&parsed.org, &parsed.name)
+        match list_github_releases(&parsed.org, &parsed.name) {
+            Ok(v) if !v.is_empty() => Ok(v),
+            Ok(_) => {
+                // Empty release set — could be a brand-new repo or one
+                // that uses git tags but no GitHub Releases. Fall through.
+                tracing::debug!(
+                    "GitHub Releases API returned no releases for {}/{}; \
+                     falling back to git ls-remote",
+                    parsed.org,
+                    parsed.name
+                );
+                list_git_tags(source)
+            }
+            Err(e) => {
+                // Network, 403 rate limit, JSON parse, anything. The git
+                // path is still likely to work and is the canonical
+                // source of truth for tags anyway.
+                tracing::debug!(
+                    "GitHub Releases API failed for {}/{}, falling back to \
+                     git ls-remote: {:#}",
+                    parsed.org,
+                    parsed.name,
+                    e
+                );
+                list_git_tags(source)
+            }
+        }
     } else {
         list_git_tags(source)
     }

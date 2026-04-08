@@ -1,131 +1,94 @@
-# aibox v0.16.1 — sync auto-installs processkit, init picks the version
+# aibox v0.16.2 — close two real-run footguns from v0.16.1
 
-Patch release that fixes a v0.16.0 bug and adds two long-overdue
-ergonomics for the `[processkit]` integration.
+Patch release. Both fixes came from the first real `aibox init` →
+`aibox sync` user run after v0.16.1 shipped.
 
-## Bug fix — `aibox sync` now installs processkit content
+## Bug fix #1 — `list_versions` falls back when GitHub API rate-limits
 
-In v0.16.0, the only code path that installed processkit content was
-`aibox init`. If a user ran `aibox init` while `[processkit].version`
-was the default `"unset"` sentinel and then edited `aibox.toml` to
-pin a real version, the next `aibox sync` would silently do nothing —
-no fetch, no install, no error. The user would see an empty
-`context/` directory and have no way to recover short of deleting
-`aibox.toml` and re-running init.
+`aibox init`'s interactive picker called the GitHub Releases API to
+list available processkit versions. The unauthenticated GitHub API is
+capped at **60 requests/hour per IP** — a real footgun on shared
+NATs, CI runners, and developer machines that already use other
+GitHub-using tooling. When the limit was hit the picker silently fell
+through to `unset` with a warning, leaving the user with the same
+v0.16.0 footgun the v0.16.1 release was supposed to fix.
 
-`aibox sync` now auto-installs whenever:
+`list_versions` now tries the API first (it gives nicer release
+metadata if/when we want it) and **falls back to `git ls-remote
+--tags --refs <source>` on any failure** — including 403, network,
+JSON parse, and empty result. The git smart-HTTP protocol has a much
+higher rate limit and is the canonical source of truth for tags
+anyway. Same fallback behavior the install script (`scripts/install.sh`)
+got in v0.16.1.
 
-- `[processkit].version != "unset"` AND
-- there is no `aibox.lock` yet, OR the lock disagrees with `aibox.toml`
-  on `(source, version)`
+Identical fix shape to the install.sh fix from earlier today, just
+applied to the in-CLI version listing path.
 
-The install is **idempotent** when source and version match the lock:
-the gating function `sync_should_install_processkit` short-circuits
-and the existing three-way diff path takes over for drift detection.
-You can re-run `aibox sync` as often as you like; the second run is
-free.
+## Bug fix #2 — sync perimeter tripwire fired on AGENTS.md install
 
-The decision is a pure function (`container::sync_should_install_processkit`)
-with five unit tests covering: unset sentinel, no-lock + pinned, lock
-matches, lock version stale, lock source changed.
+The sync auto-install path landed in v0.16.1 (BACK-110). It correctly
+fetched processkit content and copied 262 files including `AGENTS.md`
+at the project root. But the **sync perimeter** — the documented and
+runtime-enforced set of files sync may write — was not updated to
+match. The result: a runtime tripwire fired on the very first sync
+that materialized processkit content, with the misleading error
+"these out-of-perimeter paths were modified during sync, which is a
+bug: AGENTS.md (absent → present, 4719 bytes)".
 
-## Init now offers an interactive version picker
+The auto-install path was right; the perimeter was stale. v0.16.2
+brings the perimeter into agreement with v0.16.1's install behavior:
 
-`aibox init` previously hard-defaulted `[processkit].version` to the
-`"unset"` sentinel, leaving every new project with no content until
-the user manually researched which processkit tag to pin. v0.16.1
-queries the configured source at init time and shows a menu:
+**`SYNC_PERIMETER` additions:**
+- `aibox.lock` (top-level pin file written by the installer)
+- `AGENTS.md` (canonical agent entrypoint installed by processkit)
+- `context/skills/` (live install destination)
+- `context/schemas/` (primitive schemas)
+- `context/state-machines/` (state machines)
+- `context/processes/` (process definitions)
+- `context/templates/` (immutable upstream cache mirror used by the
+  three-way diff)
 
-```
-✔ Project name · my-project
-✔ Work process · managed — small teams with a shared backlog
-ℹ Querying available processkit versions at https://github.com/projectious-work/processkit.git...
-? processkit version ›
-❯ v0.5.1 (latest)
-  v0.5.0
-  v0.4.0
-  v0.3.0
-  v0.2.0
-  v0.1.0
-  unset — skip processkit install (configure later)
-```
+**`TRIPWIRE_SENTINELS` removal:**
+- `AGENTS.md` is no longer a sentinel — sync legitimately writes it
+  on the first install. The tripwire still watches `README.md`,
+  `CLAUDE.md`, `LICENSE`, `CHANGELOG.md`, `.gitignore`, and the
+  user-owned `context/{BACKLOG,DECISIONS,PRD,PROJECTS,STANDUPS,OWNER}.md`.
 
-- The latest version is the default (top entry).
-- An explicit `unset — skip processkit install (configure later)`
-  escape hatch is always present at the bottom for users who want to
-  defer pinning.
-- In non-interactive mode (no TTY) the latest version is picked
-  automatically.
-- If listing fails (network error, no semver tags) the resolver falls
-  back to `unset` with a warning. Existing v0.16.0 behavior preserved
-  in the failure case.
+Module doc-comment in `cli/src/sync_perimeter.rs` rewritten to spell
+out the v0.16.1 perimeter expansion. Migration impact: **none**, this
+matches the implementation that already shipped — it's the
+specification catching up.
 
-## New CLI flags on `aibox init`
+## Tests
 
-| Flag | What it does |
-|---|---|
-| `--processkit-source <url>` | Override the upstream URL. Lists versions from the override (or any compatible repo). Default: `https://github.com/projectious-work/processkit.git`. |
-| `--processkit-version <tag>` | Pin a specific tag. Skips the interactive picker entirely. Useful for scripted setup. |
-| `--processkit-branch <name>` | Track a moving branch. Wins over `--processkit-version` at fetch time per the existing fetcher contract; the version is still recorded in `aibox.toml` so the project can drop the branch later and have a sensible pin to fall back to. |
+- 443/443 passing (was 438 in v0.16.1)
+- 6 new sync_perimeter tests covering the new in-perimeter
+  paths and the new tripwire behavior:
+  - `aibox_lock_is_in_perimeter`
+  - `agents_md_is_in_perimeter`
+  - `processkit_install_destinations_are_in_perimeter` (5 paths)
+  - `processkit_templates_mirror_is_in_perimeter`
+  - `tripwire_does_not_fire_when_agents_md_is_created`
+  - `tripwire_fires_when_readme_is_created` (positive control)
+- Updated `all_known_sync_write_targets_are_in_perimeter` to include
+  the 9 new install-time write targets (aibox.lock, AGENTS.md, the
+  five context/ subtree samples, plus two templates/ samples).
 
-Example:
-
-```bash
-# Pin a specific version, no prompt
-aibox init --name my-app --process managed --processkit-version v0.5.1
-
-# Use a fork instead of upstream
-aibox init --name my-app --processkit-source https://github.com/acme/processkit-acme.git
-
-# Track a branch (discouraged, fine for testing pre-release work)
-aibox init --name my-app --processkit-branch main
-```
-
-## New API: `content_source::list_versions`
-
-Public function:
-
-```rust
-pub fn list_versions(source: &str) -> Result<Vec<String>>
-```
-
-Strategy:
-- **GitHub-hosted sources** (host == `github.com`): GitHub Releases API
-  (`https://api.github.com/repos/<org>/<name>/releases?per_page=100`).
-- **Anything else** (GitLab, Gitea, self-hosted, file://, ssh://, scp-like):
-  `git ls-remote --tags --refs <source>`.
-
-Filters: only tags that parse as semver (with optional leading `v`)
-are returned. Sorted descending by semver. Duplicates after the `v`
-strip are deduplicated. Six unit tests cover the helpers without
-network.
-
-## Quality gates
-
-- 438/438 tests pass (`cargo test`) — five new gating tests + six new
-  version-list filter tests
-- Zero clippy warnings (`cargo clippy --all-targets -- -D warnings`)
-- `cargo audit` clean
+`cargo audit`: clean.
+`cargo clippy --all-targets -- -D warnings`: clean.
 
 ## Migration impact
 
-**Backwards compatible.** No config schema changes; no breaking API
-changes. Existing v0.16.0 projects pick up the new behavior on the
-next `aibox sync`.
-
-If you were stuck on the v0.16.0 bug:
-
-```bash
-# Pin a real processkit version
-sed -i 's/version  = "unset"/version  = "v0.5.1"/' aibox.toml
-# Sync now installs the content
-aibox sync
-```
+**Backwards compatible.** No config schema changes. Existing v0.16.1
+projects pick up the fixes on the next `aibox sync`. If you got stuck
+on the v0.16.1 tripwire, just upgrade to v0.16.2 and re-run sync.
 
 ## Linked decisions
 
-- **DEC-028** — `aibox sync` auto-installs processkit content; init
-  offers an interactive version picker
+- **DEC-029** — list_versions GitHub fallback + sync perimeter
+  catch-up (this release)
+- **DEC-028** — sync auto-installs processkit, init picks the version
+  (v0.16.1)
 - **DEC-027** — aibox v0.16.0: rip the bundled process layer
 - **DEC-026** — Cache-tracked processkit reference
 - **DEC-025** — Generic content-source release-asset fetcher

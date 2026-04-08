@@ -6,7 +6,7 @@
 # Note: this project dogfoods its own CLI (installed from releases on the host).
 
 [aibox]
-version = "0.16.1"              # Set by aibox — do not edit manually
+version = "0.16.2"              # Set by aibox — do not edit manually
 base    = "debian"              # Base image flavor. Options: debian
 
 # =============================================================================

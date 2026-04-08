@@ -24,21 +24,39 @@
 //! | Path                                          | Why                                                              |
 //! |-----------------------------------------------|------------------------------------------------------------------|
 //! | `aibox.toml`                                  | One-time schema migrations (e.g. inserting `[processkit]`)       |
+//! | `aibox.lock`                                  | Pinned `(source, version)` written by the processkit installer  |
 //! | `.aibox-version`                              | Tracks installed CLI version for migration detection             |
 //! | `.aibox-home/`                                | Runtime config seed (shells, vim, zellij, yazi, …); gitignored   |
 //! | `.devcontainer/Dockerfile`                    | Regenerated from `aibox.toml`                                    |
 //! | `.devcontainer/docker-compose.yml`            | Regenerated from `aibox.toml`                                    |
 //! | `.devcontainer/devcontainer.json`             | Regenerated from `aibox.toml`                                    |
+//! | `AGENTS.md`                                   | Canonical agent entrypoint installed by processkit (v0.16.1+)    |
+//! | `context/skills/`                             | processkit live install destination (v0.16.1+ sync auto-install) |
+//! | `context/schemas/`                            | processkit primitive schemas (v0.16.1+)                          |
+//! | `context/state-machines/`                     | processkit state machines (v0.16.1+)                             |
+//! | `context/processes/`                          | processkit process definitions (v0.16.1+)                        |
+//! | `context/templates/`                          | Immutable upstream cache mirror; baseline for the 3-way diff     |
 //! | `context/migrations/`                         | Migration documents (additive; never overwrites)                 |
+//!
+//! The perimeter expanded in v0.16.1 because `aibox sync` now
+//! auto-installs processkit content when `[processkit].version` is
+//! pinned (closing the v0.16.0 footgun where users edited the version
+//! and got an empty `context/`). The install destinations listed above
+//! are reached via `crate::content_install::install_action_for` and
+//! are sync-managed from now on. Edits to these files are detected by
+//! the three-way diff in `crate::content_diff` and surfaced as
+//! migration documents — they are never silently clobbered.
 //!
 //! Anything else is **out of perimeter**. Notable items that aibox sync
 //! will NOT touch under any circumstances:
 //!
-//! - `README.md`, `AGENTS.md`, `CLAUDE.md`, `LICENSE`, `CHANGELOG.md`
+//! - `README.md`, `CLAUDE.md`, `LICENSE`, `CHANGELOG.md`
 //! - `src/`, `docs/`, `tests/`, `scripts/`, `assets/`
 //! - `context/BACKLOG.md`, `context/DECISIONS.md`, `context/PRD.md`,
-//!   `context/work-instructions/`, `context/skills/` (note: install-time
-//!   destination for processkit content; sync never writes here)
+//!   `context/PROJECTS.md`, `context/STANDUPS.md`, `context/OWNER.md`,
+//!   `context/work-instructions/` (these are user-authored or owned by
+//!   processkit *single-file* skills like `backlog-context` /
+//!   `decisions-adr` which write them on first use, not by aibox sync)
 //! - `.claude/`, `.gemini/`, any other provider directory
 //! - `.gitignore` (created by `aibox init`; sync never edits it)
 //!
@@ -83,6 +101,7 @@ use std::time::SystemTime;
 pub const SYNC_PERIMETER: &[&str] = &[
     // ── Top-level files aibox owns ─────────────────────────────────────
     "aibox.toml",
+    "aibox.lock",
     ".aibox-version",
     // ── Runtime config seed (gitignored) ────────────────────────────────
     ".aibox-home/",
@@ -90,6 +109,15 @@ pub const SYNC_PERIMETER: &[&str] = &[
     ".devcontainer/Dockerfile",
     ".devcontainer/docker-compose.yml",
     ".devcontainer/devcontainer.json",
+    // ── Canonical agent entrypoint (installed by processkit; v0.16.1+) ──
+    "AGENTS.md",
+    // ── processkit live install destinations (v0.16.1+ sync auto-install) ─
+    "context/skills/",
+    "context/schemas/",
+    "context/state-machines/",
+    "context/processes/",
+    // ── Immutable upstream cache mirror (baseline for the 3-way diff) ───
+    "context/templates/",
     // ── Migration documents (additive) ─────────────────────────────────
     "context/migrations/",
 ];
@@ -207,17 +235,24 @@ enum FileState {
 ///
 /// For runtime coverage we focus on the top-level files downstream
 /// consumers actually worry about: project entry points (`README.md`,
-/// `AGENTS.md`, `CLAUDE.md`) and the user-owned context documents.
+/// `CLAUDE.md`) and the user-owned context documents.
+///
+/// **Not in the sentinel list:** `AGENTS.md`. Since v0.16.1 the
+/// canonical agent entrypoint is installed by processkit through the
+/// sync auto-install path, so it legitimately changes during sync the
+/// first time a project pins a real `[processkit].version`. Tracking
+/// it here would fire on every fresh install.
 const TRIPWIRE_SENTINELS: &[&str] = &[
     // Top-level project entry points — the things issue #34 explicitly
     // worried about.
     "README.md",
-    "AGENTS.md",
     "CLAUDE.md",
     "LICENSE",
     "CHANGELOG.md",
     ".gitignore",
-    // Top-level user-owned context files (product process).
+    // Top-level user-owned context files (product process). Not
+    // sync-managed: created by user or by processkit single-file skills
+    // (backlog-context, decisions-adr, …) on first use, not by sync.
     "context/BACKLOG.md",
     "context/DECISIONS.md",
     "context/PRD.md",
@@ -331,6 +366,18 @@ mod tests {
         assert!(within(".devcontainer/devcontainer.json"));
     }
 
+    #[test]
+    fn aibox_lock_is_in_perimeter() {
+        assert!(within("aibox.lock"));
+    }
+
+    #[test]
+    fn agents_md_is_in_perimeter() {
+        // v0.16.1+: AGENTS.md is installed by processkit through the sync
+        // auto-install path. Sync legitimately writes it.
+        assert!(within("AGENTS.md"));
+    }
+
     // -- Directories in perimeter ------------------------------------------
 
     #[test]
@@ -349,12 +396,35 @@ mod tests {
         assert!(within("context/migrations/aibox-processkit-section-added.md"));
     }
 
+    #[test]
+    fn processkit_install_destinations_are_in_perimeter() {
+        // v0.16.1+: aibox sync auto-installs processkit content. The
+        // install lands under context/{skills,schemas,state-machines,
+        // processes}/ — all sync-managed.
+        assert!(within("context/skills/event-log/SKILL.md"));
+        assert!(within("context/skills/_lib/processkit/entity.py"));
+        assert!(within("context/schemas/workitem.yaml"));
+        assert!(within("context/state-machines/workitem.yaml"));
+        assert!(within("context/processes/release.md"));
+    }
+
+    #[test]
+    fn processkit_templates_mirror_is_in_perimeter() {
+        // The immutable upstream cache mirror lives under
+        // context/templates/processkit/<version>/ and is the baseline
+        // the three-way diff compares against.
+        assert!(within("context/templates"));
+        assert!(within("context/templates/processkit/v0.5.1/skills/event-log/SKILL.md"));
+        assert!(within("context/templates/processkit/v0.5.1/PROVENANCE.toml"));
+    }
+
     // -- Files explicitly OUT of perimeter ---------------------------------
 
     #[test]
     fn user_owned_top_level_files_are_out_of_perimeter() {
         assert!(!within("README.md"));
-        assert!(!within("AGENTS.md"));
+        // AGENTS.md is now in perimeter — owned by processkit, installed
+        // by sync. See agents_md_is_in_perimeter.
         assert!(!within("CLAUDE.md"));
         assert!(!within("LICENSE"));
         assert!(!within("CHANGELOG.md"));
@@ -371,22 +441,20 @@ mod tests {
 
     #[test]
     fn user_context_files_are_out_of_perimeter() {
-        // These belong to the project; sync must never touch them.
+        // These belong to the user (or to processkit single-file skills
+        // that create them lazily on first use). Sync must never write
+        // them.
         assert!(!within("context/BACKLOG.md"));
         assert!(!within("context/DECISIONS.md"));
         assert!(!within("context/PRD.md"));
         assert!(!within("context/PROJECTS.md"));
         assert!(!within("context/STANDUPS.md"));
+        assert!(!within("context/OWNER.md"));
         assert!(!within("context/work-instructions/DEVELOPMENT.md"));
         assert!(!within("context/notes/anything.md"));
-        // The processkit install destinations live under context/ but
-        // are written by `aibox init`, never by sync. Sync must not
-        // touch them either.
-        assert!(!within("context/skills/event-log/SKILL.md"));
-        assert!(!within("context/schemas/workitem.yaml"));
-        assert!(!within("context/state-machines/workflow.yaml"));
-        assert!(!within("context/processes/release.md"));
-        assert!(!within("context/templates/processkit/v0.5.0/skills/event-log/SKILL.md"));
+        // Note: context/skills/, context/schemas/, context/state-machines/,
+        // context/processes/, and context/templates/ ARE in perimeter as
+        // of v0.16.1 — see processkit_install_destinations_are_in_perimeter.
     }
 
     #[test]
@@ -508,6 +576,16 @@ mod tests {
             ".aibox-home/.asoundrc",
             // content_diff::write_migration_document
             "context/migrations/pending/MIG-20260407T120000.md",
+            // content_init::install_content_source (v0.16.1+ sync auto-install)
+            "aibox.lock",
+            "AGENTS.md",
+            "context/skills/event-log/SKILL.md",
+            "context/skills/_lib/processkit/entity.py",
+            "context/schemas/workitem.yaml",
+            "context/state-machines/workitem.yaml",
+            "context/processes/release.md",
+            "context/templates/processkit/v0.5.1/PROVENANCE.toml",
+            "context/templates/processkit/v0.5.1/skills/event-log/SKILL.md",
         ];
 
         for path in &known_sync_writes {
@@ -552,14 +630,24 @@ mod tests {
     }
 
     #[test]
-    fn tripwire_fires_when_agents_md_is_created() {
+    fn tripwire_does_not_fire_when_agents_md_is_created() {
+        // v0.16.1+: AGENTS.md is sync-managed (installed by processkit).
+        // The tripwire must NOT fire when sync legitimately writes it,
+        // otherwise the auto-install path would always trip.
         let tmp = tempfile::TempDir::new().unwrap();
-        // AGENTS.md does not exist before sync.
         let tw = Tripwire::snapshot(Some(tmp.path()));
-        // Simulate sync creating AGENTS.md (which it must not do).
-        std::fs::write(tmp.path().join("AGENTS.md"), "new\n").unwrap();
+        std::fs::write(tmp.path().join("AGENTS.md"), "installed\n").unwrap();
+        tw.verify().expect("AGENTS.md is no longer a tripwire sentinel");
+    }
+
+    #[test]
+    fn tripwire_fires_when_readme_is_created() {
+        // README.md remains a sentinel — sync must never create it.
+        let tmp = tempfile::TempDir::new().unwrap();
+        let tw = Tripwire::snapshot(Some(tmp.path()));
+        std::fs::write(tmp.path().join("README.md"), "new\n").unwrap();
         let err = tw.verify().unwrap_err();
-        assert!(format!("{}", err).contains("AGENTS.md"));
+        assert!(format!("{}", err).contains("README.md"));
     }
 
     #[test]
