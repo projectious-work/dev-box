@@ -89,11 +89,13 @@ ${bold}Development:${reset}
   test-visual              Run screencast smoke tests (~40s)
   record-docs              Regenerate all docs screencasts + README GIF
 
-${bold}Release:${reset}
-  sync-processkit          Check for new processkit release; patch constants + show diff
-  release <version>        Sync processkit, test, tag, build CLI, generate release prompt
-  release-host <version>   Build macOS binaries, upload to GH release,
-                           build + push images (on macOS host)
+${bold}Release cycle (run in order):${reset}
+  sync-processkit          [Step 0] Check for new processkit release; patch constants +
+                           show FORMAT.md diff; may require CLI changes before proceeding
+  test                     [Step 1] Verify code is clean (fmt, clippy, tests)
+  release <version>        [Step 2] Tag, build CLI binary, generate release prompt
+  release-host <version>   [Step 3, macOS] Build macOS binaries, upload to GH release,
+                           build + push images to GHCR
 
 ${bold}Container (this project's dev-container):${reset}
   start                    Ensure running, then attach via zellij
@@ -465,17 +467,7 @@ cmd_release() {
     die "Tag ${tag} already exists."
   fi
 
-  # ── Step 2: Sync processkit ───────────────────────────────────────────────
-  # Check for a newer processkit release. If one exists, patches
-  # PROCESSKIT_DEFAULT_VERSION, shows the FORMAT.md diff for human review,
-  # and aborts if the working tree is now dirty (requiring a commit first).
-  cmd_sync_processkit
-  if [[ -n "$(git status --porcelain)" ]]; then
-    echo ""
-    die "processkit_vocab.rs was updated. Commit the change, then re-run release."
-  fi
-
-  # ── Step 3: Run tests ──────────────────────────────────────────────────────
+  # ── Step 2: Run tests ──────────────────────────────────────────────────────
   info "Running tests..."
   cmd_test
 
