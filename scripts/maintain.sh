@@ -90,7 +90,8 @@ ${bold}Development:${reset}
   record-docs              Regenerate all docs screencasts + README GIF
 
 ${bold}Release:${reset}
-  release <version>        Tag, build CLI, generate release prompt (in container)
+  sync-processkit          Check for new processkit release; patch constants + show diff
+  release <version>        Sync processkit, test, tag, build CLI, generate release prompt
   release-host <version>   Build macOS binaries, upload to GH release,
                            build + push images (on macOS host)
 
@@ -327,6 +328,119 @@ cmd_docs_deploy() {
   rm -rf "${tmpdir}"
 }
 
+# =============================================================================
+# cmd_sync_processkit — check for a new processkit release and pull it in
+#
+# Queries GitHub for the latest processkit tag, compares it with the
+# PROCESSKIT_DEFAULT_VERSION constant in cli/src/processkit_vocab.rs, and if
+# a newer version exists:
+#
+#   1. Patches PROCESSKIT_DEFAULT_VERSION in processkit_vocab.rs
+#   2. Fetches the new FORMAT.md from the processkit repo and displays the
+#      diff against the previous version so the maintainer can spot vocabulary
+#      changes (new categories, renamed filenames, new directory segments, etc.)
+#   3. Re-runs the vocabulary unit tests (they enforce count/no-duplicates on
+#      CATEGORY_ORDER and will catch obvious drift immediately)
+#
+# Called automatically by cmd_release. Can also be run standalone:
+#   ./scripts/maintain.sh sync-processkit
+#
+# After this runs, review the FORMAT.md diff and update processkit_vocab.rs
+# manually if any vocabulary changed (CATEGORY_ORDER, src:: segments, filename
+# constants). Then commit before running `release`.
+# =============================================================================
+cmd_sync_processkit() {
+  command -v gh &>/dev/null || die "gh CLI required for processkit version check"
+
+  info "Checking for processkit updates..."
+
+  # ── Resolve latest upstream tag ───────────────────────────────────────────
+  local latest_tag
+  latest_tag=$(gh api repos/projectious-work/processkit/releases/latest --jq '.tag_name' 2>/dev/null) \
+    || { warn "Could not reach GitHub API — skipping processkit update check"; return 0; }
+
+  if [[ -z "${latest_tag}" ]]; then
+    warn "No processkit releases found — skipping update check"
+    return 0
+  fi
+
+  # ── Read the currently pinned version from processkit_vocab.rs ────────────
+  local vocab_file="${CLI_DIR}/src/processkit_vocab.rs"
+  local current_tag
+  current_tag=$(grep 'pub const PROCESSKIT_DEFAULT_VERSION' "${vocab_file}" \
+    | grep -oP '"v[^"]+"' | tr -d '"')
+
+  info "processkit: current=${current_tag}  latest=${latest_tag}"
+
+  if [[ "${current_tag}" == "${latest_tag}" ]]; then
+    ok "processkit is already up to date (${current_tag})"
+    return 0
+  fi
+
+  warn "New processkit version available: ${current_tag} → ${latest_tag}"
+
+  # ── Fetch FORMAT.md for both versions for a vocabulary diff ───────────────
+  local fmt_path="src/skills/FORMAT.md"
+  local tmp_old tmp_new
+  tmp_old=$(mktemp)
+  tmp_new=$(mktemp)
+  trap 'rm -f "${tmp_old}" "${tmp_new}"' RETURN
+
+  _fetch_processkit_file() {
+    local ref="$1" dest="$2"
+    gh api "repos/projectious-work/processkit/contents/${fmt_path}?ref=${ref}" \
+      --jq '.content' 2>/dev/null \
+      | base64 -d > "${dest}" 2>/dev/null \
+      || { warn "Could not fetch FORMAT.md for ${ref}"; touch "${dest}"; }
+  }
+
+  info "Fetching FORMAT.md for ${current_tag} and ${latest_tag}..."
+  _fetch_processkit_file "${current_tag}" "${tmp_old}"
+  _fetch_processkit_file "${latest_tag}"  "${tmp_new}"
+
+  local diff_output
+  diff_output=$(diff --unified=3 "${tmp_old}" "${tmp_new}" || true)
+
+  if [[ -z "${diff_output}" ]]; then
+    info "FORMAT.md is unchanged between ${current_tag} and ${latest_tag}"
+    info "(Vocabulary constants in processkit_vocab.rs need no update)"
+  else
+    echo ""
+    echo "${bold}FORMAT.md diff (${current_tag} → ${latest_tag}):${reset}"
+    echo "${diff_output}"
+    echo ""
+    warn "Review the diff above. If any of these changed, update processkit_vocab.rs manually:"
+    echo "  · CATEGORY_ORDER        (new/removed/reordered categories)"
+    echo "  · processkit_vocab::src (new/renamed source-tree directory segments)"
+    echo "  · *_FILENAME constants  (SKILL_FILENAME, PROVENANCE_FILENAME, INDEX_FILENAME, …)"
+    echo ""
+    warn "Press Enter to continue after reviewing, or Ctrl-C to abort and update first."
+    read -r
+  fi
+
+  # ── Patch PROCESSKIT_DEFAULT_VERSION in processkit_vocab.rs ───────────────
+  info "Patching PROCESSKIT_DEFAULT_VERSION: ${current_tag} → ${latest_tag}"
+  sed -i "s|pub const PROCESSKIT_DEFAULT_VERSION: &str = \"${current_tag}\";|pub const PROCESSKIT_DEFAULT_VERSION: \&str = \"${latest_tag}\";|" \
+    "${vocab_file}"
+  ok "Patched ${vocab_file}"
+
+  # ── Re-run vocabulary tests to catch obvious drift ────────────────────────
+  info "Running processkit vocabulary tests..."
+  (cd "${CLI_DIR}" && cargo test processkit_vocab 2>&1) \
+    || die "Vocabulary tests failed after update — fix processkit_vocab.rs before releasing"
+  ok "Vocabulary tests pass for ${latest_tag}"
+
+  # ── Remind maintainer to commit ────────────────────────────────────────────
+  echo ""
+  warn "processkit_vocab.rs patched but not yet committed."
+  warn "Review the diff above, make any additional vocabulary changes, then commit:"
+  echo ""
+  echo "  git add cli/src/processkit_vocab.rs"
+  echo "  git commit -m \"chore: bump processkit default version to ${latest_tag}\""
+  echo ""
+  echo "Then re-run: ./scripts/maintain.sh release <version>"
+}
+
 cmd_release() {
   local version="${1:-}"
   [[ -z "${version}" ]] && die "Usage: ./scripts/maintain.sh release <version>  (e.g. 0.2.0)"
@@ -351,7 +465,17 @@ cmd_release() {
     die "Tag ${tag} already exists."
   fi
 
-  # ── Step 2: Run tests ──────────────────────────────────────────────────────
+  # ── Step 2: Sync processkit ───────────────────────────────────────────────
+  # Check for a newer processkit release. If one exists, patches
+  # PROCESSKIT_DEFAULT_VERSION, shows the FORMAT.md diff for human review,
+  # and aborts if the working tree is now dirty (requiring a commit first).
+  cmd_sync_processkit
+  if [[ -n "$(git status --porcelain)" ]]; then
+    echo ""
+    die "processkit_vocab.rs was updated. Commit the change, then re-run release."
+  fi
+
+  # ── Step 3: Run tests ──────────────────────────────────────────────────────
   info "Running tests..."
   cmd_test
 
@@ -661,6 +785,7 @@ case "${COMMAND}" in
   docs-deploy)  cmd_docs_deploy "$@" ;;
   test-visual)  cmd_test_visual ;;
   record-docs)  cmd_record_docs ;;
+  sync-processkit) cmd_sync_processkit ;;
   release)      cmd_release "$@" ;;
   release-host) cmd_release_host "$@" ;;
   start)        cmd_start ;;
