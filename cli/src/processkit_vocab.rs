@@ -38,7 +38,7 @@ pub const PROCESSKIT_GIT_SOURCE: &str =
 /// constant serves as the canonical reference for tests and documentation.
 // Used in #[cfg(test)] blocks across multiple modules and in documentation.
 #[allow(dead_code)]
-pub const PROCESSKIT_DEFAULT_VERSION: &str = "v0.6.0";
+pub const PROCESSKIT_DEFAULT_VERSION: &str = "v0.7.0";
 
 // ---------------------------------------------------------------------------
 // Processkit source-tree directory segments

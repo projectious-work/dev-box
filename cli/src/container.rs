@@ -330,12 +330,11 @@ fn populate_addon_tools(
             .or(picked_version)
             .unwrap_or_else(|| tool.default_version.clone());
 
-        tools.insert(
-            tool.name.clone(),
-            ToolEntry {
-                version: Some(version),
-            },
-        );
+        // Empty string means "no separate version" (e.g. rustfmt is part
+        // of the rustup toolchain and has no independent version pin).
+        // Represent this as None so the TOML serialises as `tool = {}`.
+        let version_opt = if version.is_empty() { None } else { Some(version) };
+        tools.insert(tool.name.clone(), ToolEntry { version: version_opt });
     }
 
     Ok(AddonToolsSection { tools })

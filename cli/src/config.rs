@@ -802,11 +802,12 @@ impl AiboxConfig {
                     );
                 }
                 if let Some(version) = &tool_entry.version
+                    && !version.is_empty() // empty string means "use addon default" — valid
                     && !is_safe_version(version)
                 {
                     bail!(
                         "tool version '{}' for '{}' in addon '{}' contains invalid characters. \
-                         Must be non-empty and contain only [a-zA-Z0-9._\\-+]",
+                         Must contain only [a-zA-Z0-9._\\-+]",
                         version,
                         tool_name,
                         addon_name

@@ -283,37 +283,34 @@ fn base_cache_dir() -> Result<PathBuf> {
 /// Used by `aibox init`'s interactive picker (and the
 /// `--processkit-version` flag's "default to latest" path).
 pub fn list_versions(source: &str) -> Result<Vec<String>> {
+    // git ls-remote is always the authoritative source: it sees every pushed
+    // tag, including those not yet published as a formal GitHub Release.
+    // The GitHub Releases API is used only as a fallback (e.g. if git is
+    // unavailable in the environment) because it can miss tags that have been
+    // pushed but not formally released.
+    match list_git_tags(source) {
+        Ok(v) if !v.is_empty() => return Ok(v),
+        Ok(_) => {
+            tracing::debug!(
+                "git ls-remote returned no semver tags for {}; \
+                 trying GitHub Releases API",
+                source
+            );
+        }
+        Err(e) => {
+            tracing::debug!(
+                "git ls-remote failed for {}: {:#}; trying GitHub Releases API",
+                source,
+                e
+            );
+        }
+    }
+
     let parsed = parse_source(source)?;
     if parsed.host == "github.com" {
-        match list_github_releases(&parsed.org, &parsed.name) {
-            Ok(v) if !v.is_empty() => Ok(v),
-            Ok(_) => {
-                // Empty release set — could be a brand-new repo or one
-                // that uses git tags but no GitHub Releases. Fall through.
-                tracing::debug!(
-                    "GitHub Releases API returned no releases for {}/{}; \
-                     falling back to git ls-remote",
-                    parsed.org,
-                    parsed.name
-                );
-                list_git_tags(source)
-            }
-            Err(e) => {
-                // Network, 403 rate limit, JSON parse, anything. The git
-                // path is still likely to work and is the canonical
-                // source of truth for tags anyway.
-                tracing::debug!(
-                    "GitHub Releases API failed for {}/{}, falling back to \
-                     git ls-remote: {:#}",
-                    parsed.org,
-                    parsed.name,
-                    e
-                );
-                list_git_tags(source)
-            }
-        }
+        list_github_releases(&parsed.org, &parsed.name)
     } else {
-        list_git_tags(source)
+        bail!("Could not list any semver-tagged versions at {}", source)
     }
 }
 
