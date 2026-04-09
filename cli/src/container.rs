@@ -988,6 +988,11 @@ pub fn cmd_init(config_path: &Option<String>, params: InitParams) -> Result<()> 
             ) {
                 output::warn(&format!("MCP registration failed: {}", e));
             }
+            // Sync processkit command adapter files to .claude/commands/
+            // so Claude Code can tab-complete them. Best-effort.
+            if let Err(e) = crate::claude_commands::sync_claude_commands(&project_root, &config) {
+                output::warn(&format!("Claude command sync failed: {}", e));
+            }
         }
         Err(e) => {
             output::warn(&format!(
@@ -1114,10 +1119,15 @@ pub fn cmd_sync(config_path: &Option<String>, no_cache: bool, no_build: bool) ->
     // re-running on a stable (version, providers, skills) set
     // produces byte-identical output. Best-effort: any failure is
     // warned-and-continued. See DEC-033.
-    if let Ok(cwd) = std::env::current_dir()
-        && let Err(e) = crate::mcp_registration::regenerate_mcp_configs(&config, &cwd)
-    {
-        output::warn(&format!("MCP registration failed: {}", e));
+    if let Ok(cwd) = std::env::current_dir() {
+        if let Err(e) = crate::mcp_registration::regenerate_mcp_configs(&config, &cwd) {
+            output::warn(&format!("MCP registration failed: {}", e));
+        }
+        // Sync processkit command adapter files to .claude/commands/
+        // so Claude Code can tab-complete them. Best-effort.
+        if let Err(e) = crate::claude_commands::sync_claude_commands(&cwd, &config) {
+            output::warn(&format!("Claude command sync failed: {}", e));
+        }
     }
 
     // Three-way processkit diff (A6).

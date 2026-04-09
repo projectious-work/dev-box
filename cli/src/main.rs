@@ -27,6 +27,7 @@ mod content_install;
 mod content_migration;
 #[allow(dead_code)]
 mod content_source;
+mod claude_commands;
 mod mcp_registration;
 mod processkit_vocab;
 mod reset;

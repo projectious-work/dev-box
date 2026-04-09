@@ -42,6 +42,7 @@
 //! | `.gemini/`                                    | Gemini CLI settings directory (v0.16.5+)                         |
 //! | `.codex/`                                     | Codex CLI config directory (v0.16.5+)                            |
 //! | `.continue/`                                  | Continue MCP servers directory (v0.16.5+)                        |
+//! | `.claude/commands/`                           | Claude Code slash-command adapters from processkit skills (v0.17.3+) |
 //!
 //! The perimeter expanded in v0.16.1 because `aibox sync` now
 //! auto-installs processkit content when `[processkit].version` is
@@ -62,7 +63,7 @@
 //!   `context/work-instructions/` (these are user-authored or owned by
 //!   processkit skills like `workitem-management` / `decision-record`
 //!   which write them on first use, not by aibox sync)
-//! - `.claude/`, `.gemini/`, any other provider directory
+//! - `.claude/` (except `.claude/commands/` which is in-perimeter), `.gemini/`, any other provider directory
 //! - `.gitignore` (created by `aibox init`; sync never edits it)
 //!
 //! Note: `aibox init` is allowed to create files outside this list as
@@ -137,6 +138,10 @@ pub const SYNC_PERIMETER: &[&str] = &[
     ".gemini/",
     ".codex/",
     ".continue/",
+    // ── Claude Code slash-command adapters (v0.17.3+ projectious-work/aibox#37) ─
+    // Only the commands/ subdirectory; the rest of .claude/ remains out of
+    // perimeter (provider-managed: settings, memory, session history, …).
+    ".claude/commands/",
 ];
 
 /// Normalize a path to its forward-slash, project-root-relative string
@@ -496,13 +501,23 @@ mod tests {
 
     #[test]
     fn claude_internal_files_are_out_of_perimeter() {
-        // Since v0.16.0 nothing under .claude/ is aibox-managed.
+        // Most of .claude/ is provider-managed (settings, cache, memory, …).
+        // Only .claude/commands/ is in-perimeter as of v0.17.3.
         // (Note: .mcp.json at the project root IS in perimeter as of
         // v0.16.5 — it's a file Claude Code reads, but it's at the
         // project root, not under .claude/.)
         assert!(!within(".claude/settings.json"));
         assert!(!within(".claude/cache/foo"));
         assert!(!within(".claude/skills/agent-management/SKILL.md"));
+        assert!(!within(".claude/CLAUDE.md"));
+    }
+
+    #[test]
+    fn claude_commands_is_in_perimeter() {
+        // v0.17.3+ projectious-work/aibox#37: command adapter files from
+        // processkit skills are synced to .claude/commands/.
+        assert!(within(".claude/commands/session-handover-write.md"));
+        assert!(within(".claude/commands/morning-briefing-run.md"));
     }
 
     #[test]
