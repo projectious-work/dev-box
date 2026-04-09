@@ -42,7 +42,7 @@ use anyhow::{Context, Result};
 
 use crate::config::{AiboxConfig, PROCESSKIT_VERSION_UNSET};
 use crate::output;
-use crate::processkit_vocab::TEMPLATES_PROCESSKIT_DIR;
+use crate::processkit_vocab::mirror_skills_dir;
 
 /// Sync processkit command adapter files to `.claude/commands/`.
 ///
@@ -55,20 +55,19 @@ pub fn sync_claude_commands(project_root: &Path, config: &AiboxConfig) -> Result
         return Ok(());
     }
 
-    let mirror_skills_dir = project_root
-        .join(TEMPLATES_PROCESSKIT_DIR)
-        .join(pk_version)
-        .join("skills");
+    let mirror_skills_dir = mirror_skills_dir(project_root, pk_version);
     let live_skills_dir = project_root.join("context").join("skills");
 
-    if !mirror_skills_dir.is_dir() && !live_skills_dir.is_dir() {
+    if mirror_skills_dir.is_none() && !live_skills_dir.is_dir() {
         return Ok(());
     }
 
     // Step 1: build the universe of all known processkit command filenames by
     // scanning the templates mirror. Anything in this set that appears in
     // .claude/commands/ is considered aibox-managed.
-    let universe = collect_command_filenames(&mirror_skills_dir);
+    let empty_dir = std::path::PathBuf::new();
+    let mirror_dir_ref = mirror_skills_dir.as_deref().unwrap_or(&empty_dir);
+    let universe = collect_command_filenames(mirror_dir_ref);
 
     // Step 2: build the wanted set from the live installed skills. Source
     // path is stored so we can copy the content verbatim.
@@ -199,12 +198,10 @@ pub fn remove_managed_commands(project_root: &Path, config: &AiboxConfig) -> Res
         return Ok(());
     }
 
-    let mirror_skills_dir = project_root
-        .join(TEMPLATES_PROCESSKIT_DIR)
-        .join(pk_version)
-        .join("skills");
-
-    let universe = collect_command_filenames(&mirror_skills_dir);
+    let mirror_dir = mirror_skills_dir(project_root, pk_version);
+    let empty_dir = std::path::PathBuf::new();
+    let mirror_dir_ref = mirror_dir.as_deref().unwrap_or(&empty_dir);
+    let universe = collect_command_filenames(mirror_dir_ref);
     if universe.is_empty() {
         return Ok(());
     }
@@ -333,9 +330,9 @@ mod tests {
         let tmp = tempfile::tempdir().unwrap();
         let project = tmp.path();
 
-        // Mirror: knows about two commands from two skills
+        // Mirror: knows about two commands from two skills (v0.8.0 layout)
         let mirror = project
-            .join("context/templates/processkit/v0.7.0/skills");
+            .join("context/templates/processkit/v0.8.0/context/skills");
         make_skill_commands(&mirror, "skill-a", &["skill-a-run.md"], "body");
         make_skill_commands(&mirror, "skill-b", &["skill-b-run.md"], "body");
 
@@ -350,7 +347,7 @@ mod tests {
         // Also a user-created file that should be left alone
         fs::write(claude_cmds.join("my-custom.md"), "mine").unwrap();
 
-        let config = config_with_pk_version("v0.7.0");
+        let config = config_with_pk_version("v0.8.0");
 
         sync_claude_commands(project, &config).unwrap();
 

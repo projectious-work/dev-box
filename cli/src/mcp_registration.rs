@@ -53,7 +53,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::config::{AiProvider, AiboxConfig};
 use crate::output;
-use crate::processkit_vocab::TEMPLATES_PROCESSKIT_DIR;
+use crate::processkit_vocab::mirror_skills_dir;
 
 // ---------------------------------------------------------------------------
 // Spec types
@@ -122,13 +122,9 @@ pub fn collect_processkit_mcp_specs(
     if processkit_version == crate::config::PROCESSKIT_VERSION_UNSET {
         return Ok(Vec::new());
     }
-    let mirror_skills_dir = project_root
-        .join(TEMPLATES_PROCESSKIT_DIR)
-        .join(processkit_version)
-        .join("skills");
-    if !mirror_skills_dir.is_dir() {
+    let Some(mirror_skills_dir) = mirror_skills_dir(project_root, processkit_version) else {
         return Ok(Vec::new());
-    }
+    };
 
     let mut specs: Vec<McpServerSpec> = Vec::new();
 
@@ -599,10 +595,12 @@ mod tests {
         skill: &str,
         json_body: &str,
     ) -> PathBuf {
+        // Use v0.8.0 layout: context/skills/<name>/mcp/mcp-config.json
         let dir = mirror_root
             .join(crate::processkit_vocab::TEMPLATES_PROCESSKIT_DIR)
             .join(version)
-            .join("skills")
+            .join(crate::processkit_vocab::src::CONTEXT_DIR)
+            .join(crate::processkit_vocab::src::SKILLS)
             .join(skill)
             .join("mcp");
         fs::create_dir_all(&dir).unwrap();
@@ -737,7 +735,9 @@ mod tests {
             .path()
             .join(crate::processkit_vocab::TEMPLATES_PROCESSKIT_DIR)
             .join(crate::processkit_vocab::PROCESSKIT_DEFAULT_VERSION)
-            .join("skills/code-review");
+            .join(crate::processkit_vocab::src::CONTEXT_DIR)
+            .join(crate::processkit_vocab::src::SKILLS)
+            .join("code-review");
         fs::create_dir_all(&docs_only_skill).unwrap();
         fs::write(docs_only_skill.join("SKILL.md"), "# code review\n").unwrap();
 
@@ -776,7 +776,10 @@ mod tests {
             .path()
             .join(crate::processkit_vocab::TEMPLATES_PROCESSKIT_DIR)
             .join(crate::processkit_vocab::PROCESSKIT_DEFAULT_VERSION)
-            .join("skills/_lib/processkit");
+            .join(crate::processkit_vocab::src::CONTEXT_DIR)
+            .join(crate::processkit_vocab::src::SKILLS)
+            .join(crate::processkit_vocab::src::LIB_SEGMENT)
+            .join("processkit");
         fs::create_dir_all(&lib).unwrap();
         fs::write(lib.join("entity.py"), "x = 1\n").unwrap();
         let specs = collect_processkit_mcp_specs(tmp.path(), crate::processkit_vocab::PROCESSKIT_DEFAULT_VERSION, None).unwrap();

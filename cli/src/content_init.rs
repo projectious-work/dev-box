@@ -57,7 +57,9 @@ use crate::lock::{self, AiboxLock, group_for_path, should_skip_entry};
 use crate::content_install::{InstallAction, install_action_for};
 use crate::content_source;
 use crate::context;
-use crate::processkit_vocab::{self, SKILL_FILENAME, TEMPLATES_PROCESSKIT_DIR};
+use crate::processkit_vocab::{
+    self, mirror_packages_dir, mirror_skills_dir, SKILL_FILENAME, TEMPLATES_PROCESSKIT_DIR,
+};
 
 // ---------------------------------------------------------------------------
 // [skills].include / [skills].exclude activation (BACK-118 / DEC-035)
@@ -108,13 +110,9 @@ pub fn build_effective_skill_set(
     if config.processkit.version == PROCESSKIT_VERSION_UNSET {
         return Ok(None);
     }
-    let packages_dir = project_root
-        .join(TEMPLATES_PROCESSKIT_DIR)
-        .join(&config.processkit.version)
-        .join("packages");
-    if !packages_dir.is_dir() {
+    let Some(packages_dir) = mirror_packages_dir(project_root, &config.processkit.version) else {
         return Ok(None);
-    }
+    };
 
     // Step 1: walk every selected [context].packages package, recursively
     // expand `extends:`, collect the union of skill names.
@@ -163,7 +161,9 @@ pub fn build_effective_skill_set(
     // are added back unconditionally after the exclude pass. `aibox doctor`
     // warns separately when a core skill appears in [skills].exclude.
     // See processkit/aibox#36 for the proposed convention.
-    let core_skills = collect_core_skills(&packages_dir.join("..").join("skills"));
+    let skills_for_core = mirror_skills_dir(project_root, &config.processkit.version)
+        .unwrap_or_default();
+    let core_skills = collect_core_skills(&skills_for_core);
     for skill in core_skills {
         effective.insert(skill);
     }
@@ -221,13 +221,11 @@ pub fn validate_skill_overrides(
         None => return Ok(Vec::new()),
     };
     // Build the universe = set BEFORE applying user overrides.
-    let mirror_skills_dir = project_root
-        .join(TEMPLATES_PROCESSKIT_DIR)
-        .join(&config.processkit.version)
-        .join("skills");
-    if !mirror_skills_dir.is_dir() {
+    let Some(mirror_skills_dir) =
+        mirror_skills_dir(project_root, &config.processkit.version)
+    else {
         return Ok(Vec::new());
-    }
+    };
     let mut all_skills: HashSet<String> = HashSet::new();
     if let Ok(entries) = fs::read_dir(&mirror_skills_dir) {
         for entry in entries.flatten() {
@@ -749,11 +747,12 @@ mod tests {
         version: &str,
         packages: &[(&str, &[&str], &[&str])],
     ) {
-        // (package_name, extends, skills)
+        // (package_name, extends, skills) — v0.8.0 layout: .processkit/packages/
         let dir = project_root
             .join(TEMPLATES_PROCESSKIT_DIR)
             .join(version)
-            .join("packages");
+            .join(processkit_vocab::src::DOTPROCESSKIT)
+            .join(processkit_vocab::src::PACKAGES);
         fs::create_dir_all(&dir).unwrap();
         for (name, extends, skills) in packages {
             let extends_yaml = if extends.is_empty() {
@@ -953,11 +952,13 @@ mod tests {
             version,
             &[("minimal", &[], &["workitem-management", "skill-finder"])],
         );
-        // Materialise the templates mirror skills dir so validate can read it.
+        // Materialise the templates mirror skills dir so validate can read it
+        // (v0.8.0 layout: context/skills/).
         let mirror_skills = tmp.path()
             .join(TEMPLATES_PROCESSKIT_DIR)
             .join(version)
-            .join("skills");
+            .join(processkit_vocab::src::CONTEXT_DIR)
+            .join(processkit_vocab::src::SKILLS);
         let sf_dir = mirror_skills.join("skill-finder");
         let wm_dir = mirror_skills.join("workitem-management");
         fs::create_dir_all(&sf_dir).unwrap();

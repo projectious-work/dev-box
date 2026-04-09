@@ -283,16 +283,29 @@ pub fn path_to_forward_slash(rel: &Path) -> String {
 ///
 /// Groups drive the "auto-update by group, never by individual file" rule
 /// in the 3-way diff: if any file in a group has been edited locally, the
-/// whole group is held back for review. Heuristic, in priority order:
+/// whole group is held back for review.
 ///
-/// 1. `PROVENANCE.toml` at the top → `"PROVENANCE"`
-/// 2. `skills/<name>/...` → `"skills/<name>"` (everything under a skill dir)
-/// 3. `primitives/schemas/<X>.yaml` → `"primitives/schemas/<X>"`
-/// 4. `primitives/state-machines/<X>.yaml` → `"primitives/state-machines/<X>"`
-/// 5. `primitives/<other>` → `"primitives"`
-/// 6. `lib/...` → `"lib"`
-/// 7. `processes/<name>/...` or `processes/<name>.md` → `"processes/<name>"`
-/// 8. anything else → the immediate parent directory or `None`
+/// Handles both the **v0.8.0+ GrandLily layout** (paths start with
+/// `context/`) and the **v0.7.0 legacy layout** (bare top-level names).
+/// The group name strings are identical across both layouts so that the
+/// diff logic works consistently regardless of which processkit version
+/// is installed.
+///
+/// Priority order:
+/// 1. `PROVENANCE.toml` → `"PROVENANCE"`
+/// 2. v0.8.0 `context/skills/_lib/...` → `"lib"`
+/// 3. v0.8.0 `context/skills/<name>/...` → `"skills/<name>"`
+/// 4. v0.8.0 `context/schemas/<X>...` → `"schemas/<X>"`
+/// 5. v0.8.0 `context/state-machines/<X>...` → `"state-machines/<X>"`
+/// 6. v0.8.0 `context/processes/<name>...` → `"processes/<name>"`
+/// 7. v0.8.0 `AGENTS.md` (top-level) → `"AGENTS"`
+/// 8. legacy `skills/<name>/...` → `"skills/<name>"`
+/// 9. legacy `primitives/schemas/<X>...` → `"primitives/schemas/<X>"`
+/// 10. legacy `primitives/state-machines/<X>...` → `"primitives/state-machines/<X>"`
+/// 11. legacy `primitives/<other>` → `"primitives"`
+/// 12. legacy `lib/...` → `"lib"`
+/// 13. legacy `processes/<name>...` → `"processes/<name>"`
+/// 14. anything else → immediate parent dir or `None`
 pub fn group_for_path(rel_path: &Path) -> Option<String> {
     let parts: Vec<String> = rel_path
         .components()
@@ -311,36 +324,82 @@ pub fn group_for_path(rel_path: &Path) -> Option<String> {
         return Some("PROVENANCE".to_string());
     }
 
-    // 2. skills/<name>/...
-    if parts[0] == pk::src::SKILLS && parts.len() >= 2 {
-        return Some(format!("{}/{}", pk::src::SKILLS, parts[1]));
+    // ── v0.8.0+ GrandLily layout ─────────────────────────────────────────────
+
+    // 7. AGENTS.md at top-level (v0.8.0 puts it at the tarball root)
+    if parts.len() == 1 && parts[0] == crate::processkit_vocab::AGENTS_FILENAME {
+        return Some("AGENTS".to_string());
     }
 
-    // 3, 4, 5. primitives/...
-    if parts[0] == pk::src::PRIMITIVES {
-        if parts.len() >= 3
-            && (parts[1] == pk::src::SCHEMAS || parts[1] == pk::src::STATE_MACHINES)
+    if parts[0] == pk::src::CONTEXT_DIR && parts.len() >= 2 {
+        let sub = &parts[1];
+
+        // 2. context/skills/_lib/...  → "lib"
+        if sub == pk::src::SKILLS
+            && parts.len() >= 3
+            && parts[2] == pk::src::LIB_SEGMENT
         {
-            // Strip a trailing extension from the leaf so all files
-            // describing the same primitive share a group.
-            let leaf = strip_known_ext(&parts[2]);
-            return Some(format!("{}/{}/{}", pk::src::PRIMITIVES, parts[1], leaf));
+            return Some("lib".to_string());
         }
-        return Some(pk::src::PRIMITIVES.to_string());
+
+        // 3. context/skills/<name>/...  → "skills/<name>"
+        if sub == pk::src::SKILLS && parts.len() >= 3 {
+            return Some(format!("skills/{}", parts[2]));
+        }
+
+        // 4. context/schemas/<X>...  → "schemas/<X>"
+        if sub == pk::src::SCHEMAS && parts.len() >= 3 {
+            let leaf = strip_known_ext(&parts[2]);
+            return Some(format!("schemas/{}", leaf));
+        }
+
+        // 5. context/state-machines/<X>...  → "state-machines/<X>"
+        if sub == pk::src::STATE_MACHINES && parts.len() >= 3 {
+            let leaf = strip_known_ext(&parts[2]);
+            return Some(format!("state-machines/{}", leaf));
+        }
+
+        // 6. context/processes/<name>...  → "processes/<name>"
+        if sub == pk::src::PROCESSES && parts.len() >= 3 {
+            let leaf = strip_known_ext(&parts[2]);
+            return Some(format!("processes/{}", leaf));
+        }
+
+        // context/<other> → parent path fallback
+        return Some(parts[..parts.len() - 1].join("/"));
     }
 
-    // 6. lib/...
-    if parts[0] == pk::src::LIB {
-        return Some(pk::src::LIB.to_string());
+    // ── v0.7.0 legacy layout ─────────────────────────────────────────────────
+
+    // 8. skills/<name>/...
+    if parts[0] == pk::src::LEGACY_SKILLS && parts.len() >= 2 {
+        return Some(format!("skills/{}", parts[1]));
     }
 
-    // 7. processes/<name>(/...)
-    if parts[0] == pk::src::PROCESSES && parts.len() >= 2 {
+    // 9, 10, 11. primitives/...
+    if parts[0] == pk::src::LEGACY_PRIMITIVES {
+        if parts.len() >= 3
+            && (parts[1] == pk::src::LEGACY_SCHEMAS
+                || parts[1] == pk::src::LEGACY_STATE_MACHINES)
+        {
+            let leaf = strip_known_ext(&parts[2]);
+            return Some(format!("primitives/{}/{}", parts[1], leaf));
+        }
+        return Some("primitives".to_string());
+    }
+
+    // 12. lib/...
+    if parts[0] == pk::src::LEGACY_LIB {
+        return Some("lib".to_string());
+    }
+
+    // 13. processes/<name>(/...)
+    if parts[0] == pk::src::LEGACY_PROCESSES && parts.len() >= 2 {
         let leaf = strip_known_ext(&parts[1]);
-        return Some(format!("{}/{}", pk::src::PROCESSES, leaf));
+        return Some(format!("processes/{}", leaf));
     }
 
-    // 8. fallback — immediate parent dir, or None for top-level loose files.
+    // 14. fallback — immediate parent dir, or None for top-level loose files.
     if parts.len() >= 2 {
         return Some(parts[..parts.len() - 1].join("/"));
     }
@@ -492,7 +551,7 @@ mod tests {
         );
     }
 
-    // -- Group heuristic ----------------------------------------------------
+    // -- Group heuristic — shared --------------------------------------------
 
     #[test]
     fn group_provenance() {
@@ -503,7 +562,72 @@ mod tests {
     }
 
     #[test]
-    fn group_skill_subfile() {
+    fn group_unknown_top_level_file_returns_none() {
+        assert_eq!(group_for_path(Path::new("CHANGELOG.md")), None);
+    }
+
+    // -- Group heuristic — v0.8.0+ GrandLily layout -------------------------
+
+    #[test]
+    fn v8_group_agents_md() {
+        assert_eq!(
+            group_for_path(Path::new("AGENTS.md")),
+            Some("AGENTS".to_string())
+        );
+    }
+
+    #[test]
+    fn v8_group_skill_subfile() {
+        assert_eq!(
+            group_for_path(Path::new("context/skills/event-log/SKILL.md")),
+            Some("skills/event-log".to_string())
+        );
+        assert_eq!(
+            group_for_path(Path::new("context/skills/event-log/mcp/server.py")),
+            Some("skills/event-log".to_string())
+        );
+    }
+
+    #[test]
+    fn v8_group_lib() {
+        assert_eq!(
+            group_for_path(Path::new("context/skills/_lib/processkit/entity.py")),
+            Some("lib".to_string())
+        );
+    }
+
+    #[test]
+    fn v8_group_schema() {
+        assert_eq!(
+            group_for_path(Path::new("context/schemas/workitem.yaml")),
+            Some("schemas/workitem".to_string())
+        );
+    }
+
+    #[test]
+    fn v8_group_state_machine() {
+        assert_eq!(
+            group_for_path(Path::new("context/state-machines/migration.yaml")),
+            Some("state-machines/migration".to_string())
+        );
+    }
+
+    #[test]
+    fn v8_group_process() {
+        assert_eq!(
+            group_for_path(Path::new("context/processes/release.md")),
+            Some("processes/release".to_string())
+        );
+        assert_eq!(
+            group_for_path(Path::new("context/processes/release/steps.yaml")),
+            Some("processes/release".to_string())
+        );
+    }
+
+    // -- Group heuristic — v0.7.0 legacy layout ------------------------------
+
+    #[test]
+    fn legacy_group_skill_subfile() {
         assert_eq!(
             group_for_path(Path::new("skills/event-log/SKILL.md")),
             Some("skills/event-log".to_string())
@@ -519,7 +643,7 @@ mod tests {
     }
 
     #[test]
-    fn group_primitive_schema() {
+    fn legacy_group_primitive_schema() {
         assert_eq!(
             group_for_path(Path::new("primitives/schemas/workitem.yaml")),
             Some("primitives/schemas/workitem".to_string())
@@ -527,7 +651,7 @@ mod tests {
     }
 
     #[test]
-    fn group_primitive_state_machine() {
+    fn legacy_group_primitive_state_machine() {
         assert_eq!(
             group_for_path(Path::new("primitives/state-machines/migration.yaml")),
             Some("primitives/state-machines/migration".to_string())
@@ -535,7 +659,7 @@ mod tests {
     }
 
     #[test]
-    fn group_lib() {
+    fn legacy_group_lib() {
         assert_eq!(
             group_for_path(Path::new("lib/processkit/entity.py")),
             Some("lib".to_string())
@@ -543,7 +667,7 @@ mod tests {
     }
 
     #[test]
-    fn group_process_subfile() {
+    fn legacy_group_process_subfile() {
         assert_eq!(
             group_for_path(Path::new("processes/release.md")),
             Some("processes/release".to_string())
@@ -555,17 +679,10 @@ mod tests {
     }
 
     #[test]
-    fn group_primitive_format_doc() {
-        // primitives/FORMAT.md is not schemas or state-machines so it falls
-        // under the general "primitives" group.
+    fn legacy_group_primitive_format_doc() {
         assert_eq!(
             group_for_path(Path::new("primitives/FORMAT.md")),
             Some("primitives".to_string())
         );
-    }
-
-    #[test]
-    fn group_unknown_top_level_file_returns_none() {
-        assert_eq!(group_for_path(Path::new("CHANGELOG.md")), None);
     }
 }

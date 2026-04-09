@@ -381,7 +381,7 @@ cmd_sync_processkit() {
   warn "New processkit version available: ${current_tag} → ${latest_tag}"
 
   # ── Fetch FORMAT.md for both versions for a vocabulary diff ───────────────
-  local fmt_path="src/skills/FORMAT.md"
+  local fmt_path="src/.processkit/FORMAT.md"
   local tmp_old tmp_new
   tmp_old=$(mktemp)
   tmp_new=$(mktemp)

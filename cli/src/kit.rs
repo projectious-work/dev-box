@@ -6,12 +6,15 @@
 //!
 //! ## Paths
 //!
-//! | Content | Installed live path | Templates mirror |
-//! |---------|--------------------|--------------------|
-//! | Skills | `context/skills/<name>/SKILL.md` | `context/templates/processkit/<version>/skills/<name>/SKILL.md` |
-//! | Processes | `context/processes/<name>.md` | `context/templates/processkit/<version>/processes/<name>.md` |
-//! | Schemas | `context/schemas/<name>.yaml` | `context/templates/processkit/<version>/primitives/schemas/<name>.yaml` |
-//! | State machines | `context/state-machines/<name>.yaml` | `context/templates/processkit/<version>/primitives/state-machines/<name>.yaml` |
+//! | Content | Installed live path | Templates mirror (v0.8.0+) |
+//! |---------|--------------------|-----------------------------|
+//! | Skills | `context/skills/<name>/SKILL.md` | `context/templates/processkit/<version>/context/skills/<name>/SKILL.md` |
+//! | Processes | `context/processes/<name>.md` | `context/templates/processkit/<version>/context/processes/<name>.md` |
+//! | Schemas | `context/schemas/<name>.yaml` | `context/templates/processkit/<version>/context/schemas/<name>.yaml` |
+//! | State machines | `context/state-machines/<name>.yaml` | `context/templates/processkit/<version>/context/state-machines/<name>.yaml` |
+//!
+//! Legacy v0.7.0 mirror paths omit the `context/` sub-directory; the helpers
+//! in `processkit_vocab` detect the correct path automatically.
 //!
 //! ## Category vocabulary
 //!
@@ -30,9 +33,10 @@ use crate::config::AiboxConfig;
 use crate::lock;
 use crate::output;
 use crate::processkit_vocab::{
-    self as processkit_vocab, parse_skill_frontmatter,
-    DESCRIPTION_DISPLAY_MAX, INDEX_FILENAME, LIVE_PROCESSES_DIR, LIVE_SCHEMAS_DIR,
-    LIVE_SKILLS_DIR, LIVE_STATE_MACHINES_DIR, SKILL_FILENAME, TEMPLATES_PROCESSKIT_DIR,
+    self as processkit_vocab, mirror_processes_dir, mirror_skills_dir,
+    parse_skill_frontmatter, DESCRIPTION_DISPLAY_MAX, INDEX_FILENAME,
+    LIVE_PROCESSES_DIR, LIVE_SCHEMAS_DIR, LIVE_SKILLS_DIR, LIVE_STATE_MACHINES_DIR,
+    SKILL_FILENAME,
 };
 
 // ---------------------------------------------------------------------------
@@ -53,26 +57,19 @@ fn project_root(config_path: &Option<String>) -> PathBuf {
         .unwrap_or_else(|| PathBuf::from("."))
 }
 
-/// Find the processkit templates mirror directory for the current lock version,
-/// if it exists. Returns `None` when no lock or no templates mirror is present.
+/// Find the skills directory in the processkit templates mirror for the current
+/// lock version. Handles both v0.8.0+ and legacy layouts via `mirror_skills_dir`.
+/// Returns `None` when no lock or no templates mirror is present.
 fn templates_skills_dir(root: &Path) -> Option<PathBuf> {
     let lock = lock::read_lock(root).ok()??;
     let pk = lock.processkit?;
-    let dir = root
-        .join(TEMPLATES_PROCESSKIT_DIR)
-        .join(&pk.version)
-        .join(processkit_vocab::src::SKILLS);
-    if dir.is_dir() { Some(dir) } else { None }
+    mirror_skills_dir(root, &pk.version)
 }
 
 fn templates_processes_dir(root: &Path) -> Option<PathBuf> {
     let lock = lock::read_lock(root).ok()??;
     let pk = lock.processkit?;
-    let dir = root
-        .join(TEMPLATES_PROCESSKIT_DIR)
-        .join(&pk.version)
-        .join(processkit_vocab::src::PROCESSES);
-    if dir.is_dir() { Some(dir) } else { None }
+    mirror_processes_dir(root, &pk.version)
 }
 
 // Frontmatter parsing is provided by crate::processkit_vocab::parse_skill_frontmatter.

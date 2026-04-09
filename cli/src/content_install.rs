@@ -14,78 +14,77 @@
 //! pointed at via its own config (usually via CLAUDE.md / AGENTS.md / guide
 //! files at the project root).
 //!
-//! ## Install layout
+//! ## Install layout — v0.8.0+ (GrandLily)
 //!
-//! Cache file path (relative to `<cache>/<src_path>/`) → project install path
-//! (relative to project root).
+//! Since v0.8.0, processkit's `src/` directory is a **literal mirror of the
+//! consumer project root**. The install path is therefore identical to the
+//! cache path for all `context/` content; only a handful of special cases
+//! need explicit handling.
 //!
-//! | Cache path                          | Project install path                       |
-//! |-------------------------------------|--------------------------------------------|
-//! | `INDEX.md` (top of src/)            | `context/INDEX.md`                         |
-//! | `skills/<name>/...`                 | `context/skills/<name>/...`                |
-//! | `skills/INDEX.md`                   | `context/skills/INDEX.md`                  |
-//! | `lib/processkit/...`                | `context/skills/_lib/processkit/...`       |
-//! | `primitives/schemas/<f>.yaml`       | `context/schemas/<f>.yaml`                 |
-//! | `primitives/schemas/INDEX.md`       | `context/schemas/INDEX.md`                 |
-//! | `primitives/state-machines/<f>.yaml`| `context/state-machines/<f>.yaml`          |
-//! | `primitives/state-machines/INDEX.md`| `context/state-machines/INDEX.md`          |
-//! | `processes/<f>.md`                  | `context/processes/<f>.md`                 |
-//! | `processes/INDEX.md`                | `context/processes/INDEX.md`               |
-//! | `scaffolding/AGENTS.md`             | `AGENTS.md` (project root)                 |
-//! | `scaffolding/INDEX.md`              | skipped (no `context/scaffolding/` dest)   |
-//! | `primitives/INDEX.md`               | skipped (aibox splits primitives into     |
-//! |                                     |   flat `context/{schemas,state-machines}/` |
-//! |                                     |   so there is no `context/primitives/`)   |
-//! | `primitives/FORMAT.md`              | skipped (internal reference)               |
-//! | `skills/FORMAT.md`                  | skipped (internal reference)               |
-//! | `PROVENANCE.toml` (top of src/)     | skipped (aibox reads from cache)           |
-//! | `packages/...` (incl. INDEX.md)     | skipped (declarative — read from templates)|
-//! | anything unrecognized               | skipped                                    |
+//! Cache path (relative to `<cache>/<src_path>/`) → project install path:
+//!
+//! | Cache path                        | Project install path              |
+//! |-----------------------------------|-----------------------------------|
+//! | `AGENTS.md`                       | `AGENTS.md` (rendered, root)      |
+//! | `INDEX.md`                        | `context/INDEX.md`                |
+//! | `context/skills/<name>/...`       | `context/skills/<name>/...`       |
+//! | `context/skills/_lib/...`         | `context/skills/_lib/...`         |
+//! | `context/schemas/<f>.yaml`        | `context/schemas/<f>.yaml`        |
+//! | `context/state-machines/<f>.yaml` | `context/state-machines/<f>.yaml` |
+//! | `context/processes/<f>.md`        | `context/processes/<f>.md`        |
+//! | `.processkit/...`                 | skipped (catalog, not installed)  |
+//! | `PROVENANCE.toml`                 | skipped (aibox reads from cache)  |
+//! | `FORMAT.md` (anywhere)            | skipped (internal reference)      |
+//! | anything else                     | skipped                           |
+//!
+//! ## Install layout — v0.7.0 and earlier (legacy)
+//!
+//! Older tarballs use bare top-level segment names. `install_action_for`
+//! handles both layouts in one function — the prefix sets are disjoint
+//! (`context/` vs. bare names) so no version check is needed. Legacy
+//! projects pinned to v0.7.0 continue to install correctly when run
+//! with a new aibox binary.
+//!
+//! | Cache path                          | Project install path                 |
+//! |-------------------------------------|--------------------------------------|
+//! | `INDEX.md`                          | `context/INDEX.md`                   |
+//! | `skills/<name>/...`                 | `context/skills/<name>/...`          |
+//! | `lib/processkit/...`                | `context/skills/_lib/processkit/...` |
+//! | `primitives/schemas/<f>.yaml`       | `context/schemas/<f>.yaml`           |
+//! | `primitives/state-machines/<f>.yaml`| `context/state-machines/<f>.yaml`    |
+//! | `processes/<f>.md`                  | `context/processes/<f>.md`           |
+//! | `scaffolding/AGENTS.md`             | `AGENTS.md` (rendered, root)         |
+//! | `packages/...`, `scaffolding/*`,    | skipped                              |
+//! |   `primitives/INDEX.md`, etc.       |                                      |
 //!
 //! ## Why INDEX.md installs (since v0.16.4 — BACK-116)
 //!
 //! processkit ships INDEX.md files as navigation documents at every
-//! content level (top-level, skills/, processes/, primitives/schemas/,
-//! primitives/state-machines/). They are tracked in `PROVENANCE.toml`
-//! and are part of the shipping contract — agents browsing a
-//! project's `context/` directory expect to find them. v0.16.0
-//! incorrectly classified them as "processkit-internal docs" and
-//! skipped them blanket; v0.16.4 routes each INDEX.md to its parent
-//! directory's destination. The three INDEX.md files without a
-//! sensible live destination (`primitives/INDEX.md`,
-//! `scaffolding/INDEX.md`, `packages/INDEX.md`) remain skipped from
-//! the live install but are still present in the immutable cache
-//! mirror at `context/templates/processkit/<version>/`, so no
-//! information is lost.
+//! content level. They are tracked in `PROVENANCE.toml` and are part of
+//! the shipping contract — agents browsing `context/` expect to find them.
+//! v0.16.0 skipped them blanket; v0.16.4 routes each INDEX.md to its
+//! parent directory's live destination.
 //!
 //! ## Why every path is under `context/`
 //!
 //! `context/skills/`, `context/schemas/`, `context/state-machines/`, and
-//! `context/processes/` are **visible, editable, top-level** locations. No
-//! hidden directories. Users and agents can navigate to them via any file
-//! browser or `ls context/`. Following Strawman D, consumers edit installed
-//! files in place — there is no separate override location. The 3-way diff
-//! at `aibox sync` time uses `context/templates/processkit/<version>/` as
-//! the immutable upstream reference (written by `aibox init`), and computes
-//! SHAs on the fly to classify user edits vs upstream changes.
+//! `context/processes/` are **visible, editable, top-level** locations.
+//! The 3-way diff at `aibox sync` time uses
+//! `context/templates/processkit/<version>/` as the immutable upstream
+//! reference, and computes SHAs on the fly.
 //!
 //! The shared lib lands at `context/skills/_lib/processkit/` because MCP
 //! servers' `_find_lib()` boilerplate walks up from
-//! `<server>/mcp/server.py` looking for `_lib/processkit/`. With the server
-//! at `context/skills/<name>/mcp/server.py`, walk-up finds
-//! `context/skills/_lib/processkit/`.
+//! `<server>/mcp/server.py` to find `_lib/processkit/`.
 //!
 //! ## What is NOT installed
 //!
-//! - `primitives/FORMAT.md` and `skills/FORMAT.md`: internal reference docs
-//!   that agents don't need at runtime. The entity file format is
-//!   self-evident from the entity files themselves plus the installed JSON
-//!   schemas.
-//! - `PROVENANCE.toml`: aibox sync reads it directly from the fetched
-//!   cache. No project-side copy needed.
-//! - `INDEX.md` files at every level: processkit-internal documentation.
-//! - `packages/*.yaml`: consumed by init-time skill selection logic, not
-//!   installed into the project.
+//! - `.processkit/FORMAT.md` (v0.8.0+) / `skills/FORMAT.md` (legacy):
+//!   internal reference docs; the entity format is self-evident from the
+//!   installed files and JSON schemas.
+//! - `PROVENANCE.toml`: aibox sync reads it directly from the cache.
+//! - `.processkit/packages/` (v0.8.0+) / `packages/` (legacy): consumed
+//!   by init-time skill selection, not installed into the project.
 
 use std::path::{Path, PathBuf};
 
@@ -114,9 +113,13 @@ pub enum InstallAction {
 /// Map a cache file (path relative to `<cache>/<src_path>/`) to its install
 /// action. Pure function — no I/O.
 ///
+/// Handles both the **v0.8.0+ GrandLily layout** (paths start with `context/`
+/// or are bare top-level files) and the **v0.7.0 legacy layout** (bare
+/// top-level segment names: `skills/`, `lib/`, `primitives/`, etc.).
+/// The two prefix sets are disjoint, so no version check is needed.
+///
 /// The input is a relative path using forward slashes. Backslashes are
-/// normalized for Windows-friendliness (though aibox does not target
-/// Windows hosts at v0.14.x; the normalization is defensive).
+/// normalised for Windows-friendliness.
 pub fn install_action_for(rel_path: &Path) -> InstallAction {
     let s = rel_path.to_string_lossy().replace('\\', "/");
     if s.is_empty() || s == "." {
@@ -128,37 +131,47 @@ pub fn install_action_for(rel_path: &Path) -> InstallAction {
         return InstallAction::Skip;
     }
 
-    // FORMAT.md files (primitives/FORMAT.md, skills/FORMAT.md) are
-    // processkit-internal reference docs that agents don't need at
-    // runtime — the entity file format is self-evident from the
-    // entity files themselves plus the installed JSON schemas.
-    //
-    // (Note: INDEX.md files are NOT blanket-skipped here. They are
-    // routed by the per-directory branches below to their parent
-    // directory's destination. See BACK-116 for the v0.16.4 fix.)
+    // FORMAT.md anywhere → skip (internal reference in any layout version).
     if parts.last().copied() == Some(FORMAT_FILENAME) {
         return InstallAction::Skip;
     }
 
-    // Top-level files.
-    //   - `INDEX.md` → `context/INDEX.md` (processkit's top-level
-    //     navigation document — agents browsing context/ expect it)
-    //   - `PROVENANCE.toml` → skipped (aibox reads it from the cache
-    //     directly; the templates mirror has it for browsing)
-    //   - anything else → skipped (unknown top-level file)
+    // ── Top-level bare files (both layout versions) ──────────────────────────
     if parts.len() == 1 {
-        return if parts[0] == INDEX_FILENAME {
-            InstallAction::Install(PathBuf::from("context").join(INDEX_FILENAME))
-        } else {
-            InstallAction::Skip
+        return match parts[0] {
+            // v0.8.0+: AGENTS.md is at the tarball root, rendered into project root.
+            f if f == AGENTS_FILENAME => {
+                InstallAction::InstallTemplated(PathBuf::from(AGENTS_FILENAME))
+            }
+            // Both: top-level INDEX.md → context/INDEX.md.
+            f if f == INDEX_FILENAME => {
+                InstallAction::Install(PathBuf::from("context").join(INDEX_FILENAME))
+            }
+            // PROVENANCE.toml: aibox reads from cache directly; skip live install.
+            _ => InstallAction::Skip,
         };
     }
 
+    // ── v0.8.0+ layout — first segment is "context" or ".processkit" ─────────
+
+    // .processkit/... → catalog only, never installed.
+    if parts[0] == pk::src::DOTPROCESSKIT {
+        return InstallAction::Skip;
+    }
+
+    // context/... → install at the same path (src mirrors consumer root).
+    if parts[0] == pk::src::CONTEXT_DIR && parts.len() >= 2 {
+        // context/INDEX.md at any level installs verbatim (no remapping needed
+        // since the path already starts with context/).
+        let install_path: PathBuf = parts.iter().collect();
+        return InstallAction::Install(install_path);
+    }
+
+    // ── v0.7.0 legacy layout — bare top-level segment names ─────────────────
+
     match parts[0] {
         // skills/<name>/...  →  context/skills/<name>/...
-        // Provider-neutral location. Any agent discovers skills via CLAUDE.md /
-        // AGENTS.md pointing at context/skills/.
-        s if s == pk::src::SKILLS && parts.len() >= 2 => {
+        s if s == pk::src::LEGACY_SKILLS && parts.len() >= 2 => {
             let mut p = PathBuf::from(LIVE_SKILLS_DIR);
             for part in &parts[1..] {
                 p.push(part);
@@ -167,9 +180,7 @@ pub fn install_action_for(rel_path: &Path) -> InstallAction {
         }
 
         // lib/processkit/...  →  context/skills/_lib/processkit/...
-        // Matches MCP server _find_lib() walk-up: from
-        // context/skills/<name>/mcp/server.py it finds context/skills/_lib/.
-        s if s == pk::src::LIB && parts.len() >= 2 => {
+        s if s == pk::src::LEGACY_LIB && parts.len() >= 2 => {
             let mut p = PathBuf::from(LIVE_LIB_DIR);
             for part in &parts[1..] {
                 p.push(part);
@@ -177,18 +188,17 @@ pub fn install_action_for(rel_path: &Path) -> InstallAction {
             InstallAction::Install(p)
         }
 
-        // primitives/schemas/X.yaml       →  context/schemas/X.yaml
-        // primitives/state-machines/X.yaml →  context/state-machines/X.yaml
-        // primitives/<anything-else>      →  skipped (including FORMAT.md
-        //                                    handled above and INDEX.md)
-        s if s == pk::src::PRIMITIVES && parts.len() >= 3 => {
-            if parts[1] == pk::src::SCHEMAS {
+        // primitives/schemas/...       →  context/schemas/...
+        // primitives/state-machines/...→  context/state-machines/...
+        // primitives/<other>           →  skipped
+        s if s == pk::src::LEGACY_PRIMITIVES && parts.len() >= 3 => {
+            if parts[1] == pk::src::LEGACY_SCHEMAS {
                 let mut p = PathBuf::from(LIVE_SCHEMAS_DIR);
                 for part in &parts[2..] {
                     p.push(part);
                 }
                 InstallAction::Install(p)
-            } else if parts[1] == pk::src::STATE_MACHINES {
+            } else if parts[1] == pk::src::LEGACY_STATE_MACHINES {
                 let mut p = PathBuf::from(LIVE_STATE_MACHINES_DIR);
                 for part in &parts[2..] {
                     p.push(part);
@@ -200,9 +210,7 @@ pub fn install_action_for(rel_path: &Path) -> InstallAction {
         }
 
         // processes/<f>.md  →  context/processes/<f>.md
-        // Top-level under context/, existing convention. May coexist with
-        // user-authored processes — Strawman D says edit in place.
-        s if s == pk::src::PROCESSES && parts.len() >= 2 => {
+        s if s == pk::src::LEGACY_PROCESSES && parts.len() >= 2 => {
             let mut p = PathBuf::from(LIVE_PROCESSES_DIR);
             for part in &parts[1..] {
                 p.push(part);
@@ -210,25 +218,20 @@ pub fn install_action_for(rel_path: &Path) -> InstallAction {
             InstallAction::Install(p)
         }
 
-        // packages/*  →  skipped from the live install. The full set is
-        // available in context/templates/processkit/<version>/packages/
-        // for agents to read declaratively.
-        s if s == pk::src::PACKAGES => InstallAction::Skip,
+        // packages/*  →  skipped (declarative, read from templates mirror).
+        s if s == pk::src::LEGACY_PACKAGES => InstallAction::Skip,
 
-        // scaffolding/AGENTS.md  →  AGENTS.md (project root)
-        // The canonical agent entry point. processkit owns the template
-        // (with `{{PLACEHOLDER}}` markers from the Class A vocabulary —
-        // see DEC-032). aibox renders the template through the Class A
-        // substitution map at install time; Class B/C placeholders pass
-        // through untouched so processkit's onboarding skill can find
-        // and fill them with the project owner.
-        // scaffolding/INDEX.md and any other scaffolding files are skipped.
-        s if s == pk::src::SCAFFOLDING && parts.len() == 2 && parts[1] == AGENTS_FILENAME => {
+        // scaffolding/AGENTS.md  →  AGENTS.md (project root, rendered).
+        // scaffolding/INDEX.md and any other scaffolding files → skipped.
+        s if s == pk::src::LEGACY_SCAFFOLDING
+            && parts.len() == 2
+            && parts[1] == AGENTS_FILENAME =>
+        {
             InstallAction::InstallTemplated(PathBuf::from(AGENTS_FILENAME))
         }
-        s if s == pk::src::SCAFFOLDING => InstallAction::Skip,
+        s if s == pk::src::LEGACY_SCAFFOLDING => InstallAction::Skip,
 
-        // Anything else is unknown — skip rather than guess.
+        // Unknown → skip.
         _ => InstallAction::Skip,
     }
 }
@@ -259,8 +262,112 @@ mod tests {
         assert_eq!(install(input), InstallAction::Skip);
     }
 
+    // ── v0.8.0+ GrandLily layout ─────────────────────────────────────────────
+
     #[test]
-    fn skill_files_install_under_context_skills() {
+    fn v8_agents_md_installs_templated_at_project_root() {
+        assert_installs_templated_to("AGENTS.md", "AGENTS.md");
+    }
+
+    #[test]
+    fn v8_top_level_index_md_installs_at_context_index_md() {
+        assert_installs_to("INDEX.md", "context/INDEX.md");
+    }
+
+    #[test]
+    fn v8_skill_files_install_verbatim() {
+        assert_installs_to(
+            "context/skills/event-log/SKILL.md",
+            "context/skills/event-log/SKILL.md",
+        );
+        assert_installs_to(
+            "context/skills/workitem-management/templates/workitem.yaml",
+            "context/skills/workitem-management/templates/workitem.yaml",
+        );
+        assert_installs_to(
+            "context/skills/event-log/mcp/server.py",
+            "context/skills/event-log/mcp/server.py",
+        );
+    }
+
+    #[test]
+    fn v8_lib_installs_verbatim() {
+        assert_installs_to(
+            "context/skills/_lib/processkit/__init__.py",
+            "context/skills/_lib/processkit/__init__.py",
+        );
+    }
+
+    #[test]
+    fn v8_schemas_install_verbatim() {
+        assert_installs_to(
+            "context/schemas/workitem.yaml",
+            "context/schemas/workitem.yaml",
+        );
+    }
+
+    #[test]
+    fn v8_state_machines_install_verbatim() {
+        assert_installs_to(
+            "context/state-machines/workitem.yaml",
+            "context/state-machines/workitem.yaml",
+        );
+    }
+
+    #[test]
+    fn v8_processes_install_verbatim() {
+        assert_installs_to(
+            "context/processes/release.md",
+            "context/processes/release.md",
+        );
+    }
+
+    #[test]
+    fn v8_context_index_mds_install_verbatim() {
+        assert_installs_to(
+            "context/skills/INDEX.md",
+            "context/skills/INDEX.md",
+        );
+        assert_installs_to(
+            "context/schemas/INDEX.md",
+            "context/schemas/INDEX.md",
+        );
+        assert_installs_to(
+            "context/state-machines/INDEX.md",
+            "context/state-machines/INDEX.md",
+        );
+        assert_installs_to(
+            "context/processes/INDEX.md",
+            "context/processes/INDEX.md",
+        );
+        assert_installs_to(
+            "context/INDEX.md",
+            "context/INDEX.md",
+        );
+    }
+
+    #[test]
+    fn v8_dotprocesskit_is_skipped() {
+        assert_skipped(".processkit/packages/minimal.yaml");
+        assert_skipped(".processkit/FORMAT.md");
+        assert_skipped(".processkit/packages/INDEX.md");
+    }
+
+    #[test]
+    fn v8_provenance_toml_is_skipped() {
+        assert_skipped("PROVENANCE.toml");
+    }
+
+    #[test]
+    fn v8_format_md_anywhere_is_skipped() {
+        assert_skipped("context/skills/FORMAT.md");
+        assert_skipped("FORMAT.md");
+    }
+
+    // ── v0.7.0 legacy layout ─────────────────────────────────────────────────
+
+    #[test]
+    fn legacy_skill_files_install_under_context_skills() {
         assert_installs_to(
             "skills/event-log/SKILL.md",
             "context/skills/event-log/SKILL.md",
@@ -269,16 +376,10 @@ mod tests {
             "skills/workitem-management/templates/workitem.yaml",
             "context/skills/workitem-management/templates/workitem.yaml",
         );
-        assert_installs_to(
-            "skills/event-log/mcp/server.py",
-            "context/skills/event-log/mcp/server.py",
-        );
     }
 
     #[test]
-    fn lib_installs_under_context_skills_lib() {
-        // Matches MCP server _find_lib() walk-up: from
-        // context/skills/<name>/mcp/server.py it finds context/skills/_lib/.
+    fn legacy_lib_installs_under_context_skills_lib() {
         assert_installs_to(
             "lib/processkit/__init__.py",
             "context/skills/_lib/processkit/__init__.py",
@@ -290,92 +391,38 @@ mod tests {
     }
 
     #[test]
-    fn primitive_schemas_install_under_context_schemas() {
+    fn legacy_primitive_schemas_install_under_context_schemas() {
         assert_installs_to(
             "primitives/schemas/workitem.yaml",
             "context/schemas/workitem.yaml",
         );
-        assert_installs_to(
-            "primitives/schemas/logentry.yaml",
-            "context/schemas/logentry.yaml",
-        );
     }
 
     #[test]
-    fn primitive_state_machines_install_under_context_state_machines() {
+    fn legacy_primitive_state_machines_install_under_context_state_machines() {
         assert_installs_to(
             "primitives/state-machines/workitem.yaml",
             "context/state-machines/workitem.yaml",
         );
-        assert_installs_to(
-            "primitives/state-machines/migration.yaml",
-            "context/state-machines/migration.yaml",
-        );
     }
 
     #[test]
-    fn processes_install_under_context_processes() {
-        assert_installs_to(
-            "processes/release.md",
-            "context/processes/release.md",
-        );
-        assert_installs_to(
-            "processes/code-review/template.yaml",
-            "context/processes/code-review/template.yaml",
-        );
+    fn legacy_processes_install_under_context_processes() {
+        assert_installs_to("processes/release.md", "context/processes/release.md");
     }
 
     #[test]
-    fn primitive_format_doc_is_skipped() {
-        // FORMAT.md is processkit-internal reference, not installed.
-        assert_skipped("primitives/FORMAT.md");
-    }
-
-    #[test]
-    fn skills_format_doc_is_skipped() {
-        // skills/FORMAT.md is processkit-internal reference, not installed.
-        assert_skipped("skills/FORMAT.md");
-    }
-
-    #[test]
-    fn provenance_toml_is_skipped() {
-        // aibox reads PROVENANCE.toml from the cache directly; no project-side
-        // copy is installed.
-        assert_skipped("PROVENANCE.toml");
-    }
-
-    // ── INDEX.md routing (BACK-116, v0.16.4) ──────────────────────────
-    //
-    // processkit ships INDEX.md at every content level. Five of the
-    // eight have a sensible live destination and install there; three
-    // have no destination and remain skipped (but live in the cache
-    // mirror at context/templates/processkit/<version>/).
-
-    #[test]
-    fn top_level_index_md_installs_at_context_index_md() {
-        assert_installs_to("INDEX.md", "context/INDEX.md");
-    }
-
-    #[test]
-    fn skills_index_md_installs_under_context_skills() {
+    fn legacy_skills_index_md_installs_under_context_skills() {
         assert_installs_to("skills/INDEX.md", "context/skills/INDEX.md");
     }
 
     #[test]
-    fn processes_index_md_installs_under_context_processes() {
-        assert_installs_to("processes/INDEX.md", "context/processes/INDEX.md");
+    fn legacy_primitive_schemas_index_md_installs() {
+        assert_installs_to("primitives/schemas/INDEX.md", "context/schemas/INDEX.md");
     }
 
     #[test]
-    fn primitive_schemas_index_md_installs_under_context_schemas() {
-        assert_installs_to(
-            "primitives/schemas/INDEX.md",
-            "context/schemas/INDEX.md",
-        );
-    }
-
-    #[test]
-    fn primitive_state_machines_index_md_installs_under_context_state_machines() {
+    fn legacy_primitive_state_machines_index_md_installs() {
         assert_installs_to(
             "primitives/state-machines/INDEX.md",
             "context/state-machines/INDEX.md",
@@ -383,58 +430,44 @@ mod tests {
     }
 
     #[test]
-    fn primitives_top_level_index_md_is_skipped() {
-        // aibox splits primitives into flat context/{schemas,state-machines}/
-        // — there is no context/primitives/ destination for a primitives-
-        // level INDEX.md. The contents are still browsable in the
-        // cache mirror.
+    fn legacy_primitives_top_level_index_md_is_skipped() {
         assert_skipped("primitives/INDEX.md");
     }
 
-    // (scaffolding/INDEX.md skip is asserted by the existing
-    // `scaffolding_index_md_is_skipped` test from v0.16.0 — see above.)
-
     #[test]
-    fn packages_index_md_is_skipped() {
-        // packages/* are not live-installed; the templates mirror has
-        // them for declarative reads.
+    fn legacy_packages_are_skipped() {
+        assert_skipped("packages/minimal.yaml");
         assert_skipped("packages/INDEX.md");
     }
 
     #[test]
-    fn packages_are_skipped() {
-        assert_skipped("packages/minimal.yaml");
-        assert_skipped("packages/managed.yaml");
-        assert_skipped("packages/software.yaml");
-    }
-
-    #[test]
-    fn scaffolding_agents_md_installs_templated_at_project_root() {
-        // v0.16.4: AGENTS.md is the only templated install today.
-        // The Class A vocabulary substitutions happen at install time
-        // via render(); Class B/C placeholders pass through untouched
-        // for the agent's onboarding protocol to fill. See DEC-032.
+    fn legacy_scaffolding_agents_md_installs_templated() {
         assert_installs_templated_to("scaffolding/AGENTS.md", "AGENTS.md");
     }
 
     #[test]
-    fn scaffolding_index_md_is_skipped() {
+    fn legacy_scaffolding_other_files_are_skipped() {
         assert_skipped("scaffolding/INDEX.md");
-    }
-
-    #[test]
-    fn scaffolding_other_files_are_skipped() {
-        // Defensive — if processkit grows scaffolding/<other>.md, aibox
-        // skips it rather than guessing where it should land. Add an
-        // explicit branch when a new scaffolding file is intentional.
         assert_skipped("scaffolding/foo.md");
     }
 
     #[test]
-    fn primitive_subdirectories_other_than_schemas_and_state_machines_are_skipped() {
-        // Defensive — if processkit grows a new primitives/<foo>/ directory,
-        // the install mapping should skip it rather than guess.
+    fn legacy_format_docs_are_skipped() {
+        assert_skipped("primitives/FORMAT.md");
+        assert_skipped("skills/FORMAT.md");
+    }
+
+    #[test]
+    fn legacy_primitives_unknown_subdir_is_skipped() {
         assert_skipped("primitives/examples/workitem-example.yaml");
+    }
+
+    // ── Shared / defensive ───────────────────────────────────────────────────
+
+    #[test]
+    fn empty_path_is_skipped() {
+        assert_skipped("");
+        assert_skipped(".");
     }
 
     #[test]
@@ -445,15 +478,15 @@ mod tests {
     }
 
     #[test]
-    fn empty_path_is_skipped() {
-        assert_skipped("");
-        assert_skipped(".");
-    }
-
-    #[test]
     fn windows_backslashes_are_normalized() {
+        // Legacy path with backslashes
         assert_installs_to(
             "skills\\event-log\\SKILL.md",
+            "context/skills/event-log/SKILL.md",
+        );
+        // v0.8.0 path with backslashes
+        assert_installs_to(
+            "context\\skills\\event-log\\SKILL.md",
             "context/skills/event-log/SKILL.md",
         );
     }

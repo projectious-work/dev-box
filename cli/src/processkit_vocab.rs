@@ -1,7 +1,7 @@
 //! Compile-time vocabulary that mirrors processkit's published contracts.
 //!
 //! These constants and types are derived from processkit's canonical definitions
-//! (primarily `src/skills/FORMAT.md`) and should be updated here when processkit
+//! (primarily `src/.processkit/FORMAT.md`) and should be updated here when processkit
 //! publishes a new vocabulary change. For runtime information — which skills are
 //! installed, exact frontmatter values — read from the live `context/` directory
 //! or the templates mirror rather than consulting these constants.
@@ -9,7 +9,7 @@
 //! ## Update checklist (when processkit releases)
 //!
 //! 1. Bump `PROCESSKIT_DEFAULT_VERSION` to the new tag.
-//! 2. Check `CATEGORY_ORDER` against `src/skills/FORMAT.md`; add/remove entries
+//! 2. Check `CATEGORY_ORDER` against `src/.processkit/FORMAT.md`; add/remove entries
 //!    if the vocabulary changed.
 //! 3. Run `cargo test` — the vocabulary tests below will catch order drift.
 
@@ -38,25 +38,59 @@ pub const PROCESSKIT_GIT_SOURCE: &str =
 /// constant serves as the canonical reference for tests and documentation.
 // Used in #[cfg(test)] blocks across multiple modules and in documentation.
 #[allow(dead_code)]
-pub const PROCESSKIT_DEFAULT_VERSION: &str = "v0.7.0";
+pub const PROCESSKIT_DEFAULT_VERSION: &str = "v0.8.0";
 
 // ---------------------------------------------------------------------------
 // Processkit source-tree directory segments
 // (the layout inside the processkit `src/` directory)
 // ---------------------------------------------------------------------------
 
-/// Top-level directory names inside the processkit `src/` tree.
-/// Used by `content_install` (routing) and `lock` (grouping); duplicated
-/// string literals in those files must match these values.
+/// Path segments describing processkit's `src/` tree layout.
+///
+/// **v0.8.0+ (GrandLily) layout** — `src/` is now a literal mirror of the
+/// consumer project root. Content lives under `src/context/`; catalog-only
+/// files (packages, FORMAT.md) live under `src/.processkit/`.
+///
+/// **v0.7.0 legacy layout** — kept as `LEGACY_*` constants so that
+/// `content_install` and `lock` can route and group both old and new tarballs
+/// without a version check. The two prefix sets are disjoint (`context/` vs.
+/// bare top-level names), so a single match expression handles both.
 pub mod src {
+    // ── v0.8.0+ segments ────────────────────────────────────────────────────
+    /// Top-level directory in the v0.8.0 tarball (`src/context/`).
+    pub const CONTEXT_DIR: &str = "context";
+    /// Skills live at `context/skills/` (second segment).
     pub const SKILLS: &str = "skills";
-    pub const PRIMITIVES: &str = "primitives";
-    pub const SCHEMAS: &str = "schemas";          // under primitives/
-    pub const STATE_MACHINES: &str = "state-machines"; // under primitives/
+    /// Schemas live at `context/schemas/` (second segment).
+    pub const SCHEMAS: &str = "schemas";
+    /// State machines live at `context/state-machines/` (second segment).
+    pub const STATE_MACHINES: &str = "state-machines";
+    /// Processes live at `context/processes/` (second segment).
     pub const PROCESSES: &str = "processes";
-    pub const LIB: &str = "lib";
-    pub const SCAFFOLDING: &str = "scaffolding";
+    /// Shared lib segment inside `context/skills/_lib/`.
+    pub const LIB_SEGMENT: &str = "_lib";
+    /// Hidden catalog directory — never installed (`src/.processkit/`).
+    pub const DOTPROCESSKIT: &str = ".processkit";
+    /// Package YAML files live at `.processkit/packages/`.
     pub const PACKAGES: &str = "packages";
+
+    // ── v0.7.0 legacy segments (kept for backward-compat routing) ───────────
+    /// Legacy: skills were at `src/skills/` (top-level, pre-v0.8.0).
+    pub const LEGACY_SKILLS: &str = "skills";
+    /// Legacy: shared lib was at `src/lib/` (top-level, pre-v0.8.0).
+    pub const LEGACY_LIB: &str = "lib";
+    /// Legacy: primitive schemas/state-machines were under `src/primitives/`.
+    pub const LEGACY_PRIMITIVES: &str = "primitives";
+    /// Legacy: schemas sub-segment inside `primitives/schemas/`.
+    pub const LEGACY_SCHEMAS: &str = "schemas";
+    /// Legacy: state-machine sub-segment inside `primitives/state-machines/`.
+    pub const LEGACY_STATE_MACHINES: &str = "state-machines";
+    /// Legacy: processes were at `src/processes/` (top-level, pre-v0.8.0).
+    pub const LEGACY_PROCESSES: &str = "processes";
+    /// Legacy: AGENTS.md was under `src/scaffolding/` (pre-v0.8.0).
+    pub const LEGACY_SCAFFOLDING: &str = "scaffolding";
+    /// Legacy: packages were at `src/packages/` (top-level, pre-v0.8.0).
+    pub const LEGACY_PACKAGES: &str = "packages";
 }
 
 // ---------------------------------------------------------------------------
@@ -97,6 +131,96 @@ pub const LIVE_PROCESSES_DIR: &str = "context/processes";
 
 /// Shared MCP lib directory (under the live skills tree, not the src tree).
 pub const LIVE_LIB_DIR: &str = "context/skills/_lib";
+
+// ---------------------------------------------------------------------------
+// Templates mirror path helpers
+// ---------------------------------------------------------------------------
+
+/// Resolve the skills directory inside the templates mirror for a given
+/// processkit version, handling both layout versions transparently.
+///
+/// - v0.8.0+: `<mirror>/<version>/context/skills/`
+/// - v0.7.0 legacy: `<mirror>/<version>/skills/`
+///
+/// Returns the first path that exists on disk, trying v0.8.0 first.
+/// Returns `None` if neither exists (processkit not yet installed).
+pub fn mirror_skills_dir(
+    project_root: &std::path::Path,
+    version: &str,
+) -> Option<std::path::PathBuf> {
+    // v0.8.0+ path
+    let new = project_root
+        .join(TEMPLATES_PROCESSKIT_DIR)
+        .join(version)
+        .join(src::CONTEXT_DIR)
+        .join(src::SKILLS);
+    if new.is_dir() {
+        return Some(new);
+    }
+    // v0.7.0 legacy path
+    let legacy = project_root
+        .join(TEMPLATES_PROCESSKIT_DIR)
+        .join(version)
+        .join(src::LEGACY_SKILLS);
+    if legacy.is_dir() {
+        return Some(legacy);
+    }
+    None
+}
+
+/// Resolve the processes directory inside the templates mirror for a given
+/// processkit version, handling both layout versions transparently.
+///
+/// - v0.8.0+: `<mirror>/<version>/context/processes/`
+/// - v0.7.0 legacy: `<mirror>/<version>/processes/`
+pub fn mirror_processes_dir(
+    project_root: &std::path::Path,
+    version: &str,
+) -> Option<std::path::PathBuf> {
+    let new = project_root
+        .join(TEMPLATES_PROCESSKIT_DIR)
+        .join(version)
+        .join(src::CONTEXT_DIR)
+        .join(src::PROCESSES);
+    if new.is_dir() {
+        return Some(new);
+    }
+    let legacy = project_root
+        .join(TEMPLATES_PROCESSKIT_DIR)
+        .join(version)
+        .join(src::LEGACY_PROCESSES);
+    if legacy.is_dir() {
+        return Some(legacy);
+    }
+    None
+}
+
+/// Resolve the packages directory inside the templates mirror for a given
+/// processkit version, handling both layout versions transparently.
+///
+/// - v0.8.0+: `<mirror>/<version>/.processkit/packages/`
+/// - v0.7.0 legacy: `<mirror>/<version>/packages/`
+pub fn mirror_packages_dir(
+    project_root: &std::path::Path,
+    version: &str,
+) -> Option<std::path::PathBuf> {
+    let new = project_root
+        .join(TEMPLATES_PROCESSKIT_DIR)
+        .join(version)
+        .join(src::DOTPROCESSKIT)
+        .join(src::PACKAGES);
+    if new.is_dir() {
+        return Some(new);
+    }
+    let legacy = project_root
+        .join(TEMPLATES_PROCESSKIT_DIR)
+        .join(version)
+        .join(src::LEGACY_PACKAGES);
+    if legacy.is_dir() {
+        return Some(legacy);
+    }
+    None
+}
 
 // ---------------------------------------------------------------------------
 // Display constants
