@@ -1,41 +1,19 @@
-# aibox v0.17.9
+# aibox v0.17.10
 
-Feature release: `"latest"` sentinel for version fields in `aibox.toml`.
+Bug-fix release: `[aibox].version = "latest"` no longer fails validation.
 No processkit version change — still compatible with v0.8.0.
 
-## `"latest"` sentinel for version fields
+## Fix: `[aibox].version = "latest"` rejected by config validator
 
-You can now set `version = "latest"` in `aibox.toml` for both version fields
-instead of updating the pin after every release.
-
-### `[aibox].version = "latest"`
-
-```toml
-[aibox]
-version = "latest"
-```
-
-`aibox sync` suppresses the version-mismatch warning when set to `"latest"`.
-Use this if you always want to run the newest aibox CLI without being prompted
-to update the pin.
-
-### `[processkit].version = "latest"`
-
-```toml
-[processkit]
-version = "latest"
-```
-
-`aibox sync` resolves `"latest"` to the newest available tag at the source
-before installing:
+`aibox sync` was failing with:
 
 ```
-==> Resolved processkit 'latest' → v0.8.0
+ERR Invalid version 'latest': must be valid semver: unexpected character 'l' while parsing major version number
 ```
 
-The resolved concrete version is written to `aibox.lock`; `"latest"` stays
-in `aibox.toml`. The lock remains fully reproducible — a second developer
-running sync on the same day gets the same concrete version from the lock.
+The `validate()` method in `config.rs` was calling `semver::Version::parse` on
+`[aibox].version` unconditionally. The `[processkit].version` section already
+had the `"latest"` exemption guard from v0.17.9; the `[aibox]` section did not.
 
-Network errors or an empty tag list produce a warning and skip the install
-rather than failing hard.
+Fixed by adding the same guard. A regression test was added to prevent
+recurrence.

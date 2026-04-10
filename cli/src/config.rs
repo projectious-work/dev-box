@@ -885,13 +885,15 @@ impl AiboxConfig {
     /// Validate the config values. Called internally by `load`, but also
     /// available for validating programmatically-constructed configs.
     pub fn validate(&self) -> Result<()> {
-        // Validate version is valid semver
-        semver::Version::parse(&self.aibox.version).with_context(|| {
-            format!(
-                "Invalid version '{}': must be valid semver",
-                self.aibox.version
-            )
-        })?;
+        // Validate version is valid semver (allow "latest" sentinel)
+        if self.aibox.version != "latest" {
+            semver::Version::parse(&self.aibox.version).with_context(|| {
+                format!(
+                    "Invalid version '{}': must be valid semver",
+                    self.aibox.version
+                )
+            })?;
+        }
 
         // Validate schema_version is valid semver
         semver::Version::parse(&self.context.schema_version).with_context(|| {
@@ -1343,6 +1345,20 @@ name = "test"
 "#;
         let result = parse_toml(toml);
         assert!(result.is_err(), "should reject invalid semver");
+    }
+
+    #[test]
+    fn parse_aibox_version_latest_sentinel() {
+        let toml = r#"
+[aibox]
+version = "latest"
+
+[container]
+name = "test"
+"#;
+        let result = parse_toml(toml);
+        assert!(result.is_ok(), "should accept 'latest' as aibox version");
+        assert_eq!(result.unwrap().aibox.version, "latest");
     }
 
     #[test]

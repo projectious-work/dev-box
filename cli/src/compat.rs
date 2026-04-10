@@ -80,6 +80,11 @@ pub static COMPAT_TABLE: &[CompatEntry] = &[
         processkit_version: "v0.8.0",
         note: "\"latest\" sentinel for aibox and processkit version fields",
     },
+    CompatEntry {
+        aibox_version: "0.17.10",
+        processkit_version: "v0.8.0",
+        note: "fix: validate() rejected \"latest\" in [aibox].version (regression from v0.17.9)",
+    },
 ];
 
 /// Find the minimum compatible processkit version for the given aibox version.
