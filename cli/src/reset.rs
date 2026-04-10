@@ -7,7 +7,7 @@ use crate::output;
 use crate::runtime::{ContainerState, Runtime};
 
 /// Backup directory name.
-const BACKUP_DIR: &str = ".aibox-backup";
+const BACKUP_DIR: &str = ".aibox/backup";
 
 /// Files and directories managed by aibox.
 /// Each entry: (path, should_delete_on_reset)
@@ -48,7 +48,6 @@ const MANAGED_ITEMS: &[(&str, bool)] = &[
     (".claude/commands", false),
     // ── Backward compat ──────────────────────────────────────────────────
     (".root", true),
-    (".aibox", true),
     (".aibox-version", true), // legacy — removed by migrate_legacy_lock_files; still cleaned up on reset
 ];
 

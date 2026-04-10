@@ -331,7 +331,6 @@ pub(crate) fn update_gitignore(addons: &AddonsSection) -> Result<()> {
     content.push_str(".aibox-home/\n");
     content.push_str(".root/\n");
     content.push_str(".aibox/\n");
-    content.push_str(".aibox-backup/\n");
     content.push_str(".aibox-env/\n");
     // Runtime cache for fetched processkit / aibox content. Reproducible
     // from aibox.lock; never tracked.
@@ -459,7 +458,6 @@ fn ensure_aibox_entries(gitignore_path: &Path) -> Result<()> {
     let required_entries = [
         "# aibox generated",
         ".aibox-home/",
-        ".aibox-backup/",
         ".aibox-env/",
         // Personal overlay with credentials and per-developer mounts.
         // Never committed — secrets live here.
@@ -863,7 +861,7 @@ mod tests {
             // Pre-existing .gitignore with the v0.16.2 entries but no privacy rule.
             fs::write(
                 ".gitignore",
-                "# user\nmy-secret\n\n# aibox generated\n.aibox-home/\n.aibox-version\n.aibox-backup/\n.aibox-env/\ncontext/.cache/\n",
+                "# user\nmy-secret\n\n# aibox generated\n.aibox-home/\n.aibox-version\n.aibox-env/\ncontext/.cache/\n",
             )
             .unwrap();
             let addons = AddonsSection::default();

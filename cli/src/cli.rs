@@ -257,7 +257,7 @@ pub enum Commands {
     /// Copies aibox.toml, aibox.lock, .devcontainer/, .aibox-home/, context/,
     /// CLAUDE.md, and .gitignore to a backup directory.
     Backup {
-        /// Output directory for backup (default: .aibox-backup/)
+        /// Output directory for backup (default: .aibox/backup/)
         #[arg(long)]
         output_dir: Option<String>,
         /// Preview what would be backed up without copying
