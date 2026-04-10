@@ -407,12 +407,16 @@ and discuss action items with the project owner.
 - [ ] Verify `/workspace/context/processes/` directory exists
 - [ ] Verify `/workspace/context/schemas/` directory exists
 - [ ] Verify `/workspace/context/templates/processkit/v{effective_pk_version}/` snapshot directory exists
+- [ ] Check `/workspace/context/migrations/` (this directory) for **other unreviewed CLI migration
+      documents** (files named `YYYYMMDD_HHMM_X.Y.Z-to-A.B.C.md`):
+      - Files with the **same** `from→to` range as this one (e.g. two `0.17.5-to-0.17.6.md`
+        files) are retries — the most recent is authoritative; mark older ones as cancelled
+      - Files with a **different** range (e.g. `0.17.5-to-0.17.6.md` alongside this
+        `0.17.6-to-0.17.7.md`) are **sequential migrations** — both must be reviewed in
+        chronological order; do NOT discard them
 - [ ] Check `/workspace/context/migrations/pending/` for processkit content migration files:
-      - Filenames are datetime-prefixed and sort chronologically — **the last file listed is authoritative**
-      - If multiple files exist, earlier ones may be superseded or contradictory; review each
-        with the owner and close/discard any that are superseded by a newer file
-      - For the latest file: use `skill-finder` to locate the processkit migration skill,
-        then work through it with the owner — do NOT handle migrations manually
+      - Use `skill-finder` to locate the processkit migration skill, then work through each
+        file with the owner in chronological order — do NOT handle migrations manually
 - [ ] Mark this migration as completed (change Status to \"completed\")
 
 ## processkit State
