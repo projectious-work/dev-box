@@ -324,7 +324,7 @@ fn format_migration_doc(
     };
 
     // Build processkit state section.
-    let processkit_state_section = match pk.or(config_pk_version.map(|_| pk).flatten()) {
+    let processkit_state_section = match pk {
         Some(p) => {
             let source = &p.source;
             format!(
