@@ -1040,21 +1040,19 @@ pub fn cmd_sync(config_path: &Option<String>, no_cache: bool, no_build: bool) ->
         ));
     }
 
-    // Feature 2: warn if processkit version is below minimum for this aibox
-    if let Some(pk_section) = Some(&config.processkit) {
-        let current_aibox = env!("CARGO_PKG_VERSION");
-        if let Some(compat) = crate::compat::min_processkit_for(current_aibox) {
-            if !crate::compat::processkit_meets_minimum(&pk_section.version, compat.processkit_version) {
-                crate::output::warn(&format!(
-                    "processkit {} is below the minimum recommended version {} for aibox v{} ({}). \
-                     Consider updating [processkit].version in aibox.toml.",
-                    pk_section.version,
-                    compat.processkit_version,
-                    current_aibox,
-                    compat.note,
-                ));
-            }
-        }
+    // Warn if processkit version is below minimum for this aibox
+    let current_aibox = env!("CARGO_PKG_VERSION");
+    if let Some(compat) = crate::compat::min_processkit_for(current_aibox)
+        && !crate::compat::processkit_meets_minimum(&config.processkit.version, compat.processkit_version)
+    {
+        crate::output::warn(&format!(
+            "processkit {} is below the minimum recommended version {} for aibox v{} ({}). \
+             Consider updating [processkit].version in aibox.toml.",
+            config.processkit.version,
+            compat.processkit_version,
+            current_aibox,
+            compat.note,
+        ));
     }
 
     output::info("Syncing config files...");

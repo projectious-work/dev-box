@@ -32,6 +32,7 @@ pub static COMPAT_TABLE: &[CompatEntry] = &[
     CompatEntry { aibox_version: "0.17.3", processkit_version: "v0.6.0", note: "Claude Code slash-command adapters (aibox#37)" },
     CompatEntry { aibox_version: "0.17.4", processkit_version: "v0.6.0", note: "content migration documents (pending/in-progress/applied)" },
     CompatEntry { aibox_version: "0.17.5", processkit_version: "v0.8.0", note: "processkit v0.8.0 GrandLily src/ restructure" },
+    CompatEntry { aibox_version: "0.17.6", processkit_version: "v0.8.0", note: "migration briefing overhaul, structured logging, compat matrix" },
 ];
 
 /// Find the minimum compatible processkit version for the given aibox version.
@@ -43,12 +44,11 @@ pub fn min_processkit_for(aibox_version: &str) -> Option<&'static CompatEntry> {
 
     COMPAT_TABLE
         .iter()
-        .filter(|e| {
+        .rfind(|e| {
             parse_semver(e.aibox_version)
                 .map(|v| v <= target)
                 .unwrap_or(false)
         })
-        .last()
 }
 
 /// Parse a semver string like "0.17.5" or "v0.17.5" into (major, minor, patch).
