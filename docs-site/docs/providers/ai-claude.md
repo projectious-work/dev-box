@@ -39,6 +39,28 @@ Claude Code supports voice input. To enable it, configure [audio bridging](../co
 enabled = true
 ```
 
+## MCP Integration
+
+Claude Code's native MCP client reads `.mcp.json`. aibox generates `.mcp.json` automatically on `aibox sync`, merging processkit built-in servers, team servers from `aibox.toml [mcp]`, and personal servers from `.aibox-local.toml [mcp]`.
+
+`.mcp.json` is **gitignored** — it is regenerated on every `aibox sync` and must not be committed.
+
+To add MCP servers:
+
+```toml
+# aibox.toml — team-shared servers
+[[mcp.servers]]
+name    = "github"
+command = "npx"
+args    = ["-y", "@modelcontextprotocol/server-github"]
+
+# .aibox-local.toml — personal servers (not committed)
+[[mcp.servers]]
+name    = "my-internal-tool"
+command = "npx"
+args    = ["-y", "@acme/internal-mcp-server"]
+```
+
 ## Zellij Integration
 
 When Claude is configured as a provider, Zellij layouts include a dedicated Claude pane:

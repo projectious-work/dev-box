@@ -220,16 +220,40 @@ pub fn regenerate_mcp_configs(config: &AiboxConfig, project_root: &Path) -> Resu
     let effective = crate::content_init::build_effective_skill_set(project_root, config)
         .ok()
         .flatten();
-    let specs = collect_processkit_mcp_specs(
+    let processkit_specs = collect_processkit_mcp_specs(
         project_root,
         &config.processkit.version,
         effective.as_ref(),
         crate::processkit_vocab::MANDATORY_MCP_SKILLS,
     )?;
 
+    // Build the full spec list: processkit first, then team-shared
+    // (aibox.toml [mcp.servers]), then personal (.aibox-local.toml
+    // [mcp.servers]).  All three sources are "aibox-managed" — they
+    // are in the managed set and get refreshed on every sync so that
+    // removals from any source are reflected immediately.
+    let mut specs: Vec<McpServerSpec> = processkit_specs;
+    for s in &config.mcp.servers {
+        specs.push(McpServerSpec {
+            name: s.name.clone(),
+            command: s.command.clone(),
+            args: s.args.clone(),
+            env: s.env.clone(),
+        });
+    }
+    for s in &config.local_mcp_servers {
+        specs.push(McpServerSpec {
+            name: s.name.clone(),
+            command: s.command.clone(),
+            args: s.args.clone(),
+            env: s.env.clone(),
+        });
+    }
+    // Stable order across all sources.
+    specs.sort_by(|a, b| a.name.cmp(&b.name));
+
     if specs.is_empty() {
-        // No processkit MCP servers to register. Don't bother writing
-        // empty config files; the user can add their own later.
+        // No MCP servers from any source. Nothing to write.
         return Ok(());
     }
 

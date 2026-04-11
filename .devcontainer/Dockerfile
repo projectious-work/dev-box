@@ -84,6 +84,26 @@ COPY --from=rust-builder /home/aibox/.rustup /home/aibox/.rustup
 
 ENV PATH="/home/aibox/.cargo/bin:${PATH}"
 
+# The builder stage has build-essential, but only the toolchain is copied to
+# the runtime image. Without a C linker, `cargo build` and `cargo test` fail.
+# Install the minimum needed for native compilation and cross-compilation to
+# x86_64 Linux (gcc-x86-64-linux-gnu provides x86_64-linux-gnu-gcc).
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    binutils \
+    pkg-config \
+    libssl-dev \
+    gcc-x86-64-linux-gnu \
+    libc6-dev-amd64-cross \
+    && rm -rf /var/lib/apt/lists/*
+
+# Pre-install the x86_64 Rust target so cross-compilation works without
+# a `rustup target add` step.
+USER aibox
+ENV RUSTUP_HOME=/home/aibox/.rustup CARGO_HOME=/home/aibox/.cargo
+RUN /home/aibox/.cargo/bin/rustup target add x86_64-unknown-linux-gnu
+USER root
+
 # Project-specific layers (from Dockerfile.local — not managed by aibox sync)
 # Project-specific Dockerfile layers.
 # This file is appended to the generated Dockerfile by `aibox sync`.

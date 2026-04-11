@@ -27,7 +27,7 @@ my-project/
 
 ## Supported sections
 
-Only two sections are supported. Everything else must remain in `aibox.toml`.
+Three sections are supported. Everything else must remain in `aibox.toml`.
 
 ### [container.environment]
 
@@ -61,16 +61,44 @@ target = "/home/aibox/.ssh/id_ed25519"
 read_only = true
 ```
 
+### [mcp]
+
+Personal MCP servers appended to the generated MCP client configs on `aibox sync`. Use this section for servers you want only on your machine — internal tools, local scripts, or servers that require credentials you don't want to share.
+
+Each server entry is an `[[mcp.servers]]` table with the same fields as `[mcp]` in `aibox.toml`:
+
+```toml
+[[mcp.servers]]
+name    = "my-internal-tool"
+command = "npx"
+args    = ["-y", "@acme/internal-mcp-server"]
+
+[[mcp.servers]]
+name    = "local-notes"
+command = "/home/user/bin/notes-mcp"
+args    = ["--db", "~/notes.db"]
+
+[[mcp.servers]]
+name    = "stripe"
+command = "npx"
+args    = ["-y", "@stripe/mcp"]
+[mcp.servers.env]
+STRIPE_SECRET_KEY = "sk_test_..."
+```
+
+`aibox sync` merges personal servers with team servers (from `aibox.toml [mcp]`) and built-in processkit servers, then regenerates all MCP client config files. The generated files are **gitignored** — they are never committed to version control, so personal keys and server definitions stay private.
+
 ## Merge behavior
 
 | Section | Merge rule |
 |---------|-----------|
 | `[container.environment]` | Merged with `aibox.toml`; local values win on key conflicts |
 | `[[container.extra_volumes]]` | Appended after `aibox.toml` volumes; no deduplication |
+| `[[mcp.servers]]` | Appended after `aibox.toml` MCP servers; all sources merged into each generated config file |
 
 ## Full example
 
-A typical `.aibox-local.toml` for a developer working with Claude, GitHub, and AWS:
+A typical `.aibox-local.toml` for a developer working with Claude, GitHub, and AWS, plus a personal MCP server:
 
 ```toml
 [container.environment]
@@ -92,11 +120,16 @@ read_only = true
 source = "~/.ssh/id_ed25519"
 target = "/home/aibox/.ssh/id_ed25519"
 read_only = true
+
+[[mcp.servers]]
+name    = "my-internal-tool"
+command = "npx"
+args    = ["-y", "@acme/internal-mcp-server"]
 ```
 
 ## What is NOT supported
 
-Everything outside of `[container.environment]` and `[[container.extra_volumes]]` is ignored. The following must remain in `aibox.toml`:
+Everything outside of `[container.environment]`, `[[container.extra_volumes]]`, and `[[mcp.servers]]` is ignored. The following must remain in `aibox.toml`:
 
 - Container name, hostname, user, `post_create_command`, `keepalive`
 - `[addons]` — addon configuration
@@ -107,5 +140,5 @@ Everything outside of `[container.environment]` and `[[container.extra_volumes]]
 - `[audio]` — audio bridging
 
 :::tip Applying changes
-After editing `.aibox-local.toml`, run `aibox sync` (or `aibox sync --no-build` for a config-only refresh) to regenerate `.devcontainer/` files with the updated environment and volumes.
+After editing `.aibox-local.toml`, run `aibox sync` (or `aibox sync --no-build` for a config-only refresh) to regenerate `.devcontainer/` files with the updated environment and volumes, and MCP client config files with the updated server list.
 :::

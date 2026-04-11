@@ -34,7 +34,9 @@ MISTRAL_API_KEY = "..."
 
 ## MCP Integration
 
-aibox writes `.mcp.json` (the Claude Code MCP format) when Mistral is configured, so a custom Mistral SDK-based tool you build can read processkit MCP server registrations from there.
+aibox generates `.mcp.json` (the Claude Code MCP format) on `aibox sync`, merging processkit built-in servers, team servers from `aibox.toml [mcp]`, and personal servers from `.aibox-local.toml [mcp]`. A custom Mistral SDK-based tool you build can read MCP server registrations from this file.
+
+`.mcp.json` is **gitignored** — it is regenerated on every `aibox sync` and must not be committed.
 
 ## Installation
 

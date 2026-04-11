@@ -268,6 +268,14 @@ mod tests {
             cmds.contains("COPY --from=rust-builder"),
             "missing COPY in:\n{cmds}"
         );
+        assert!(
+            cmds.contains("gcc"),
+            "missing gcc install in:\n{cmds}"
+        );
+        assert!(
+            cmds.contains("x86_64-unknown-linux-gnu"),
+            "missing x86_64 target add in:\n{cmds}"
+        );
     }
 
     // ── Default-enabled / default-disabled ──────────────────────────────

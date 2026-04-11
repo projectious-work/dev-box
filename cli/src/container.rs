@@ -468,7 +468,13 @@ pub fn cmd_start(config_path: &Option<String>, layout: &str) -> Result<()> {
     //
     // We can't cheaply distinguish them from inside cmd_start without
     // poking the local image store, so we name both fixes in the error.
+    //
+    // Skip when aibox.toml pins "latest" — "latest" means "any version is
+    // acceptable". Comparing a concrete label (e.g. "0.17.12") against the
+    // literal string "latest" would always fire even though the container is
+    // correct.
     if state != ContainerState::Missing
+        && config.aibox.version != "latest"
         && let Ok(Some(container_version)) = runtime.get_container_image_version(name)
         && container_version != config.aibox.version
     {
@@ -502,10 +508,14 @@ pub fn cmd_start(config_path: &Option<String>, layout: &str) -> Result<()> {
     }
 
     output::info(&format!("Attaching via zellij (layout: {})...", layout));
+    // Use a named session matching the container name so that `aibox start`
+    // re-attaches to an existing session rather than creating a new one each
+    // time. `--create` makes zellij start a fresh session (with the given
+    // layout) only when no session named `name` exists yet.
     runtime.exec_interactive(
         name,
         &config.container.user,
-        &["zellij", "--layout", layout],
+        &["zellij", "attach", "--create", "--layout", layout, name],
     )?;
 
     Ok(())
@@ -989,6 +999,9 @@ pub fn cmd_init(config_path: &Option<String>, params: InitParams) -> Result<()> 
         },
         agents: crate::config::AgentsSection::default(),
         audio: AudioSection::default(),
+        mcp: crate::config::McpSection::default(),
+        local_env: std::collections::HashMap::new(),
+        local_mcp_servers: vec![],
     };
     config.resolve_ai_provider_addons();
 

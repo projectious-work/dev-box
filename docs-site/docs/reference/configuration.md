@@ -53,6 +53,17 @@ rustfmt = {}
 [ai]
 providers = ["claude", "aider"]       # AI providers to install
 
+[mcp]
+# Team-shared MCP servers merged into all generated MCP client configs
+# (see also [[mcp.servers]] in .aibox-local.toml for personal servers)
+
+[[mcp.servers]]
+name    = "my-team-tool"              # Unique server name
+command = "npx"                       # Executable to run
+args    = ["-y", "@acme/team-server"] # Arguments
+# [mcp.servers.env]                   # Optional environment variables
+# API_KEY = "..."
+
 [customization]
 theme  = "gruvbox-dark"               # Color theme (7 options)
 prompt = "default"                    # Starship preset (7 options)
@@ -117,10 +128,11 @@ Environment variables and bind mounts can also be configured directly in `[conta
 
 `.aibox-local.toml` is a personal, gitignored overlay for per-developer settings that should never be committed — API keys, personal bind mounts, and similar secrets. It lives next to `aibox.toml` in the project root and is automatically added to `.gitignore` by `aibox init` and `aibox sync`.
 
-Only two sections are supported:
+Three sections are supported:
 
 - **`[container.environment]`** — merged on top of `aibox.toml`'s `[container.environment]`. Local values win on conflicts.
 - **`[[container.extra_volumes]]`** — appended after any volumes declared in `aibox.toml`.
+- **`[[mcp.servers]]`** — personal MCP servers appended to the team MCP servers from `aibox.toml [mcp]`. All sources are merged into each generated MCP client config file.
 
 All other configuration (container name, addons, processkit version, etc.) must remain in `aibox.toml`.
 
@@ -247,6 +259,40 @@ source                     = "https://gitea.acme.com/platform/processkit-acme.gi
 version                    = "v1.2.0"
 release_asset_url_template = "https://gitea.acme.com/{org}/{name}/releases/download/{version}/{name}-{version}.tar.gz"
 ```
+
+### [mcp]
+
+Team-shared MCP server definitions. `aibox sync` merges servers from three sources and regenerates all MCP client config files:
+
+1. **Built-in processkit servers** — always included (the processkit MCP server and any extras it ships)
+2. **`aibox.toml [mcp]`** — team-shared servers committed to version control
+3. **`.aibox-local.toml [mcp]`** — personal servers, gitignored
+
+Generated files (`.mcp.json`, `.cursor/mcp.json`, `.gemini/settings.json`, `.codex/config.toml`, `.continue/mcpServers/`) are **gitignored**. They are always reproducible from the config sources above and must not be committed — doing so would embed personal server definitions or credentials from `.aibox-local.toml`.
+
+Each `[[mcp.servers]]` entry has these fields:
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `name` | String | Yes | -- | Unique server name (used as the key in generated configs) |
+| `command` | String | Yes | -- | Executable to run (e.g. `npx`, `/usr/local/bin/my-server`) |
+| `args` | Array of strings | No | `[]` | Arguments passed to `command` |
+| `env` | Map (String → String) | No | `{}` | Environment variables set when the server process starts |
+
+Example:
+
+```toml
+[[mcp.servers]]
+name    = "github"
+command = "npx"
+args    = ["-y", "@modelcontextprotocol/server-github"]
+[mcp.servers.env]
+GITHUB_TOKEN = "ghp_..."
+```
+
+:::tip Personal MCP servers
+Servers that require personal credentials or are not relevant to all team members belong in `[[mcp.servers]]` in `.aibox-local.toml`, not here. See [Local Config](./local-config.md).
+:::
 
 ### [agents]
 

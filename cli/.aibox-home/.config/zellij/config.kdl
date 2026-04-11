@@ -9,27 +9,33 @@ rounded_corners true
 simplified_ui false
 pane_frames true
 
-// Leader: Ctrl+b (press Ctrl+b, release, then press the action key)
+// Leader: Ctrl+g (press Ctrl+g, release, then press the action key)
 // Quick reference:
-//   Ctrl+b → h/j/k/l    Navigate panes
-//   Ctrl+b → n/d/r       New pane / split down / split right
-//   Ctrl+b → x           Close pane
-//   Ctrl+b → f           Toggle fullscreen
-//   Ctrl+b → z           Toggle pane frames
-//   Ctrl+b → t/w         New tab / close tab
-//   Ctrl+b → [/]         Previous/next tab
-//   Ctrl+b → 1-5         Jump to tab
-//   Ctrl+b → s           Strider file picker
-//   Ctrl+b → u           Scroll mode
-//   Ctrl+b → /           Search scrollback
-//   Ctrl+q               Quit zellij
+//   Alt+h/j/k/l          Navigate panes (no leader needed; always shown in status bar)
+//   Ctrl+g → h/j/k/l    Navigate panes (leader variant)
+//   Ctrl+g → n/d/r       New pane / split down / split right
+//   Ctrl+g → x           Close pane
+//   Ctrl+g → f           Toggle fullscreen
+//   Ctrl+g → z           Toggle pane frames
+//   Ctrl+g → p           Toggle scratch notepad (vim floating pane)
+//   Ctrl+g → t/w         New tab / close tab
+//   Ctrl+g → [/]         Previous/next tab
+//   Ctrl+g → 1-5         Jump to tab
+//   Ctrl+g → s           Strider file picker
+//   Ctrl+g → u           Scroll mode
+//   Ctrl+g → /           Search scrollback
+//   Ctrl+g → q           Quit zellij (entire session)
 keybinds clear-defaults=true {
     normal {
-        bind "Ctrl b" { SwitchToMode "Tmux"; }
-        bind "Ctrl q" { Quit; }
+        bind "Ctrl g" { SwitchToMode "Tmux"; }
+        // Direct pane navigation — no leader needed; always visible in status bar.
+        bind "Alt h" { MoveFocus "Left"; }
+        bind "Alt j" { MoveFocus "Down"; }
+        bind "Alt k" { MoveFocus "Up"; }
+        bind "Alt l" { MoveFocus "Right"; }
     }
     tmux {
-        bind "Ctrl b" { SwitchToMode "Normal"; }
+        bind "Ctrl g" { SwitchToMode "Normal"; }
         bind "Esc" { SwitchToMode "Normal"; }
         bind "h" "Left"  { MoveFocus "Left"; SwitchToMode "Normal"; }
         bind "j" "Down"  { MoveFocus "Down"; SwitchToMode "Normal"; }
@@ -74,7 +80,7 @@ keybinds clear-defaults=true {
         bind "q" { Quit; }
     }
     scroll {
-        bind "Ctrl b" { SwitchToMode "Normal"; }
+        bind "Ctrl g" { SwitchToMode "Normal"; }
         bind "Ctrl c" "Esc" "q" { SwitchToMode "Normal"; }
         bind "j" "Down"  { ScrollDown; }
         bind "k" "Up"    { ScrollUp; }
@@ -87,7 +93,7 @@ keybinds clear-defaults=true {
         bind "/"         { SwitchToMode "EnterSearch"; SearchInput 0; }
     }
     search {
-        bind "Ctrl b" { SwitchToMode "Normal"; }
+        bind "Ctrl g" { SwitchToMode "Normal"; }
         bind "Ctrl c" "Esc" { SwitchToMode "Normal"; }
         bind "n"     { Search "down"; }
         bind "N"     { Search "up"; }

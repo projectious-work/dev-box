@@ -593,6 +593,9 @@ pub const PROCESSKIT_VERSION_LATEST: &str = "latest";
 pub struct AiboxLocalConfig {
     #[serde(default)]
     pub container: LocalContainerSection,
+    /// Personal MCP servers — never committed to git.
+    #[serde(default)]
+    pub mcp: McpSection,
 }
 
 /// The `[container]` sub-section of `.aibox-local.toml`.
@@ -604,6 +607,32 @@ pub struct LocalContainerSection {
     /// Additional bind mounts — appended after `aibox.toml` extra_volumes.
     #[serde(default)]
     pub extra_volumes: Vec<ExtraVolume>,
+}
+
+/// One extra MCP server entry defined in `aibox.toml` (team-shared) or
+/// `.aibox-local.toml` (personal). Supplements the processkit-managed
+/// servers that aibox discovers from the installed skills.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ExtraMcpServer {
+    /// Server name — used as the key in the `mcpServers` JSON object.
+    pub name: String,
+    /// Executable to spawn (e.g. `uv`, `npx`, `python3`).
+    pub command: String,
+    /// Arguments passed to `command`.
+    #[serde(default)]
+    pub args: Vec<String>,
+    /// Optional environment variables injected into the server process.
+    #[serde(default)]
+    pub env: std::collections::BTreeMap<String, String>,
+}
+
+/// `[mcp]` section shared by `aibox.toml` (team-shared servers) and
+/// `.aibox-local.toml` (personal servers). Same shape, different semantics.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct McpSection {
+    /// Extra MCP servers to register alongside processkit-managed ones.
+    #[serde(default)]
+    pub servers: Vec<ExtraMcpServer>,
 }
 
 impl Default for ProcessKitSection {
@@ -764,12 +793,23 @@ pub struct AiboxConfig {
     #[serde(default, skip_serializing)]
     pub(crate) process: Option<LegacyProcessSection>,
 
+    /// Team-shared custom MCP servers from `aibox.toml [mcp.servers]`.
+    #[serde(default)]
+    pub mcp: McpSection,
+
     /// Environment variables from `.aibox-local.toml` only — tracked separately
     /// so `generate.rs` can write them to `.aibox-local.env` rather than
     /// embedding literal credential values in `docker-compose.yml`.
     /// Not part of the TOML schema; populated programmatically at load time.
     #[serde(skip)]
     pub local_env: HashMap<String, String>,
+
+    /// Personal MCP servers from `.aibox-local.toml [mcp.servers]` — tracked
+    /// separately so they are never committed to git (same principle as
+    /// `local_env` / `.aibox-local.env`). Not part of the TOML schema;
+    /// populated programmatically at load time.
+    #[serde(skip)]
+    pub local_mcp_servers: Vec<ExtraMcpServer>,
 }
 
 impl AiboxConfig {
@@ -844,6 +884,9 @@ impl AiboxConfig {
                 .extend(local.container.extra_volumes);
             // Validate merged extra_volumes from both sources.
             config.validate_extra_volumes()?;
+            // Personal MCP servers — stored separately so they never get
+            // embedded in a committed file (same principle as local_env).
+            config.local_mcp_servers = local.mcp.servers;
         }
 
         Ok(config)
@@ -1154,6 +1197,9 @@ pub fn test_config() -> AiboxConfig {
         customization: CustomizationSection::default(),
         audio: AudioSection::default(),
         process: None,
+        mcp: McpSection::default(),
+        local_env: HashMap::new(),
+        local_mcp_servers: vec![],
     };
     config.resolve_ai_provider_addons();
     config
