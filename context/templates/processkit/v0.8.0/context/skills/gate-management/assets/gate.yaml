@@ -1,0 +1,16 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: Gate
+metadata:
+  id: GATE-TODO
+  created: TODO
+spec:
+  name: TODO
+  description: TODO
+  kind: manual           # manual | automated | hybrid
+  validator: TODO
+  validator_command: null
+  required_roles: []
+  blocking: true
+  evidence_required: false
+---

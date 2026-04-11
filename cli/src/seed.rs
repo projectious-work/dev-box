@@ -124,6 +124,7 @@ pane_frames true
 //   Ctrl+g → p           Toggle scratch notepad (vim floating pane)
 //   Ctrl+g → t/w         New tab / close tab
 //   Ctrl+g → [/]         Previous/next tab
+//   Ctrl+g → ,/.         Previous/next stacked pane
 //   Ctrl+g → 1-5         Jump to tab
 //   Ctrl+g → s           Strider file picker
 //   Ctrl+g → u           Scroll mode
@@ -161,6 +162,8 @@ keybinds clear-defaults=true {
         bind "w"     { CloseTab; SwitchToMode "Normal"; }
         bind "["     { GoToPreviousTab; SwitchToMode "Normal"; }
         bind "]"     { GoToNextTab; SwitchToMode "Normal"; }
+        bind ","     { PreviousSwapLayout; SwitchToMode "Normal"; }
+        bind "."     { NextSwapLayout; SwitchToMode "Normal"; }
         bind "1"     { GoToTab 1; SwitchToMode "Normal"; }
         bind "2"     { GoToTab 2; SwitchToMode "Normal"; }
         bind "3"     { GoToTab 3; SwitchToMode "Normal"; }
@@ -299,7 +302,7 @@ fn generate_dev_layout(providers: &[crate::config::AiProvider]) -> String {
                 hide_frame_for_single_pane "false"
 
                 mode_normal       "#[bg=#5e81ac,fg=#2e3440,bold] NORMAL #[bg=default,fg=#7b88a1]  ^g LEADER · g→q QUIT · g→n/d/r PANE · g→t/w TAB · Alt+h/j/k/l FOCUS"
-                mode_tmux         "#[bg=#ebcb8b,fg=#2e3440,bold] LEADER #[bg=default,fg=#7b88a1]  h/j/k/l FOCUS · n/d/r PANE · t/w TAB · [/] PREV/NEXT · x CLOSE · q QUIT · Esc CANCEL"
+                mode_tmux         "#[bg=#ebcb8b,fg=#2e3440,bold] LEADER #[bg=default,fg=#7b88a1]  h/j/k/l FOCUS · n/d/r PANE · t/w TAB · [/] PREV/NEXT TAB · ,/. PREV/NEXT STACK · x CLOSE · q QUIT · Esc CANCEL"
                 mode_scroll       "#[bg=#d08770,fg=#2e3440,bold] SCROLL #[bg=default,fg=#7b88a1]  j/k SCROLL · d/u HALF · f/b PAGE · g/G TOP/BTM · / SEARCH · ^g EXIT"
                 mode_enter_search "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  Type to search… Enter CONFIRM · Esc CANCEL"
                 mode_search       "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  n/N NEXT/PREV · c CASE · w WRAP · ^g EXIT"
@@ -374,7 +377,7 @@ fn generate_focus_layout(providers: &[crate::config::AiProvider]) -> String {
                 hide_frame_for_single_pane "false"
 
                 mode_normal       "#[bg=#5e81ac,fg=#2e3440,bold] NORMAL #[bg=default,fg=#7b88a1]  ^g LEADER · g→q QUIT · g→n/d/r PANE · g→t/w TAB · Alt+h/j/k/l FOCUS"
-                mode_tmux         "#[bg=#ebcb8b,fg=#2e3440,bold] LEADER #[bg=default,fg=#7b88a1]  h/j/k/l FOCUS · n/d/r PANE · t/w TAB · [/] PREV/NEXT · x CLOSE · q QUIT · Esc CANCEL"
+                mode_tmux         "#[bg=#ebcb8b,fg=#2e3440,bold] LEADER #[bg=default,fg=#7b88a1]  h/j/k/l FOCUS · n/d/r PANE · t/w TAB · [/] PREV/NEXT TAB · ,/. PREV/NEXT STACK · x CLOSE · q QUIT · Esc CANCEL"
                 mode_scroll       "#[bg=#d08770,fg=#2e3440,bold] SCROLL #[bg=default,fg=#7b88a1]  j/k SCROLL · d/u HALF · f/b PAGE · g/G TOP/BTM · / SEARCH · ^g EXIT"
                 mode_enter_search "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  Type to search… Enter CONFIRM · Esc CANCEL"
                 mode_search       "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  n/N NEXT/PREV · c CASE · w WRAP · ^g EXIT"
@@ -447,7 +450,7 @@ fn generate_cowork_layout(providers: &[crate::config::AiProvider]) -> String {
                 hide_frame_for_single_pane "false"
 
                 mode_normal       "#[bg=#5e81ac,fg=#2e3440,bold] NORMAL #[bg=default,fg=#7b88a1]  ^g LEADER · g→q QUIT · g→n/d/r PANE · g→t/w TAB · Alt+h/j/k/l FOCUS"
-                mode_tmux         "#[bg=#ebcb8b,fg=#2e3440,bold] LEADER #[bg=default,fg=#7b88a1]  h/j/k/l FOCUS · n/d/r PANE · t/w TAB · [/] PREV/NEXT · x CLOSE · q QUIT · Esc CANCEL"
+                mode_tmux         "#[bg=#ebcb8b,fg=#2e3440,bold] LEADER #[bg=default,fg=#7b88a1]  h/j/k/l FOCUS · n/d/r PANE · t/w TAB · [/] PREV/NEXT TAB · ,/. PREV/NEXT STACK · x CLOSE · q QUIT · Esc CANCEL"
                 mode_scroll       "#[bg=#d08770,fg=#2e3440,bold] SCROLL #[bg=default,fg=#7b88a1]  j/k SCROLL · d/u HALF · f/b PAGE · g/G TOP/BTM · / SEARCH · ^g EXIT"
                 mode_enter_search "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  Type to search… Enter CONFIRM · Esc CANCEL"
                 mode_search       "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  n/N NEXT/PREV · c CASE · w WRAP · ^g EXIT"
@@ -515,7 +518,7 @@ fn generate_cowork_layout(providers: &[crate::config::AiProvider]) -> String {
                 hide_frame_for_single_pane "false"
 
                 mode_normal       "#[bg=#5e81ac,fg=#2e3440,bold] NORMAL #[bg=default,fg=#7b88a1]  ^g LEADER · g→q QUIT · g→n/d/r PANE · g→t/w TAB · Alt+h/j/k/l FOCUS"
-                mode_tmux         "#[bg=#ebcb8b,fg=#2e3440,bold] LEADER #[bg=default,fg=#7b88a1]  h/j/k/l FOCUS · n/d/r PANE · t/w TAB · [/] PREV/NEXT · x CLOSE · q QUIT · Esc CANCEL"
+                mode_tmux         "#[bg=#ebcb8b,fg=#2e3440,bold] LEADER #[bg=default,fg=#7b88a1]  h/j/k/l FOCUS · n/d/r PANE · t/w TAB · [/] PREV/NEXT TAB · ,/. PREV/NEXT STACK · x CLOSE · q QUIT · Esc CANCEL"
                 mode_scroll       "#[bg=#d08770,fg=#2e3440,bold] SCROLL #[bg=default,fg=#7b88a1]  j/k SCROLL · d/u HALF · f/b PAGE · g/G TOP/BTM · / SEARCH · ^g EXIT"
                 mode_enter_search "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  Type to search… Enter CONFIRM · Esc CANCEL"
                 mode_search       "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  n/N NEXT/PREV · c CASE · w WRAP · ^g EXIT"
@@ -617,7 +620,7 @@ fn generate_cowork_swap_layout(providers: &[crate::config::AiProvider]) -> Strin
                 hide_frame_for_single_pane "false"
 
                 mode_normal       "#[bg=#5e81ac,fg=#2e3440,bold] NORMAL #[bg=default,fg=#7b88a1]  ^g LEADER · g→q QUIT · g→n/d/r PANE · g→t/w TAB · Alt+h/j/k/l FOCUS"
-                mode_tmux         "#[bg=#ebcb8b,fg=#2e3440,bold] LEADER #[bg=default,fg=#7b88a1]  h/j/k/l FOCUS · n/d/r PANE · t/w TAB · [/] PREV/NEXT · x CLOSE · q QUIT · Esc CANCEL"
+                mode_tmux         "#[bg=#ebcb8b,fg=#2e3440,bold] LEADER #[bg=default,fg=#7b88a1]  h/j/k/l FOCUS · n/d/r PANE · t/w TAB · [/] PREV/NEXT TAB · ,/. PREV/NEXT STACK · x CLOSE · q QUIT · Esc CANCEL"
                 mode_scroll       "#[bg=#d08770,fg=#2e3440,bold] SCROLL #[bg=default,fg=#7b88a1]  j/k SCROLL · d/u HALF · f/b PAGE · g/G TOP/BTM · / SEARCH · ^g EXIT"
                 mode_enter_search "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  Type to search… Enter CONFIRM · Esc CANCEL"
                 mode_search       "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  n/N NEXT/PREV · c CASE · w WRAP · ^g EXIT"
@@ -683,7 +686,7 @@ fn generate_cowork_swap_layout(providers: &[crate::config::AiProvider]) -> Strin
                 hide_frame_for_single_pane "false"
 
                 mode_normal       "#[bg=#5e81ac,fg=#2e3440,bold] NORMAL #[bg=default,fg=#7b88a1]  ^g LEADER · g→q QUIT · g→n/d/r PANE · g→t/w TAB · Alt+h/j/k/l FOCUS"
-                mode_tmux         "#[bg=#ebcb8b,fg=#2e3440,bold] LEADER #[bg=default,fg=#7b88a1]  h/j/k/l FOCUS · n/d/r PANE · t/w TAB · [/] PREV/NEXT · x CLOSE · q QUIT · Esc CANCEL"
+                mode_tmux         "#[bg=#ebcb8b,fg=#2e3440,bold] LEADER #[bg=default,fg=#7b88a1]  h/j/k/l FOCUS · n/d/r PANE · t/w TAB · [/] PREV/NEXT TAB · ,/. PREV/NEXT STACK · x CLOSE · q QUIT · Esc CANCEL"
                 mode_scroll       "#[bg=#d08770,fg=#2e3440,bold] SCROLL #[bg=default,fg=#7b88a1]  j/k SCROLL · d/u HALF · f/b PAGE · g/G TOP/BTM · / SEARCH · ^g EXIT"
                 mode_enter_search "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  Type to search… Enter CONFIRM · Esc CANCEL"
                 mode_search       "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  n/N NEXT/PREV · c CASE · w WRAP · ^g EXIT"
@@ -768,7 +771,7 @@ fn generate_ai_layout(providers: &[crate::config::AiProvider]) -> String {
                 hide_frame_for_single_pane "false"
 
                 mode_normal       "#[bg=#5e81ac,fg=#2e3440,bold] NORMAL #[bg=default,fg=#7b88a1]  ^g LEADER · g→q QUIT · g→n/d/r PANE · g→t/w TAB · Alt+h/j/k/l FOCUS"
-                mode_tmux         "#[bg=#ebcb8b,fg=#2e3440,bold] LEADER #[bg=default,fg=#7b88a1]  h/j/k/l FOCUS · n/d/r PANE · t/w TAB · [/] PREV/NEXT · x CLOSE · q QUIT · Esc CANCEL"
+                mode_tmux         "#[bg=#ebcb8b,fg=#2e3440,bold] LEADER #[bg=default,fg=#7b88a1]  h/j/k/l FOCUS · n/d/r PANE · t/w TAB · [/] PREV/NEXT TAB · ,/. PREV/NEXT STACK · x CLOSE · q QUIT · Esc CANCEL"
                 mode_scroll       "#[bg=#d08770,fg=#2e3440,bold] SCROLL #[bg=default,fg=#7b88a1]  j/k SCROLL · d/u HALF · f/b PAGE · g/G TOP/BTM · / SEARCH · ^g EXIT"
                 mode_enter_search "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  Type to search… Enter CONFIRM · Esc CANCEL"
                 mode_search       "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  n/N NEXT/PREV · c CASE · w WRAP · ^g EXIT"
@@ -836,7 +839,7 @@ fn generate_ai_layout(providers: &[crate::config::AiProvider]) -> String {
                 hide_frame_for_single_pane "false"
 
                 mode_normal       "#[bg=#5e81ac,fg=#2e3440,bold] NORMAL #[bg=default,fg=#7b88a1]  ^g LEADER · g→q QUIT · g→n/d/r PANE · g→t/w TAB · Alt+h/j/k/l FOCUS"
-                mode_tmux         "#[bg=#ebcb8b,fg=#2e3440,bold] LEADER #[bg=default,fg=#7b88a1]  h/j/k/l FOCUS · n/d/r PANE · t/w TAB · [/] PREV/NEXT · x CLOSE · q QUIT · Esc CANCEL"
+                mode_tmux         "#[bg=#ebcb8b,fg=#2e3440,bold] LEADER #[bg=default,fg=#7b88a1]  h/j/k/l FOCUS · n/d/r PANE · t/w TAB · [/] PREV/NEXT TAB · ,/. PREV/NEXT STACK · x CLOSE · q QUIT · Esc CANCEL"
                 mode_scroll       "#[bg=#d08770,fg=#2e3440,bold] SCROLL #[bg=default,fg=#7b88a1]  j/k SCROLL · d/u HALF · f/b PAGE · g/G TOP/BTM · / SEARCH · ^g EXIT"
                 mode_enter_search "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  Type to search… Enter CONFIRM · Esc CANCEL"
                 mode_search       "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  n/N NEXT/PREV · c CASE · w WRAP · ^g EXIT"
@@ -921,7 +924,7 @@ fn generate_browse_layout(providers: &[crate::config::AiProvider]) -> String {
                 hide_frame_for_single_pane "false"
 
                 mode_normal       "#[bg=#5e81ac,fg=#2e3440,bold] NORMAL #[bg=default,fg=#7b88a1]  ^g LEADER · g→q QUIT · g→n/d/r PANE · g→t/w TAB · Alt+h/j/k/l FOCUS"
-                mode_tmux         "#[bg=#ebcb8b,fg=#2e3440,bold] LEADER #[bg=default,fg=#7b88a1]  h/j/k/l FOCUS · n/d/r PANE · t/w TAB · [/] PREV/NEXT · x CLOSE · q QUIT · Esc CANCEL"
+                mode_tmux         "#[bg=#ebcb8b,fg=#2e3440,bold] LEADER #[bg=default,fg=#7b88a1]  h/j/k/l FOCUS · n/d/r PANE · t/w TAB · [/] PREV/NEXT TAB · ,/. PREV/NEXT STACK · x CLOSE · q QUIT · Esc CANCEL"
                 mode_scroll       "#[bg=#d08770,fg=#2e3440,bold] SCROLL #[bg=default,fg=#7b88a1]  j/k SCROLL · d/u HALF · f/b PAGE · g/G TOP/BTM · / SEARCH · ^g EXIT"
                 mode_enter_search "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  Type to search… Enter CONFIRM · Esc CANCEL"
                 mode_search       "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  n/N NEXT/PREV · c CASE · w WRAP · ^g EXIT"
@@ -989,7 +992,7 @@ fn generate_browse_layout(providers: &[crate::config::AiProvider]) -> String {
                 hide_frame_for_single_pane "false"
 
                 mode_normal       "#[bg=#5e81ac,fg=#2e3440,bold] NORMAL #[bg=default,fg=#7b88a1]  ^g LEADER · g→q QUIT · g→n/d/r PANE · g→t/w TAB · Alt+h/j/k/l FOCUS"
-                mode_tmux         "#[bg=#ebcb8b,fg=#2e3440,bold] LEADER #[bg=default,fg=#7b88a1]  h/j/k/l FOCUS · n/d/r PANE · t/w TAB · [/] PREV/NEXT · x CLOSE · q QUIT · Esc CANCEL"
+                mode_tmux         "#[bg=#ebcb8b,fg=#2e3440,bold] LEADER #[bg=default,fg=#7b88a1]  h/j/k/l FOCUS · n/d/r PANE · t/w TAB · [/] PREV/NEXT TAB · ,/. PREV/NEXT STACK · x CLOSE · q QUIT · Esc CANCEL"
                 mode_scroll       "#[bg=#d08770,fg=#2e3440,bold] SCROLL #[bg=default,fg=#7b88a1]  j/k SCROLL · d/u HALF · f/b PAGE · g/G TOP/BTM · / SEARCH · ^g EXIT"
                 mode_enter_search "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  Type to search… Enter CONFIRM · Esc CANCEL"
                 mode_search       "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  n/N NEXT/PREV · c CASE · w WRAP · ^g EXIT"
@@ -1308,7 +1311,7 @@ pub fn seed_root_dir(config: &AiboxConfig) -> Result<()> {
             crate::config::AiProvider::Mistral => {
                 dirs.push(root.join(".mistral"));
             }
-            crate::config::AiProvider::Codex => {
+            crate::config::AiProvider::OpenAI => {
                 dirs.push(root.join(".codex"));
             }
             crate::config::AiProvider::Continue => {

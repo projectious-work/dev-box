@@ -1,0 +1,19 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: Actor
+metadata:
+  id: ACTOR-TODO
+  created: TODO
+spec:
+  type: human
+  name: TODO
+  email: TODO
+  handle: TODO            # optional — GitHub/Slack handle
+  expertise: []
+  roles: []
+  preferences:
+    timezone: TODO
+    commit_style: conventional
+  active: true
+  joined_at: TODO
+---

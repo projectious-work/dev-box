@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "processkit-id-management": {
+      "command": "uv",
+      "args": [
+        "run",
+        "context/skills/id-management/mcp/server.py"
+      ],
+      "env": {}
+    }
+  }
+}

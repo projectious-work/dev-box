@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "processkit-discussion-management": {
+      "command": "uv",
+      "args": [
+        "run",
+        "context/skills/discussion-management/mcp/server.py"
+      ],
+      "env": {}
+    }
+  }
+}

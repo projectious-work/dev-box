@@ -1,0 +1,17 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: StateMachine
+metadata:
+  id: SM-TODO
+  name: TODO
+  created: TODO
+spec:
+  description: TODO
+  initial: TODO
+  terminal: []
+  states:
+    TODO:
+      description: TODO
+      transitions:
+        - to: TODO
+---

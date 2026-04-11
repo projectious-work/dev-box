@@ -512,10 +512,11 @@ pub fn cmd_start(config_path: &Option<String>, layout: &str) -> Result<()> {
     // re-attaches to an existing session rather than creating a new one each
     // time. `--create` makes zellij start a fresh session (with the given
     // layout) only when no session named `name` exists yet.
+    // `--layout` is a global flag that must come before the subcommand.
     runtime.exec_interactive(
         name,
         &config.container.user,
-        &["zellij", "attach", "--create", "--layout", layout, name],
+        &["zellij", "--layout", layout, "attach", "--create", name],
     )?;
 
     Ok(())
@@ -792,7 +793,7 @@ fn serialize_config_with_comments(config: &AiboxConfig) -> String {
     out.push_str("# [ai] — AI coding assistant providers\n");
     out.push_str(sep);
     out.push_str("# Each provider listed here is automatically installed as an addon.\n");
-    out.push_str("# Options: claude, aider, gemini, mistral, codex, copilot, continue\n");
+    out.push_str("# Options: claude, aider, gemini, mistral, openai, copilot, continue\n");
     out.push_str("# (cursor is MCP-registration only — host-side IDE, no container CLI)\n");
     out.push_str("[ai]\n");
     out.push_str(&format!(

@@ -1,0 +1,16 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: Binding
+metadata:
+  id: BIND-TODO
+  created: TODO
+spec:
+  type: TODO              # e.g. role-assignment, work-assignment, process-gate
+  subject: TODO           # ID of the "from" entity
+  target: TODO            # ID of the "to" entity
+  scope: null             # optional — scope ID
+  valid_from: null        # optional — ISO 8601 date or datetime
+  valid_until: null       # optional
+  conditions: {}
+  description: TODO       # one-line summary
+---

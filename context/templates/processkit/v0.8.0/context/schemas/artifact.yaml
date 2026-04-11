@@ -1,0 +1,67 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: Schema
+metadata:
+  id: SCHEMA-artifact
+  target_kind: Artifact
+  version: "1.0.0"
+  created: 2026-04-07T00:00:00Z
+spec:
+  description: >
+    A reference to a tangible deliverable produced by the project — a
+    document, design file, dataset, build output, slide deck, video,
+    URL. The Artifact primitive captures metadata about the thing
+    (where it lives, who owns it, when it was produced) so other
+    entities can reference it without copying its contents. processkit
+    does not store the artifact content itself; just the pointer.
+  id_prefix: ART
+  state_machine: null
+  default_directory: context/artifacts
+  spec_schema:
+    $schema: https://json-schema.org/draft/2020-12/schema
+    type: object
+    required: [name, kind, location]
+    additionalProperties: true
+    properties:
+      name:
+        type: string
+        minLength: 1
+        description: "Human-readable name."
+      kind:
+        type: string
+        description: >
+          Subtype: document, design, dataset, build, slides, video,
+          spec, diagram, url, other.
+      location:
+        type: string
+        description: >
+          Where the artifact lives — a path, URL, repository reference,
+          or storage identifier. Treated as opaque by processkit.
+      format:
+        type: string
+        description: >
+          Optional. File format or MIME type (e.g. pdf, png, application/json)."
+      version:
+        type: string
+        description: "Optional. Version identifier for the artifact."
+      checksum:
+        type: string
+        description: "Optional. Hash for integrity verification."
+      owner:
+        type: string
+        pattern: "^ACTOR-[a-zA-Z0-9_-]+$"
+        description: "Actor responsible for the artifact."
+      produced_by:
+        type: string
+        description: >
+          Optional. Reference to the entity (workitem, process,
+          decision) that produced this artifact.
+      produced_at:
+        type: string
+        format: date-time
+        description: "When the artifact was produced."
+      tags:
+        type: array
+        items:
+          type: string
+        description: "Freeform tags for retrieval."

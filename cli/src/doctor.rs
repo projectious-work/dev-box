@@ -185,7 +185,7 @@ fn check_mount_sources(root: &Path, root_label: &str, config: &AiboxConfig, diag
             crate::config::AiProvider::Aider => ".aider",
             crate::config::AiProvider::Gemini => ".gemini",
             crate::config::AiProvider::Mistral => ".mistral",
-            crate::config::AiProvider::Codex => ".codex",
+            crate::config::AiProvider::OpenAI => ".codex",
             crate::config::AiProvider::Continue => ".continue",
             crate::config::AiProvider::Copilot => ".copilot",
             crate::config::AiProvider::Cursor => continue,

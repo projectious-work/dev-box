@@ -200,7 +200,7 @@ AI provider configuration. Providers listed here are automatically installed as 
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `providers` | Array of strings | No | `["claude"]` | AI providers: `claude`, `aider`, `gemini`, `mistral`, `codex`, `copilot`, `continue`. `cursor` is MCP-registration only (no container CLI). |
+| `providers` | Array of strings | No | `["claude"]` | AI providers: `claude`, `aider`, `gemini`, `mistral`, `openai`, `copilot`, `continue`. `cursor` is MCP-registration only (no container CLI). |
 
 ### [processkit]
 
@@ -313,7 +313,7 @@ auto-loads `CLAUDE.md` at startup, etc.).
 overwrites). When the Claude provider is enabled, it also creates
 `CLAUDE.md`, either as a thin pointer (default) or with the full rich
 content (`provider_mode = "full"`). Other providers (Aider, Gemini,
-Mistral, Codex, Copilot, Continue) use config files rather than markdown
+Mistral, OpenAI, Copilot, Continue) use config files rather than markdown
 entries and are not affected by this section.
 
 Existing files are never overwritten. If you already have a hand-written

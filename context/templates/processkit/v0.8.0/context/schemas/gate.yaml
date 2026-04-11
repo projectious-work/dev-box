@@ -1,0 +1,69 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: Schema
+metadata:
+  id: SCHEMA-gate
+  target_kind: Gate
+  version: "1.0.0"
+  created: 2026-04-07T00:00:00Z
+spec:
+  description: >
+    A validation checkpoint a process must pass — "code review passed",
+    "tests green", "security scan clean", "stakeholder signed off".
+    Processes reference Gates to declare what has to be true before a
+    step can complete. Gate evaluation results are LogEntries
+    (gate.passed / gate.failed / gate.waived); the Gate definition itself
+    is just the rule.
+  id_prefix: GATE
+  state_machine: null
+  default_directory: context/gates
+  spec_schema:
+    $schema: https://json-schema.org/draft/2020-12/schema
+    type: object
+    required: [name, description, kind, validator]
+    additionalProperties: true
+    properties:
+      name:
+        type: string
+        minLength: 1
+        maxLength: 100
+        description: "Short kebab-case identifier."
+      description:
+        type: string
+        minLength: 1
+        description: "What this gate checks. One sentence."
+      kind:
+        type: string
+        enum: [manual, automated, hybrid]
+        description: >
+          manual = a human does the check; automated = a tool does it;
+          hybrid = both contribute (e.g. CI runs but a human approves).
+      validator:
+        type: string
+        description: >
+          Prose description of the check. One or two sentences. The
+          actual evaluation is performed externally — processkit only
+          records the rule and the outcome events.
+      validator_command:
+        type: string
+        description: >
+          Optional. CLI command that automates the check, for kind:
+          automated or hybrid gates.
+      required_roles:
+        type: array
+        items:
+          type: string
+          pattern: "^ROLE-[a-zA-Z0-9_-]+$"
+        description: "Roles authorized to sign off on this gate."
+      blocking:
+        type: boolean
+        default: true
+        description: >
+          true = work cannot proceed past this gate without passing it.
+          false = advisory only; failure logged but not blocking.
+      evidence_required:
+        type: boolean
+        default: false
+        description: >
+          true = the gate.passed event must include a link or artifact
+          reference (e.g. PR URL, scan report).

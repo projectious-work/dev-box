@@ -1,0 +1,62 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: Schema
+metadata:
+  id: SCHEMA-scope
+  target_kind: Scope
+  version: "1.0.0"
+  created: 2026-04-07T00:00:00Z
+spec:
+  description: >
+    A named, bounded container that groups related entities — a sprint,
+    milestone, project, release, quarter. WorkItems, Processes, and
+    Bindings reference scopes to say "I apply within this container."
+    Scopes have a state machine (planned → active → completed, plus
+    cancelled).
+  id_prefix: SCOPE
+  state_machine: scope
+  default_directory: context/scopes
+  spec_schema:
+    $schema: https://json-schema.org/draft/2020-12/schema
+    type: object
+    required: [name, kind, state]
+    additionalProperties: true
+    properties:
+      name:
+        type: string
+        minLength: 1
+        maxLength: 200
+        description: "Human-readable name. Shown in listings."
+      kind:
+        type: string
+        enum: [sprint, milestone, quarter, project, release, other]
+        description: "Subtype of scope."
+      state:
+        type: string
+        description: "Current state. Must be a state in the scope state machine."
+      starts_at:
+        type: string
+        format: date
+        description: "Optional. For time-bounded scopes."
+      ends_at:
+        type: string
+        format: date
+        description: "Optional. For time-bounded scopes."
+      goals:
+        type: array
+        items:
+          type: string
+        description: "Concrete outcomes expected. Testable bullet points."
+      description:
+        type: string
+        description: "Longer context."
+      parent:
+        type: string
+        pattern: "^SCOPE-[a-zA-Z0-9_-]+$"
+        description: "Optional parent scope (e.g. quarter contains sprints)."
+      related_decisions:
+        type: array
+        items:
+          type: string
+          pattern: "^DEC-[a-zA-Z0-9_-]+$"
+        description: "DecisionRecords related to this scope (retros, planning decisions)."

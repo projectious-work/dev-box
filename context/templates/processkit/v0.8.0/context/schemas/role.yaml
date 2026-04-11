@@ -1,0 +1,55 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: Schema
+metadata:
+  id: SCHEMA-role
+  target_kind: Role
+  version: "1.0.0"
+  created: 2026-04-07T00:00:00Z
+spec:
+  description: >
+    A named set of responsibilities an Actor can fill. Roles describe
+    what, not who — "developer", "reviewer", "tech-lead". Actor-to-Role
+    assignments live in Binding entities so they can be scoped and
+    time-bounded. Roles in processkit have no enforcement semantics
+    (DEC-017): they are descriptive, not restrictive.
+  id_prefix: ROLE
+  state_machine: null
+  default_directory: context/roles
+  spec_schema:
+    $schema: https://json-schema.org/draft/2020-12/schema
+    type: object
+    required: [name, description]
+    additionalProperties: true
+    properties:
+      name:
+        type: string
+        minLength: 1
+        maxLength: 100
+        description: "Kebab-case identifier. Matches the suffix of metadata.id."
+      description:
+        type: string
+        minLength: 1
+        description: "One-sentence purpose statement. Shown in role listings."
+      responsibilities:
+        type: array
+        items:
+          type: string
+        description: "Imperative bullet points. Concrete, not vague."
+      skills_required:
+        type: array
+        items:
+          type: string
+        description: >
+          Skill IDs or names. Advisory — not enforced. Used by
+          assignment-suggestion logic.
+      default_scope:
+        type: string
+        enum: [project, sprint, permanent]
+        description: >
+          Default scope assumption when an Actor is bound to this role
+          without an explicit scope.
+      supersedes:
+        type: string
+        pattern: "^ROLE-[a-zA-Z0-9_-]+$"
+        description: "Role ID this one replaces (for role renames or reorganizations)."

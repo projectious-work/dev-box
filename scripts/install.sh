@@ -198,6 +198,7 @@ main() {
     tools/cloud-aws.yaml
     tools/cloud-gcp.yaml
     tools/cloud-azure.yaml
+    tools/preview-enhanced.yaml
     docs/docs-mkdocs.yaml
     docs/docs-zensical.yaml
     docs/docs-docusaurus.yaml
@@ -206,6 +207,9 @@ main() {
     docs/docs-hugo.yaml
     ai/ai-claude.yaml
     ai/ai-aider.yaml
+    ai/ai-openai.yaml
+    ai/ai-continue.yaml
+    ai/ai-copilot.yaml
     ai/ai-gemini.yaml
     ai/ai-mistral.yaml
   "
@@ -218,7 +222,7 @@ main() {
   done
 
   if [[ "${failed}" -eq 0 ]]; then
-    ok "Installed 21 addon definitions"
+    ok "Installed 25 addon definitions"
   else
     warn "Installed with ${failed} addon download failures — re-run to retry"
   fi

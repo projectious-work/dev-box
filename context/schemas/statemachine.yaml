@@ -1,0 +1,68 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: Schema
+metadata:
+  id: SCHEMA-statemachine
+  target_kind: StateMachine
+  version: "1.0.0"
+  created: 2026-04-07T00:00:00Z
+spec:
+  description: >
+    Defines the valid states of a primitive and the allowed transitions
+    between them. processkit ships default state machines for WorkItem,
+    DecisionRecord, Migration, Scope, and Discussion; projects override
+    these or define new ones for custom entities. Note: this is the
+    schema for entities of kind StateMachine living in
+    context/state-machines/. The state machine YAML files under
+    src/primitives/state-machines/ follow the same shape (apiVersion,
+    kind StateMachine, metadata, spec) but are loaded directly by the
+    lib's state_machine module rather than being treated as ordinary
+    indexed entities.
+  id_prefix: SM
+  state_machine: null
+  default_directory: context/state-machines
+  spec_schema:
+    $schema: https://json-schema.org/draft/2020-12/schema
+    type: object
+    required: [description, initial, states]
+    additionalProperties: true
+    properties:
+      description:
+        type: string
+        description: "What this state machine governs."
+      initial:
+        type: string
+        description: "Starting state for new entities."
+      terminal:
+        type: array
+        items:
+          type: string
+        description: "States with no outgoing transitions."
+      states:
+        type: object
+        minProperties: 1
+        additionalProperties:
+          type: object
+          additionalProperties: true
+          properties:
+            description:
+              type: string
+            transitions:
+              type: array
+              items:
+                type: object
+                required: [to]
+                additionalProperties: true
+                properties:
+                  to:
+                    type: string
+                  guard:
+                    type: string
+                  on_enter:
+                    type: string
+                  required_role:
+                    type: string
+              description: >
+                List of {to, guard?, on_enter?, required_role?} objects.
+                Empty list = terminal state.
+        description: "Map of state name to {description, transitions}."

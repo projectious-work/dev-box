@@ -1,0 +1,72 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: Schema
+metadata:
+  id: SCHEMA-actor
+  target_kind: Actor
+  version: "1.0.0"
+  created: 2026-04-07T00:00:00Z
+spec:
+  description: >
+    A participant in the project: human, AI agent, or service. Actors do
+    things — get assigned WorkItems, decide DecisionRecords, perform
+    automated actions. They are descriptive, not restrictive: there is
+    no RBAC enforcement attached to an Actor's roles or expertise.
+  id_prefix: ACTOR
+  state_machine: null
+  default_directory: context/actors
+  spec_schema:
+    $schema: https://json-schema.org/draft/2020-12/schema
+    type: object
+    required: [type, name]
+    additionalProperties: true
+    properties:
+      type:
+        type: string
+        enum: [human, ai-agent, service]
+        description: "Kind of actor."
+      name:
+        type: string
+        minLength: 1
+        maxLength: 200
+        description: "Display name. For agents, model name + version."
+      email:
+        type: string
+        format: email
+        description: "Optional. Human actors only."
+      handle:
+        type: string
+        description: "Optional. GitHub handle, Slack user, etc."
+      expertise:
+        type: array
+        items:
+          type: string
+        description: "Tags used by assignment-suggestion logic."
+      roles:
+        type: array
+        items:
+          type: string
+          pattern: "^ROLE-[a-zA-Z0-9_-]+$"
+        description: >
+          Role IDs. Shortcut for unscoped role assignment. For scoped or
+          time-bounded role assignments, prefer a Binding.
+      preferences:
+        type: object
+        additionalProperties: true
+        description: >
+          Free-form per-actor preferences. Conventional keys include
+          commit_style, timezone, review_style, communication, languages.
+      active:
+        type: boolean
+        default: true
+        description: >
+          False = profile preserved (history references it) but no new
+          work assigned. Set when the actor leaves the project.
+      joined_at:
+        type: string
+        format: date-time
+        description: "When the actor became part of the project."
+      left_at:
+        type: string
+        format: date-time
+        description: "When the actor stopped (typically also sets active: false)."

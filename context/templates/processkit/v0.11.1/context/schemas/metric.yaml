@@ -1,0 +1,61 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: Schema
+metadata:
+  id: SCHEMA-metric
+  target_kind: Metric
+  version: "1.0.0"
+  created: 2026-04-07T00:00:00Z
+spec:
+  description: >
+    A named, quantified observation the project measures and cares
+    about — velocity, p99 latency, release frequency, error rate, NPS.
+    The Metric primitive defines what is measured. Individual readings
+    are LogEntries (event_type metric.recorded) or external time-series
+    data; processkit stores the definition, not the time series.
+  id_prefix: METRIC
+  state_machine: null
+  default_directory: context/metrics
+  spec_schema:
+    $schema: https://json-schema.org/draft/2020-12/schema
+    type: object
+    required: [name, description, unit, direction]
+    additionalProperties: true
+    properties:
+      name:
+        type: string
+        minLength: 1
+        description: "Kebab-case identifier."
+      description:
+        type: string
+        description: "What this metric measures."
+      unit:
+        type: string
+        description: "Unit of measurement: points, ms, %, count, etc."
+      direction:
+        type: string
+        enum: [higher-is-better, lower-is-better, target]
+        description: >
+          Which direction is good. 'target' means closeness to a value
+          rather than higher or lower.
+      measurement:
+        type: string
+        description: "How to compute the value (a prose recipe)."
+      target:
+        description: "Desired value. Number or string (e.g. '< 200ms')."
+      tolerance:
+        type: string
+        description: "Acceptable deviation from target (e.g. '±20%')."
+      cadence:
+        type: string
+        description: >
+          How often it is measured: continuous, daily, sprint, monthly,
+          quarterly, etc.
+      owner:
+        type: string
+        pattern: "^ACTOR-[a-zA-Z0-9_-]+$"
+        description: "Actor responsible for the metric."
+      active:
+        type: boolean
+        default: true
+        description: "False = no longer tracked."

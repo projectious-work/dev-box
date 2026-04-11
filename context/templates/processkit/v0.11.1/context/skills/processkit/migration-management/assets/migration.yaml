@@ -1,0 +1,42 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: Migration
+metadata:
+  id: MIG-TODO
+  created: TODO
+spec:
+  source: TODO              # aibox | processkit | processkit-acme | ...
+  source_url: TODO          # git URL of the upstream source
+  from_version: TODO        # semver tag the project is on
+  to_version: TODO          # semver tag the project is moving to
+  state: pending            # pending | in-progress | applied | rejected
+  generated_by: TODO        # aibox sync | user | ...
+  generated_at: TODO        # ISO 8601 UTC
+  summary: TODO             # one line for INDEX.md
+  affected_files: []
+  affected_groups: []
+  plan: ""                  # filled in after user approval
+  progress_notes: []
+---
+
+# Migration briefing
+
+## Summary
+
+TODO — what this migration is about, in 1-2 paragraphs.
+
+## What changed upstream
+
+TODO — bullet list of changed/added/removed entities.
+
+## Affected project files
+
+TODO — table or list of files in this project, classified.
+
+## Plan (drafted by agent + user, approved before transition)
+
+TODO — fill in after user reviews the briefing.
+
+## Progress notes
+
+(append-only as work proceeds)

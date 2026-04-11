@@ -52,6 +52,10 @@ builder: |
 
   RUN cargo install cargo-audit
 
+  # Pre-install the x86_64 cross-compilation target in the builder where
+  # rustup can freely download components (no directory or permission issues).
+  RUN rustup target add x86_64-unknown-linux-gnu
+
 runtime: |
   # Addon: rust (runtime — copy from builder)
   COPY --from=rust-builder /home/aibox/.cargo /home/aibox/.cargo
@@ -72,9 +76,11 @@ runtime: |
       libc6-dev-amd64-cross \
       && rm -rf /var/lib/apt/lists/*
 
-  # Pre-install the x86_64 Rust target so cross-compilation works without
-  # a `rustup target add` step.
+  # Write the cross-compilation linker config. The x86_64 target is already
+  # included in the copied .rustup (added in the builder stage).
   USER aibox
   ENV RUSTUP_HOME=/home/aibox/.rustup CARGO_HOME=/home/aibox/.cargo
-  RUN /home/aibox/.cargo/bin/rustup target add x86_64-unknown-linux-gnu
+  RUN mkdir -p /home/aibox/.cargo && \
+      printf '[target.x86_64-unknown-linux-gnu]\nlinker = "x86_64-linux-gnu-gcc"\n' \
+      >> /home/aibox/.cargo/config.toml
   USER root

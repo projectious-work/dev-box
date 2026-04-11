@@ -110,6 +110,11 @@ pub static COMPAT_TABLE: &[CompatEntry] = &[
         processkit_version: "v0.13.0",
         note: "fix: gitignore OS patterns + .aibox/; gitignore + scaffold generated MCP client configs; [mcp] section in aibox.toml + .aibox-local.toml; Zellij leader hints via zjstatus; remove dangerous Ctrl+q from normal mode; restore deleted schemas/v1.0.0; docs updated",
     },
+    CompatEntry {
+        aibox_version: "0.17.16",
+        processkit_version: "v0.13.0",
+        note: "fix: zellij --layout flag position; Rust x86_64 target added in builder stage; rename ai provider 'codex' → 'openai' (BREAKING: update providers = [\"openai\"] in aibox.toml); add ai-openai addon to install.sh",
+    },
 ];
 
 /// Find the minimum compatible processkit version for the given aibox version.

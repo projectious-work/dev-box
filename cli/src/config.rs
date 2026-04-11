@@ -176,7 +176,7 @@ pub struct LegacyProcessSection {
 /// - `Claude` — `.mcp.json` at project root
 /// - `Cursor` — `.cursor/mcp.json` at project root (host-side IDE only)
 /// - `Gemini` — `.gemini/settings.json` (Gemini CLI)
-/// - `Codex` — `.codex/config.toml` (OpenAI Codex CLI, binary: `codex`)
+/// - `OpenAI` — `.codex/config.toml` (OpenAI Codex CLI, binary: `codex`)
 /// - `Continue` — `.continue/mcpServers/<name>.json` (Continue CLI, binary: `cn`)
 /// - `Copilot` — `.mcp.json` at project root (GitHub Copilot CLI, binary: `copilot`)
 ///
@@ -203,7 +203,9 @@ pub enum AiProvider {
     Gemini,
     Mistral,
     Cursor,
-    Codex,
+    #[serde(rename = "openai")]
+    #[clap(name = "openai")]
+    OpenAI,
     Continue,
     Copilot,
 }
@@ -216,7 +218,7 @@ impl std::fmt::Display for AiProvider {
             AiProvider::Gemini => write!(f, "gemini"),
             AiProvider::Mistral => write!(f, "mistral"),
             AiProvider::Cursor => write!(f, "cursor"),
-            AiProvider::Codex => write!(f, "codex"),
+            AiProvider::OpenAI => write!(f, "openai"),
             AiProvider::Continue => write!(f, "continue"),
             AiProvider::Copilot => write!(f, "copilot"),
         }
@@ -236,7 +238,7 @@ impl AiProvider {
             AiProvider::Gemini => "gemini",
             AiProvider::Mistral => "mistral",
             AiProvider::Cursor => "cursor",
-            AiProvider::Codex => "codex",
+            AiProvider::OpenAI => "codex",
             AiProvider::Continue => "cn",
             AiProvider::Copilot => "copilot",
         }
@@ -1556,7 +1558,7 @@ tool = {}
         assert_eq!(format!("{}", AiProvider::Aider), "aider");
         assert_eq!(format!("{}", AiProvider::Gemini), "gemini");
         assert_eq!(format!("{}", AiProvider::Mistral), "mistral");
-        assert_eq!(format!("{}", AiProvider::Codex), "codex");
+        assert_eq!(format!("{}", AiProvider::OpenAI), "openai");
         assert_eq!(format!("{}", AiProvider::Continue), "continue");
         assert_eq!(format!("{}", AiProvider::Copilot), "copilot");
     }
@@ -1566,10 +1568,11 @@ tool = {}
         // Most providers: binary name matches display name.
         assert_eq!(AiProvider::Claude.binary_name(), "claude");
         assert_eq!(AiProvider::Aider.binary_name(), "aider");
-        assert_eq!(AiProvider::Codex.binary_name(), "codex");
         assert_eq!(AiProvider::Copilot.binary_name(), "copilot");
         // Continue is the exception: display = "continue", binary = "cn".
         assert_eq!(AiProvider::Continue.binary_name(), "cn");
+        // OpenAI is the exception: display = "openai", binary = "codex".
+        assert_eq!(AiProvider::OpenAI.binary_name(), "codex");
     }
 
     #[test]
@@ -1599,14 +1602,14 @@ version = "0.9.0"
 name = "test"
 
 [ai]
-providers = ["codex", "copilot", "continue"]
+providers = ["openai", "copilot", "continue"]
 "#;
         let config = AiboxConfig::from_str(toml).unwrap();
         assert_eq!(config.ai.providers.len(), 3);
-        assert_eq!(config.ai.providers[0], AiProvider::Codex);
+        assert_eq!(config.ai.providers[0], AiProvider::OpenAI);
         assert_eq!(config.ai.providers[1], AiProvider::Copilot);
         assert_eq!(config.ai.providers[2], AiProvider::Continue);
-        assert!(config.addons.has_addon("ai-codex"));
+        assert!(config.addons.has_addon("ai-openai"));
         assert!(config.addons.has_addon("ai-copilot"));
         assert!(config.addons.has_addon("ai-continue"));
     }

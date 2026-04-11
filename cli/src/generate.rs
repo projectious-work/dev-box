@@ -261,7 +261,7 @@ fn generate_devcontainer_json(config: &AiboxConfig, dir: &Path) -> Result<bool> 
             crate::config::AiProvider::Aider => ("aider", "/usr/local/bin/aider"),
             crate::config::AiProvider::Gemini => ("gemini", "/usr/local/bin/gemini"),
             crate::config::AiProvider::Mistral => ("mistral", "/usr/local/bin/mistral"),
-            crate::config::AiProvider::Codex => ("codex", "/usr/local/bin/codex"),
+            crate::config::AiProvider::OpenAI => ("codex", "/usr/local/bin/codex"),
             crate::config::AiProvider::Continue => ("cn", "/usr/local/bin/cn"),
             crate::config::AiProvider::Copilot => ("copilot", "/usr/local/bin/copilot"),
             crate::config::AiProvider::Cursor => continue,

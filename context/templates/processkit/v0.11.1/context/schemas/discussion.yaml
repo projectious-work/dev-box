@@ -1,0 +1,57 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: Schema
+metadata:
+  id: SCHEMA-discussion
+  target_kind: Discussion
+  version: "1.0.0"
+  created: 2026-04-07T00:00:00Z
+spec:
+  description: >
+    A structured, multi-turn conversation exploring a question. Captures
+    the back-and-forth of research, proposals, objections, and convergence
+    — producing (or failing to produce) DecisionRecords as outcomes.
+    Discussions are the audit trail behind decisions; use a Discussion
+    when you don't yet know the answer, and a DecisionRecord when you do.
+  id_prefix: DISC
+  state_machine: discussion
+  default_directory: context/discussions
+  spec_schema:
+    $schema: https://json-schema.org/draft/2020-12/schema
+    type: object
+    required: [question, state]
+    additionalProperties: true
+    properties:
+      question:
+        type: string
+        minLength: 1
+        description: "The driving question, stated as one crisp sentence."
+      state:
+        type: string
+        description: "Current state. Must be a state in the discussion state machine."
+      participants:
+        type: array
+        items:
+          type: string
+          pattern: "^ACTOR-[a-zA-Z0-9_-]+$"
+        description: "Actor IDs participating in the discussion."
+      related:
+        type: array
+        items:
+          type: string
+          pattern: "^DISC-[a-zA-Z0-9_-]+$"
+        description: "Related discussion IDs."
+      outcomes:
+        type: array
+        items:
+          type: string
+          pattern: "^DEC-[a-zA-Z0-9_-]+$"
+        description: "DecisionRecord IDs produced by this discussion."
+      opened_at:
+        type: string
+        format: date-time
+        description: "When the discussion started."
+      closed_at:
+        type: string
+        format: date-time
+        description: "When the discussion was marked resolved."

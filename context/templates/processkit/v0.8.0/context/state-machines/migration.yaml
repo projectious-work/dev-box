@@ -1,0 +1,43 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: StateMachine
+metadata:
+  id: SM-migration
+  name: migration
+  version: "1.0.0"
+  created: 2026-04-07T00:00:00Z
+spec:
+  description: >
+    Default state machine for Migration entities. Pending → in-progress →
+    applied is the happy path; rejected is a terminal side branch for
+    migrations the user decides not to take. The directory the migration
+    file lives in (context/migrations/{pending,in-progress,applied}/) is
+    expected to mirror the state — `aibox migrate` and friends move the
+    file when transitioning.
+  initial: pending
+  terminal: [applied, rejected]
+  states:
+    pending:
+      description: "Generated and waiting for human review. No plan yet, no work done."
+      transitions:
+        - to: in-progress
+          guard: "User has reviewed the briefing and approved the plan."
+        - to: rejected
+          guard: "User decided not to take this upstream change."
+    in-progress:
+      description: "Plan has been approved and the agent is working through it."
+      transitions:
+        - to: applied
+          guard: "All items in the plan are done and the user has accepted the result."
+        - to: pending
+          guard: "Plan needs to be reworked from scratch (rare)."
+        - to: rejected
+          guard: "Mid-flight decision to abandon the migration."
+    applied:
+      description: "Migration is complete. Terminal state. Kept as historical record."
+      transitions: []
+    rejected:
+      description: >
+        Migration was abandoned. Terminal. Kept so the agent knows "we already
+        looked at this and decided not to take it" and does not re-propose it.
+      transitions: []

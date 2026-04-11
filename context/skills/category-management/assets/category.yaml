@@ -1,0 +1,17 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: Category
+metadata:
+  id: CAT-TODO
+  created: TODO
+spec:
+  name: TODO
+  description: TODO
+  axis: TODO
+  values:
+    - name: TODO
+      description: TODO
+  applies_to: []
+  default: null
+  multi: false
+---

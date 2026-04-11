@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "processkit-binding-management": {
+      "command": "uv",
+      "args": [
+        "run",
+        "context/skills/binding-management/mcp/server.py"
+      ],
+      "env": {}
+    }
+  }
+}

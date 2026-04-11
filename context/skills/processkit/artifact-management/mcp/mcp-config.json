@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "processkit-artifact-management": {
+      "command": "uv",
+      "args": [
+        "run",
+        "context/skills/processkit/artifact-management/mcp/server.py"
+      ],
+      "env": {}
+    }
+  }
+}

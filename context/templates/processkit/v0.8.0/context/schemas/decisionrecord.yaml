@@ -1,0 +1,76 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: Schema
+metadata:
+  id: SCHEMA-decisionrecord
+  target_kind: DecisionRecord
+  version: "1.0.0"
+  created: 2026-04-06T00:00:00Z
+spec:
+  description: >
+    A choice with rationale. DecisionRecords (ADRs in classic literature)
+    capture a single decision, the alternatives considered, and why the
+    chosen option won. They are typically written once and then amended
+    via superseding records rather than edited in place.
+  id_prefix: DEC
+  state_machine: decisionrecord
+  default_directory: context/decisions
+  spec_schema:
+    $schema: https://json-schema.org/draft/2020-12/schema
+    type: object
+    required: [title, state, decision]
+    additionalProperties: true
+    properties:
+      title:
+        type: string
+        minLength: 1
+        maxLength: 200
+        description: "Short, declarative title — the decision itself."
+      state:
+        type: string
+        description: "Current state. Must be a state in the decisionrecord state machine."
+      context:
+        type: string
+        description: "The situation that prompted the decision. Background and forces at play."
+      decision:
+        type: string
+        description: "The chosen option, stated clearly."
+      rationale:
+        type: string
+        description: "Why this option was chosen. The reasoning chain."
+      alternatives:
+        type: array
+        items:
+          type: object
+          required: [option]
+          properties:
+            option: { type: string, description: "The alternative considered." }
+            rejected_because: { type: string, description: "Why it was not chosen." }
+        description: "Alternatives considered and why they were rejected."
+      consequences:
+        type: string
+        description: "Known or expected consequences, both positive and negative."
+      deciders:
+        type: array
+        items:
+          type: string
+          pattern: "^ACTOR-[a-zA-Z0-9_-]+$"
+        description: "ACTOR IDs of the people/agents who made the decision."
+      supersedes:
+        type: string
+        pattern: "^DEC-[a-zA-Z0-9_-]+$"
+        description: "ID of a prior decision this one replaces."
+      superseded_by:
+        type: string
+        pattern: "^DEC-[a-zA-Z0-9_-]+$"
+        description: "ID of a later decision that replaces this one (set when this one becomes superseded)."
+      related_workitems:
+        type: array
+        items:
+          type: string
+          pattern: "^BACK-[a-zA-Z0-9_-]+$"
+        description: "Work items that motivated or implement the decision."
+      decided_at:
+        type: string
+        format: date-time
+        description: "When the decision was finalized (distinct from metadata.created)."

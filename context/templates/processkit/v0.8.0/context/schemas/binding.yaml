@@ -1,0 +1,65 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: Schema
+metadata:
+  id: SCHEMA-binding
+  target_kind: Binding
+  version: "1.0.0"
+  created: 2026-04-07T00:00:00Z
+spec:
+  description: >
+    A scoped, temporal, attribute-bearing relationship between two
+    entities. The junction-table pattern promoted to a primitive
+    (DEC-023). Use a Binding when a relationship has scope, time, or
+    its own attributes; otherwise prefer a frontmatter cross-reference.
+    Bindings are descriptive — there is no enforcement attached.
+  id_prefix: BIND
+  state_machine: null
+  default_directory: context/bindings
+  spec_schema:
+    $schema: https://json-schema.org/draft/2020-12/schema
+    type: object
+    required: [type, subject, target]
+    additionalProperties: true
+    properties:
+      type:
+        type: string
+        minLength: 1
+        description: >
+          Freeform binding type. Conventions per project. Examples:
+          role-assignment, work-assignment, process-gate, process-scope,
+          schedule-scope, constraint-scope, category-assignment.
+      subject:
+        type: string
+        description: "ID of the entity on the from side of the relationship."
+      target:
+        type: string
+        description: "ID of the entity on the to side of the relationship."
+      subject_kind:
+        type: string
+        description: >
+          Optional. The primitive kind of the subject. Set by the
+          binding-management MCP server when known; queries can filter
+          by it.
+      target_kind:
+        type: string
+        description: "Optional. The primitive kind of the target."
+      scope:
+        type: string
+        pattern: "^SCOPE-[a-zA-Z0-9_-]+$"
+        description: "Optional. Scope ID within which this binding applies."
+      valid_from:
+        type: string
+        description: >
+          Optional. When the binding starts being in effect. Date or
+          ISO 8601 datetime.
+      valid_until:
+        type: string
+        description: "Optional. When the binding stops being in effect."
+      conditions:
+        type: object
+        additionalProperties: true
+        description: "Optional. Freeform constraints attached to the binding."
+      description:
+        type: string
+        description: "One-line human-readable summary."

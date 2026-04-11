@@ -1,0 +1,8 @@
+{
+  "_comment": "Edit this file to reflect your actual model access and preferences. The MCP server reads this on every call. Leave available_models empty to include all models in recommendations.",
+  "available_models": [],
+  "blocked_models": [],
+  "require_governance_min": 0,
+  "budget_tier": "any",
+  "preferred_providers": []
+}

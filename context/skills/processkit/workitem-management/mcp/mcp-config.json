@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "processkit-workitem-management": {
+      "command": "uv",
+      "args": [
+        "run",
+        "context/skills/workitem-management/mcp/server.py"
+      ],
+      "env": {}
+    }
+  }
+}

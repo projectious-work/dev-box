@@ -1,0 +1,21 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: Process
+metadata:
+  id: PROC-TODO
+  created: TODO
+spec:
+  name: TODO
+  description: TODO
+  triggers: []
+  roles: []
+  steps:
+    - name: TODO
+      role: TODO
+      description: TODO
+      uses_skill: null
+      gates: []
+  definition_of_done: TODO
+  parallel: false
+  retryable: true
+---

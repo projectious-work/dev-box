@@ -1,0 +1,20 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: DecisionRecord
+metadata:
+  id: DEC-TODO
+  created: TODO
+spec:
+  title: TODO                # declarative, not a question
+  state: proposed            # proposed | accepted | superseded | rejected
+  context: TODO              # what prompted this decision
+  decision: TODO             # the chosen option
+  rationale: TODO            # why this option won
+  alternatives:
+    - option: TODO
+      rejected_because: TODO
+  consequences: TODO         # positive and negative
+  deciders: []
+  related_workitems: []
+  decided_at: TODO
+---

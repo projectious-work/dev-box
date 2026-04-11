@@ -1,0 +1,909 @@
+{
+  "_meta": {
+    "validated": "2026-Q1",
+    "schema_version": "1.1",
+    "pricing_note": "USD per 1M tokens, approximate as of 2026-Q1. Prices change frequently — verify at provider pricing pages before budgeting.",
+    "dimensions": ["R", "E", "S", "B", "L", "G"],
+    "dimension_names": {
+      "R": "Reasoning",
+      "E": "Engineering",
+      "S": "Speed",
+      "B": "Breadth",
+      "L": "Reliability",
+      "G": "Governance"
+    },
+    "sub_dimensions": {
+      "R": ["math_reasoning", "scientific_reasoning", "abstract_reasoning", "logical_chains", "debugging_chains"],
+      "E": ["function_codegen", "repo_scale_tasks", "tool_use", "agentic_planning", "codebase_navigation"],
+      "S": ["ttft", "throughput", "cost_efficiency"],
+      "B": ["context_window", "long_doc_faithfulness", "vision", "audio", "video", "multilingual", "structured_output"],
+      "L": ["instruction_following", "hallucination_resistance", "consistency", "safety", "format_adherence"],
+      "G": ["data_retention_policy", "data_sovereignty", "self_hostable", "compliance_certs", "audit_logging"]
+    },
+    "pricing_pages": {
+      "Anthropic": "https://www.anthropic.com/pricing",
+      "OpenAI": "https://openai.com/api/pricing/",
+      "Google": "https://ai.google.dev/pricing",
+      "Mistral": "https://mistral.ai/technology/#pricing",
+      "DeepSeek": "https://platform.deepseek.com/api-docs/pricing",
+      "Meta": "varies by hosting provider"
+    },
+    "status_pages": {
+      "Anthropic": "https://status.anthropic.com",
+      "OpenAI": "https://status.openai.com",
+      "Google": "https://status.cloud.google.com",
+      "Meta": null,
+      "Mistral": "https://status.mistral.ai",
+      "DeepSeek": null
+    },
+    "leaderboards": {
+      "SWE-bench": "https://www.swebench.com",
+      "LMSYS Arena": "https://chat.lmsys.org/?leaderboard",
+      "BFCL": "https://gorilla.cs.berkeley.edu/leaderboard.html",
+      "Artificial Analysis": "https://artificialanalysis.ai/models"
+    }
+  },
+  "models": [
+    {
+      "id": "claude-opus-4.6",
+      "name": "Claude Opus 4.6",
+      "provider": "Anthropic",
+      "tier": "Frontier flagship",
+      "context_k": 200,
+      "governance_warning": null,
+      "pricing": {
+        "input_per_1m": 15.0,
+        "output_per_1m": 75.0,
+        "currency": "USD",
+        "hosting": "api",
+        "note": "Most expensive Claude; reserve for tasks where quality justifies cost"
+      },
+      "dimensions": {
+        "R": { "score": 5, "sub": { "math_reasoning": 5, "scientific_reasoning": 5, "abstract_reasoning": 5, "logical_chains": 5, "debugging_chains": 5 }},
+        "E": { "score": 5, "sub": { "function_codegen": 5, "repo_scale_tasks": 5, "tool_use": 5, "agentic_planning": 5, "codebase_navigation": 5 }},
+        "S": { "score": 2, "sub": { "ttft": 2, "throughput": 2, "cost_efficiency": 1 }},
+        "B": { "score": 4, "sub": { "context_window": 4, "long_doc_faithfulness": 4, "vision": 4, "audio": 1, "video": 1, "multilingual": 4, "structured_output": 5 }},
+        "L": { "score": 5, "sub": { "instruction_following": 5, "hallucination_resistance": 5, "consistency": 5, "safety": 5, "format_adherence": 5 }},
+        "G": { "score": 5, "sub": { "data_retention_policy": 5, "data_sovereignty": 4, "self_hostable": 2, "compliance_certs": 5, "audit_logging": 5 }}
+      },
+      "best_for": ["Hardest engineering problems", "Novel algorithm design", "Complex architectural decisions", "High-stakes code review", "Ambiguous/vague prompts", "Tasks where errors are very costly"],
+      "avoid_for": ["High-volume generation", "Real-time applications (<500ms TTFT)", "Cost-sensitive workflows at scale"]
+    },
+    {
+      "id": "claude-sonnet-4.6",
+      "name": "Claude Sonnet 4.6",
+      "provider": "Anthropic",
+      "tier": "Frontier mid-size",
+      "context_k": 200,
+      "governance_warning": null,
+      "pricing": {
+        "input_per_1m": 3.0,
+        "output_per_1m": 15.0,
+        "currency": "USD",
+        "hosting": "api",
+        "note": "Best price-capability ratio in the Claude family for engineering tasks"
+      },
+      "dimensions": {
+        "R": { "score": 4, "sub": { "math_reasoning": 4, "scientific_reasoning": 4, "abstract_reasoning": 4, "logical_chains": 4, "debugging_chains": 4 }},
+        "E": { "score": 5, "sub": { "function_codegen": 5, "repo_scale_tasks": 5, "tool_use": 5, "agentic_planning": 5, "codebase_navigation": 5 }},
+        "S": { "score": 3, "sub": { "ttft": 3, "throughput": 3, "cost_efficiency": 3 }},
+        "B": { "score": 4, "sub": { "context_window": 4, "long_doc_faithfulness": 4, "vision": 4, "audio": 1, "video": 1, "multilingual": 4, "structured_output": 5 }},
+        "L": { "score": 4, "sub": { "instruction_following": 4, "hallucination_resistance": 4, "consistency": 4, "safety": 5, "format_adherence": 5 }},
+        "G": { "score": 5, "sub": { "data_retention_policy": 5, "data_sovereignty": 4, "self_hostable": 2, "compliance_certs": 5, "audit_logging": 5 }}
+      },
+      "best_for": ["Everyday engineering", "Code review", "Refactoring", "Agentic workflows", "Sensitive/enterprise data", "Claude Code native model"],
+      "avoid_for": ["Extreme cost sensitivity at very high volume", "Real-time <100ms UX", "Native audio/video"]
+    },
+    {
+      "id": "claude-haiku-4.5",
+      "name": "Claude Haiku 4.5",
+      "provider": "Anthropic",
+      "tier": "Frontier fast",
+      "context_k": 200,
+      "governance_warning": null,
+      "pricing": {
+        "input_per_1m": 0.25,
+        "output_per_1m": 1.25,
+        "currency": "USD",
+        "hosting": "api",
+        "note": "Cheapest Claude; excellent value for high-volume, low-complexity tasks"
+      },
+      "dimensions": {
+        "R": { "score": 3, "sub": { "math_reasoning": 3, "scientific_reasoning": 3, "abstract_reasoning": 2, "logical_chains": 3, "debugging_chains": 3 }},
+        "E": { "score": 3, "sub": { "function_codegen": 3, "repo_scale_tasks": 3, "tool_use": 3, "agentic_planning": 3, "codebase_navigation": 3 }},
+        "S": { "score": 5, "sub": { "ttft": 5, "throughput": 5, "cost_efficiency": 5 }},
+        "B": { "score": 3, "sub": { "context_window": 4, "long_doc_faithfulness": 3, "vision": 3, "audio": 1, "video": 1, "multilingual": 3, "structured_output": 4 }},
+        "L": { "score": 4, "sub": { "instruction_following": 4, "hallucination_resistance": 3, "consistency": 4, "safety": 5, "format_adherence": 4 }},
+        "G": { "score": 5, "sub": { "data_retention_policy": 5, "data_sovereignty": 4, "self_hostable": 2, "compliance_certs": 5, "audit_logging": 5 }}
+      },
+      "best_for": ["High-volume generation", "Formatting and transformation", "Simple test scaffolding", "Latency-sensitive applications", "Cost-sensitive pipelines"],
+      "avoid_for": ["Complex architecture", "Novel algorithm design", "Ambiguous prompts requiring deep interpretation"]
+    },
+    {
+      "id": "gpt-4o",
+      "name": "GPT-4o",
+      "provider": "OpenAI",
+      "tier": "Frontier multi-modal",
+      "context_k": 128,
+      "governance_warning": null,
+      "pricing": {
+        "input_per_1m": 2.50,
+        "output_per_1m": 10.0,
+        "currency": "USD",
+        "hosting": "api",
+        "note": "Strong value for multimodal tasks; audio in/out included in standard pricing"
+      },
+      "dimensions": {
+        "R": { "score": 4, "sub": { "math_reasoning": 4, "scientific_reasoning": 4, "abstract_reasoning": 3, "logical_chains": 4, "debugging_chains": 4 }},
+        "E": { "score": 4, "sub": { "function_codegen": 4, "repo_scale_tasks": 4, "tool_use": 4, "agentic_planning": 3, "codebase_navigation": 4 }},
+        "S": { "score": 3, "sub": { "ttft": 3, "throughput": 3, "cost_efficiency": 3 }},
+        "B": { "score": 5, "sub": { "context_window": 3, "long_doc_faithfulness": 3, "vision": 5, "audio": 5, "video": 3, "multilingual": 5, "structured_output": 5 }},
+        "L": { "score": 4, "sub": { "instruction_following": 4, "hallucination_resistance": 3, "consistency": 4, "safety": 4, "format_adherence": 4 }},
+        "G": { "score": 2, "sub": { "data_retention_policy": 2, "data_sovereignty": 2, "self_hostable": 1, "compliance_certs": 3, "audit_logging": 2 }}
+      },
+      "best_for": ["Multimodal tasks (vision + audio + text)", "Voice applications", "Non-sensitive data workflows"],
+      "avoid_for": ["Privacy-sensitive or regulated data without enterprise DPA", "EU data sovereignty without Azure OpenAI EU region"]
+    },
+    {
+      "id": "o3",
+      "name": "o3",
+      "provider": "OpenAI",
+      "tier": "Frontier reasoning flagship",
+      "context_k": 128,
+      "governance_warning": null,
+      "pricing": {
+        "input_per_1m": 10.0,
+        "output_per_1m": 40.0,
+        "currency": "USD",
+        "hosting": "api",
+        "note": "Extended thinking output is billed at output rates; total cost per task can be very high"
+      },
+      "dimensions": {
+        "R": { "score": 5, "sub": { "math_reasoning": 5, "scientific_reasoning": 5, "abstract_reasoning": 5, "logical_chains": 5, "debugging_chains": 5 }},
+        "E": { "score": 5, "sub": { "function_codegen": 5, "repo_scale_tasks": 5, "tool_use": 4, "agentic_planning": 4, "codebase_navigation": 5 }},
+        "S": { "score": 1, "sub": { "ttft": 1, "throughput": 1, "cost_efficiency": 1 }},
+        "B": { "score": 3, "sub": { "context_window": 3, "long_doc_faithfulness": 3, "vision": 4, "audio": 1, "video": 1, "multilingual": 4, "structured_output": 4 }},
+        "L": { "score": 4, "sub": { "instruction_following": 4, "hallucination_resistance": 4, "consistency": 4, "safety": 4, "format_adherence": 4 }},
+        "G": { "score": 2, "sub": { "data_retention_policy": 2, "data_sovereignty": 2, "self_hostable": 1, "compliance_certs": 3, "audit_logging": 2 }}
+      },
+      "best_for": ["Competition-level math and science", "Formal proofs", "Hardest algorithmic problems", "One-off high-stakes analysis"],
+      "avoid_for": ["Interactive use", "High-volume tasks", "Time-sensitive applications", "Tasks not requiring SOTA reasoning"]
+    },
+    {
+      "id": "o4-mini",
+      "name": "o4-mini",
+      "provider": "OpenAI",
+      "tier": "Frontier reasoning mid-size",
+      "context_k": 128,
+      "governance_warning": null,
+      "pricing": {
+        "input_per_1m": 1.10,
+        "output_per_1m": 4.40,
+        "currency": "USD",
+        "hosting": "api",
+        "note": "Best cost-efficiency among reasoning models; ~10x cheaper than o3"
+      },
+      "dimensions": {
+        "R": { "score": 4, "sub": { "math_reasoning": 4, "scientific_reasoning": 4, "abstract_reasoning": 4, "logical_chains": 4, "debugging_chains": 4 }},
+        "E": { "score": 4, "sub": { "function_codegen": 4, "repo_scale_tasks": 4, "tool_use": 4, "agentic_planning": 4, "codebase_navigation": 4 }},
+        "S": { "score": 3, "sub": { "ttft": 2, "throughput": 2, "cost_efficiency": 4 }},
+        "B": { "score": 3, "sub": { "context_window": 3, "long_doc_faithfulness": 3, "vision": 4, "audio": 1, "video": 1, "multilingual": 3, "structured_output": 4 }},
+        "L": { "score": 4, "sub": { "instruction_following": 4, "hallucination_resistance": 4, "consistency": 4, "safety": 4, "format_adherence": 4 }},
+        "G": { "score": 2, "sub": { "data_retention_policy": 2, "data_sovereignty": 2, "self_hostable": 1, "compliance_certs": 3, "audit_logging": 2 }}
+      },
+      "best_for": ["Tasks needing extended reasoning at lower cost than o3", "Middle ground between Sonnet and o3"],
+      "avoid_for": ["Tasks not needing extended reasoning", "Real-time UX"]
+    },
+    {
+      "id": "gemini-2.5-pro",
+      "name": "Gemini 2.5 Pro",
+      "provider": "Google",
+      "tier": "Frontier flagship",
+      "context_k": 1000,
+      "governance_warning": null,
+      "pricing": {
+        "input_per_1m": 1.25,
+        "output_per_1m": 10.0,
+        "currency": "USD",
+        "hosting": "api",
+        "note": "Context >200K billed at higher rates; 1M context tasks can be expensive"
+      },
+      "dimensions": {
+        "R": { "score": 5, "sub": { "math_reasoning": 5, "scientific_reasoning": 5, "abstract_reasoning": 4, "logical_chains": 5, "debugging_chains": 4 }},
+        "E": { "score": 5, "sub": { "function_codegen": 5, "repo_scale_tasks": 5, "tool_use": 4, "agentic_planning": 4, "codebase_navigation": 5 }},
+        "S": { "score": 3, "sub": { "ttft": 3, "throughput": 3, "cost_efficiency": 3 }},
+        "B": { "score": 5, "sub": { "context_window": 5, "long_doc_faithfulness": 5, "vision": 5, "audio": 5, "video": 5, "multilingual": 5, "structured_output": 5 }},
+        "L": { "score": 4, "sub": { "instruction_following": 4, "hallucination_resistance": 4, "consistency": 3, "safety": 4, "format_adherence": 4 }},
+        "G": { "score": 2, "sub": { "data_retention_policy": 2, "data_sovereignty": 2, "self_hostable": 1, "compliance_certs": 3, "audit_logging": 2 }}
+      },
+      "best_for": ["Huge context windows (entire repos, long documents)", "Multimodal pipelines (vision + audio + video)", "Tasks where breadth is the primary constraint"],
+      "avoid_for": ["Privacy-sensitive or regulated data without explicit Cloud DPA and EU region"]
+    },
+    {
+      "id": "gemini-flash-2.0",
+      "name": "Gemini Flash 2.0",
+      "provider": "Google",
+      "tier": "Frontier fast",
+      "context_k": 1000,
+      "governance_warning": null,
+      "pricing": {
+        "input_per_1m": 0.075,
+        "output_per_1m": 0.30,
+        "currency": "USD",
+        "hosting": "api",
+        "note": "Extremely low cost; 1M context sweep costs cents; best throughput/dollar of any listed model"
+      },
+      "dimensions": {
+        "R": { "score": 3, "sub": { "math_reasoning": 3, "scientific_reasoning": 3, "abstract_reasoning": 3, "logical_chains": 3, "debugging_chains": 3 }},
+        "E": { "score": 3, "sub": { "function_codegen": 3, "repo_scale_tasks": 3, "tool_use": 3, "agentic_planning": 3, "codebase_navigation": 3 }},
+        "S": { "score": 5, "sub": { "ttft": 5, "throughput": 5, "cost_efficiency": 5 }},
+        "B": { "score": 5, "sub": { "context_window": 5, "long_doc_faithfulness": 4, "vision": 5, "audio": 5, "video": 5, "multilingual": 5, "structured_output": 4 }},
+        "L": { "score": 3, "sub": { "instruction_following": 3, "hallucination_resistance": 3, "consistency": 3, "safety": 4, "format_adherence": 3 }},
+        "G": { "score": 2, "sub": { "data_retention_policy": 2, "data_sovereignty": 2, "self_hostable": 1, "compliance_certs": 3, "audit_logging": 2 }}
+      },
+      "best_for": ["High-volume multimodal tasks", "Fast classification", "Streaming pipelines", "Huge context at low cost"],
+      "avoid_for": ["Precise instruction following", "Complex reasoning", "High-stakes output without human review"]
+    },
+    {
+      "id": "llama-3.3-70b",
+      "name": "Llama 3.3 70B",
+      "provider": "Meta",
+      "tier": "Open-source",
+      "context_k": 128,
+      "governance_warning": null,
+      "pricing": {
+        "input_per_1m": null,
+        "output_per_1m": null,
+        "currency": "USD",
+        "hosting": "self-hosted",
+        "note": "No API cost; infra cost varies by hardware. Via third-party APIs (Groq, Together, etc.): ~$0.06-0.80/1M tokens depending on provider."
+      },
+      "dimensions": {
+        "R": { "score": 3, "sub": { "math_reasoning": 3, "scientific_reasoning": 3, "abstract_reasoning": 3, "logical_chains": 3, "debugging_chains": 3 }},
+        "E": { "score": 3, "sub": { "function_codegen": 3, "repo_scale_tasks": 3, "tool_use": 3, "agentic_planning": 3, "codebase_navigation": 3 }},
+        "S": { "score": 4, "sub": { "ttft": 4, "throughput": 4, "cost_efficiency": 5 }},
+        "B": { "score": 3, "sub": { "context_window": 3, "long_doc_faithfulness": 3, "vision": 2, "audio": 1, "video": 1, "multilingual": 3, "structured_output": 3 }},
+        "L": { "score": 3, "sub": { "instruction_following": 3, "hallucination_resistance": 3, "consistency": 3, "safety": 3, "format_adherence": 3 }},
+        "G": { "score": 5, "sub": { "data_retention_policy": 5, "data_sovereignty": 5, "self_hostable": 5, "compliance_certs": 3, "audit_logging": 4 }}
+      },
+      "best_for": ["Privacy-First cluster", "PII/PHI/secrets", "Regulated industries", "EU-GDPR data residency", "Full data sovereignty"],
+      "avoid_for": ["Cutting-edge reasoning", "Multimodal pipelines", "Cases where self-hosting cost exceeds privacy requirement"]
+    },
+    {
+      "id": "mistral-large-3",
+      "name": "Mistral Large 3",
+      "provider": "Mistral",
+      "tier": "Mid-tier frontier",
+      "context_k": 128,
+      "governance_warning": null,
+      "pricing": {
+        "input_per_1m": 2.0,
+        "output_per_1m": 6.0,
+        "currency": "USD",
+        "hosting": "api",
+        "note": "EU-based pricing in EUR also available; Le Chat Enterprise has volume discounts"
+      },
+      "dimensions": {
+        "R": { "score": 3, "sub": { "math_reasoning": 3, "scientific_reasoning": 3, "abstract_reasoning": 3, "logical_chains": 3, "debugging_chains": 3 }},
+        "E": { "score": 4, "sub": { "function_codegen": 4, "repo_scale_tasks": 3, "tool_use": 4, "agentic_planning": 3, "codebase_navigation": 3 }},
+        "S": { "score": 4, "sub": { "ttft": 4, "throughput": 4, "cost_efficiency": 4 }},
+        "B": { "score": 3, "sub": { "context_window": 3, "long_doc_faithfulness": 3, "vision": 2, "audio": 1, "video": 1, "multilingual": 4, "structured_output": 4 }},
+        "L": { "score": 3, "sub": { "instruction_following": 3, "hallucination_resistance": 3, "consistency": 3, "safety": 3, "format_adherence": 4 }},
+        "G": { "score": 4, "sub": { "data_retention_policy": 4, "data_sovereignty": 5, "self_hostable": 4, "compliance_certs": 4, "audit_logging": 3 }}
+      },
+      "best_for": ["EU organizations needing GDPR compliance", "Mid-tier engineering at lower cost", "Privacy-First cluster fallback"],
+      "avoid_for": ["Cutting-edge reasoning", "Multimodal", "SOTA coding requirements"]
+    },
+    {
+      "id": "deepseek-v3",
+      "name": "DeepSeek V3",
+      "provider": "DeepSeek",
+      "tier": "Frontier-class, low cost",
+      "context_k": 64,
+      "governance_warning": "G:1 — Chinese jurisdiction. Never use for PII, PHI, confidential IP, credentials, regulated data, or government/defense work.",
+      "pricing": {
+        "input_per_1m": 0.14,
+        "output_per_1m": 0.28,
+        "currency": "USD",
+        "hosting": "api",
+        "note": "Exceptional price-capability ratio; cheapest frontier-class model. G:1 severely limits safe use cases."
+      },
+      "dimensions": {
+        "R": { "score": 4, "sub": { "math_reasoning": 4, "scientific_reasoning": 4, "abstract_reasoning": 3, "logical_chains": 4, "debugging_chains": 4 }},
+        "E": { "score": 4, "sub": { "function_codegen": 4, "repo_scale_tasks": 4, "tool_use": 4, "agentic_planning": 3, "codebase_navigation": 4 }},
+        "S": { "score": 4, "sub": { "ttft": 4, "throughput": 4, "cost_efficiency": 5 }},
+        "B": { "score": 3, "sub": { "context_window": 3, "long_doc_faithfulness": 3, "vision": 2, "audio": 1, "video": 1, "multilingual": 3, "structured_output": 4 }},
+        "L": { "score": 3, "sub": { "instruction_following": 3, "hallucination_resistance": 3, "consistency": 3, "safety": 2, "format_adherence": 3 }},
+        "G": { "score": 1, "sub": { "data_retention_policy": 1, "data_sovereignty": 1, "self_hostable": 2, "compliance_certs": 1, "audit_logging": 1 }}
+      },
+      "best_for": ["Non-sensitive tasks where cost is dominant constraint", "Open-source project work", "Public information only"],
+      "avoid_for": ["Any sensitive, personal, regulated, or confidential data"]
+    },
+    {
+      "id": "deepseek-r1",
+      "name": "DeepSeek R1",
+      "provider": "DeepSeek",
+      "tier": "Frontier reasoning, low cost",
+      "context_k": 64,
+      "governance_warning": "G:1 — Chinese jurisdiction. Never use for PII, PHI, confidential IP, credentials, regulated data, or government/defense work.",
+      "pricing": {
+        "input_per_1m": 0.55,
+        "output_per_1m": 2.19,
+        "currency": "USD",
+        "hosting": "api",
+        "note": "~20x cheaper than o3 for comparable reasoning; G:1 severely limits safe use cases."
+      },
+      "dimensions": {
+        "R": { "score": 5, "sub": { "math_reasoning": 5, "scientific_reasoning": 5, "abstract_reasoning": 4, "logical_chains": 5, "debugging_chains": 4 }},
+        "E": { "score": 4, "sub": { "function_codegen": 4, "repo_scale_tasks": 4, "tool_use": 3, "agentic_planning": 3, "codebase_navigation": 4 }},
+        "S": { "score": 3, "sub": { "ttft": 3, "throughput": 3, "cost_efficiency": 4 }},
+        "B": { "score": 3, "sub": { "context_window": 3, "long_doc_faithfulness": 3, "vision": 1, "audio": 1, "video": 1, "multilingual": 3, "structured_output": 3 }},
+        "L": { "score": 3, "sub": { "instruction_following": 3, "hallucination_resistance": 3, "consistency": 3, "safety": 2, "format_adherence": 3 }},
+        "G": { "score": 1, "sub": { "data_retention_policy": 1, "data_sovereignty": 1, "self_hostable": 2, "compliance_certs": 1, "audit_logging": 1 }}
+      },
+      "best_for": ["Hard reasoning and math on non-sensitive public data", "Cost-constrained alternative to o3"],
+      "avoid_for": ["Any sensitive, personal, regulated, or confidential data"]
+    },
+    {
+      "id": "minimax-text-01",
+      "name": "MiniMax Text-01",
+      "provider": "MiniMax",
+      "tier": "Long-context specialist",
+      "context_k": 1000,
+      "governance_warning": "Chinese company. Via MiniMax API: G:1 (same caution as DeepSeek). Self-hosted open weights raise governance to G:3 but no compliance certs available.",
+      "pricing": {
+        "input_per_1m": 0.20,
+        "output_per_1m": 1.10,
+        "currency": "USD",
+        "hosting": "api-or-self-hosted",
+        "note": "1M context at very low cost; open weights available for self-hosting"
+      },
+      "dimensions": {
+        "R": { "score": 3, "sub": { "math_reasoning": 3, "scientific_reasoning": 3, "abstract_reasoning": 3, "logical_chains": 3, "debugging_chains": 3 }},
+        "E": { "score": 3, "sub": { "function_codegen": 3, "repo_scale_tasks": 3, "tool_use": 3, "agentic_planning": 3, "codebase_navigation": 3 }},
+        "S": { "score": 3, "sub": { "ttft": 3, "throughput": 3, "cost_efficiency": 5 }},
+        "B": { "score": 5, "sub": { "context_window": 5, "long_doc_faithfulness": 4, "vision": 3, "audio": 1, "video": 1, "multilingual": 4, "structured_output": 3 }},
+        "L": { "score": 3, "sub": { "instruction_following": 3, "hallucination_resistance": 3, "consistency": 3, "safety": 3, "format_adherence": 3 }},
+        "G": { "score": 2, "sub": { "data_retention_policy": 2, "data_sovereignty": 2, "self_hostable": 4, "compliance_certs": 1, "audit_logging": 2 }}
+      },
+      "best_for": ["1M-context tasks on non-sensitive data", "Long document analysis where cost matters", "Cheap alternative to Gemini 2.5 Pro for context-heavy work"],
+      "avoid_for": ["Sensitive/regulated data via API", "Tasks requiring strong reasoning or coding capability"]
+    },
+    {
+      "id": "qwen2.5-72b",
+      "name": "Qwen 2.5 72B",
+      "provider": "Alibaba / Open",
+      "tier": "Open-source frontier",
+      "context_k": 128,
+      "governance_warning": "Via Alibaba Cloud API: G:1 (Chinese jurisdiction). Self-hosted (Apache 2.0 license): governance rises to G:4 — no data leaves your infra, but no compliance certs from Alibaba.",
+      "pricing": {
+        "input_per_1m": 0.40,
+        "output_per_1m": 1.20,
+        "currency": "USD",
+        "hosting": "third-party-or-self-hosted",
+        "note": "Self-hosted: GPU infra cost only. Via Together/Groq/etc.: ~$0.20–0.90/1M. Alibaba Cloud API available but G:1."
+      },
+      "dimensions": {
+        "R": { "score": 4, "sub": { "math_reasoning": 4, "scientific_reasoning": 3, "abstract_reasoning": 3, "logical_chains": 4, "debugging_chains": 4 }},
+        "E": { "score": 4, "sub": { "function_codegen": 4, "repo_scale_tasks": 3, "tool_use": 4, "agentic_planning": 3, "codebase_navigation": 3 }},
+        "S": { "score": 4, "sub": { "ttft": 4, "throughput": 4, "cost_efficiency": 5 }},
+        "B": { "score": 3, "sub": { "context_window": 3, "long_doc_faithfulness": 3, "vision": 2, "audio": 1, "video": 1, "multilingual": 5, "structured_output": 4 }},
+        "L": { "score": 3, "sub": { "instruction_following": 3, "hallucination_resistance": 3, "consistency": 3, "safety": 3, "format_adherence": 3 }},
+        "G": { "score": 4, "sub": { "data_retention_policy": 5, "data_sovereignty": 5, "self_hostable": 5, "compliance_certs": 2, "audit_logging": 3 }}
+      },
+      "best_for": ["Self-hosted strong-reasoning at low cost", "Strong multilingual (especially Asian languages)", "Open-source alternative to GPT-4o class for non-sensitive work"],
+      "avoid_for": ["Tasks requiring frontier coding or multimodal", "Any use via Alibaba Cloud API with sensitive data"]
+    },
+    {
+      "id": "qwen2.5-coder-32b",
+      "name": "Qwen 2.5 Coder 32B",
+      "provider": "Alibaba / Open",
+      "tier": "Open-source coding specialist",
+      "context_k": 128,
+      "governance_warning": "Via Alibaba Cloud API: G:1. Self-hosted (Apache 2.0): G:4. Recommended deployment is self-hosted for any proprietary code.",
+      "pricing": {
+        "input_per_1m": 0.20,
+        "output_per_1m": 0.60,
+        "currency": "USD",
+        "hosting": "third-party-or-self-hosted",
+        "note": "Smaller than 72B so cheaper to host; very cost-effective coding model"
+      },
+      "dimensions": {
+        "R": { "score": 3, "sub": { "math_reasoning": 3, "scientific_reasoning": 2, "abstract_reasoning": 3, "logical_chains": 3, "debugging_chains": 4 }},
+        "E": { "score": 5, "sub": { "function_codegen": 5, "repo_scale_tasks": 4, "tool_use": 4, "agentic_planning": 3, "codebase_navigation": 4 }},
+        "S": { "score": 4, "sub": { "ttft": 4, "throughput": 4, "cost_efficiency": 5 }},
+        "B": { "score": 3, "sub": { "context_window": 3, "long_doc_faithfulness": 3, "vision": 1, "audio": 1, "video": 1, "multilingual": 4, "structured_output": 4 }},
+        "L": { "score": 3, "sub": { "instruction_following": 3, "hallucination_resistance": 3, "consistency": 3, "safety": 3, "format_adherence": 4 }},
+        "G": { "score": 4, "sub": { "data_retention_policy": 5, "data_sovereignty": 5, "self_hostable": 5, "compliance_certs": 2, "audit_logging": 3 }}
+      },
+      "best_for": ["Self-hosted coding at very low cost", "Function codegen competitive with GPT-4o", "Code-first pipelines on proprietary code when self-hosted"],
+      "avoid_for": ["General reasoning or chat tasks", "Multimodal", "Non-coding tasks where a general model is better"]
+    },
+    {
+      "id": "phi-4",
+      "name": "Phi-4",
+      "provider": "Microsoft",
+      "tier": "Small / efficient",
+      "context_k": 16,
+      "governance_warning": null,
+      "pricing": {
+        "input_per_1m": 0.07,
+        "output_per_1m": 0.14,
+        "currency": "USD",
+        "hosting": "azure-or-self-hosted",
+        "note": "MIT license; cheapest STEM-capable model; via Azure AI Foundry with enterprise DPA available"
+      },
+      "dimensions": {
+        "R": { "score": 4, "sub": { "math_reasoning": 5, "scientific_reasoning": 4, "abstract_reasoning": 3, "logical_chains": 4, "debugging_chains": 3 }},
+        "E": { "score": 3, "sub": { "function_codegen": 3, "repo_scale_tasks": 2, "tool_use": 3, "agentic_planning": 2, "codebase_navigation": 2 }},
+        "S": { "score": 5, "sub": { "ttft": 5, "throughput": 5, "cost_efficiency": 5 }},
+        "B": { "score": 2, "sub": { "context_window": 2, "long_doc_faithfulness": 2, "vision": 1, "audio": 1, "video": 1, "multilingual": 2, "structured_output": 3 }},
+        "L": { "score": 3, "sub": { "instruction_following": 3, "hallucination_resistance": 3, "consistency": 3, "safety": 4, "format_adherence": 3 }},
+        "G": { "score": 4, "sub": { "data_retention_policy": 5, "data_sovereignty": 4, "self_hostable": 5, "compliance_certs": 3, "audit_logging": 3 }}
+      },
+      "best_for": ["STEM reasoning at minimal cost", "Edge deployment / low-resource environments", "Fast math/science Q&A where context window is not a constraint"],
+      "avoid_for": ["Long documents (16K limit)", "Complex codebases", "Multimodal", "Any task needing broad knowledge base"]
+    },
+    {
+      "id": "gemma-3-27b",
+      "name": "Gemma 3 27B",
+      "provider": "Google / Open",
+      "tier": "Open-source frontier-class",
+      "context_k": 128,
+      "governance_warning": "Via Google API: G:2 (same as Gemini). Self-hosted open weights (Gemma Terms of Use): G:4 — data stays local, strong sovereignty, but no Anthropic-tier compliance certs.",
+      "pricing": {
+        "input_per_1m": 0.15,
+        "output_per_1m": 0.45,
+        "currency": "USD",
+        "hosting": "third-party-or-self-hosted",
+        "note": "Open weights under Gemma Terms; self-hosting recommended for proprietary workloads"
+      },
+      "dimensions": {
+        "R": { "score": 3, "sub": { "math_reasoning": 3, "scientific_reasoning": 3, "abstract_reasoning": 3, "logical_chains": 3, "debugging_chains": 3 }},
+        "E": { "score": 3, "sub": { "function_codegen": 3, "repo_scale_tasks": 3, "tool_use": 3, "agentic_planning": 3, "codebase_navigation": 3 }},
+        "S": { "score": 4, "sub": { "ttft": 4, "throughput": 4, "cost_efficiency": 5 }},
+        "B": { "score": 4, "sub": { "context_window": 3, "long_doc_faithfulness": 3, "vision": 4, "audio": 1, "video": 1, "multilingual": 4, "structured_output": 4 }},
+        "L": { "score": 3, "sub": { "instruction_following": 3, "hallucination_resistance": 3, "consistency": 3, "safety": 4, "format_adherence": 3 }},
+        "G": { "score": 4, "sub": { "data_retention_policy": 5, "data_sovereignty": 5, "self_hostable": 5, "compliance_certs": 2, "audit_logging": 3 }}
+      },
+      "best_for": ["Self-hosted vision-capable model", "Privacy-First workflows needing image understanding", "EU deployment with full data sovereignty"],
+      "avoid_for": ["Tasks needing cutting-edge reasoning or coding", "Audio/video processing", "Very long documents"]
+    },
+    {
+      "id": "grok-3",
+      "name": "Grok 3",
+      "provider": "xAI",
+      "tier": "Frontier flagship",
+      "context_k": 128,
+      "governance_warning": null,
+      "pricing": {
+        "input_per_1m": 3.0,
+        "output_per_1m": 15.0,
+        "currency": "USD",
+        "hosting": "api",
+        "note": "Available via xAI API and X Premium subscription; real-time web access available in some modes"
+      },
+      "dimensions": {
+        "R": { "score": 5, "sub": { "math_reasoning": 5, "scientific_reasoning": 5, "abstract_reasoning": 4, "logical_chains": 5, "debugging_chains": 4 }},
+        "E": { "score": 4, "sub": { "function_codegen": 4, "repo_scale_tasks": 4, "tool_use": 4, "agentic_planning": 4, "codebase_navigation": 4 }},
+        "S": { "score": 3, "sub": { "ttft": 3, "throughput": 3, "cost_efficiency": 3 }},
+        "B": { "score": 4, "sub": { "context_window": 3, "long_doc_faithfulness": 3, "vision": 4, "audio": 1, "video": 1, "multilingual": 3, "structured_output": 4 }},
+        "L": { "score": 4, "sub": { "instruction_following": 4, "hallucination_resistance": 4, "consistency": 4, "safety": 3, "format_adherence": 4 }},
+        "G": { "score": 2, "sub": { "data_retention_policy": 2, "data_sovereignty": 2, "self_hostable": 1, "compliance_certs": 2, "audit_logging": 2 }}
+      },
+      "best_for": ["Strong reasoning and engineering tasks", "Real-time data access via web search mode", "Alternative frontier model when Anthropic/OpenAI are rate-limited"],
+      "avoid_for": ["Privacy-sensitive or regulated data", "Tasks requiring well-documented compliance posture"]
+    },
+    {
+      "id": "command-r-plus",
+      "name": "Command R+",
+      "provider": "Cohere",
+      "tier": "Enterprise RAG specialist",
+      "context_k": 128,
+      "governance_warning": null,
+      "pricing": {
+        "input_per_1m": 2.50,
+        "output_per_1m": 10.0,
+        "currency": "USD",
+        "hosting": "api-or-self-hosted",
+        "note": "Weights available for self-hosting; Cohere is SOC 2 certified; HIPAA BAA available for enterprise"
+      },
+      "dimensions": {
+        "R": { "score": 3, "sub": { "math_reasoning": 3, "scientific_reasoning": 3, "abstract_reasoning": 3, "logical_chains": 3, "debugging_chains": 3 }},
+        "E": { "score": 3, "sub": { "function_codegen": 3, "repo_scale_tasks": 3, "tool_use": 4, "agentic_planning": 3, "codebase_navigation": 3 }},
+        "S": { "score": 4, "sub": { "ttft": 4, "throughput": 4, "cost_efficiency": 3 }},
+        "B": { "score": 3, "sub": { "context_window": 3, "long_doc_faithfulness": 4, "vision": 1, "audio": 1, "video": 1, "multilingual": 4, "structured_output": 4 }},
+        "L": { "score": 4, "sub": { "instruction_following": 4, "hallucination_resistance": 4, "consistency": 4, "safety": 4, "format_adherence": 4 }},
+        "G": { "score": 3, "sub": { "data_retention_policy": 3, "data_sovereignty": 3, "self_hostable": 4, "compliance_certs": 4, "audit_logging": 3 }}
+      },
+      "best_for": ["RAG pipelines (retrieval-augmented generation)", "High instruction-following at mid-tier cost", "Enterprise workloads needing SOC 2 + HIPAA without full self-hosting"],
+      "avoid_for": ["Frontier reasoning or coding tasks", "Vision/audio/video processing", "Tasks where G:5 is required"]
+    },
+
+    {
+      "id": "gemini-2.5-flash",
+      "name": "Gemini 2.5 Flash",
+      "provider": "Google",
+      "tier": "Frontier fast",
+      "context_k": 1000,
+      "governance_warning": null,
+      "pricing": {
+        "input_per_1m": 0.075,
+        "output_per_1m": 0.30,
+        "currency": "USD",
+        "hosting": "api",
+        "note": "Updated Flash variant of Gemini 2.5; slightly stronger than Flash 2.0 on instruction following"
+      },
+      "dimensions": {
+        "R": { "score": 3, "sub": { "math_reasoning": 3, "scientific_reasoning": 3, "abstract_reasoning": 3, "logical_chains": 3, "debugging_chains": 3 }},
+        "E": { "score": 3, "sub": { "function_codegen": 3, "repo_scale_tasks": 3, "tool_use": 4, "agentic_planning": 3, "codebase_navigation": 3 }},
+        "S": { "score": 5, "sub": { "ttft": 5, "throughput": 5, "cost_efficiency": 5 }},
+        "B": { "score": 5, "sub": { "context_window": 5, "long_doc_faithfulness": 4, "vision": 5, "audio": 5, "video": 5, "multilingual": 5, "structured_output": 4 }},
+        "L": { "score": 3, "sub": { "instruction_following": 3, "hallucination_resistance": 3, "consistency": 3, "safety": 4, "format_adherence": 3 }},
+        "G": { "score": 2, "sub": { "data_retention_policy": 2, "data_sovereignty": 2, "self_hostable": 1, "compliance_certs": 3, "audit_logging": 2 }}
+      },
+      "best_for": ["High-volume multimodal, 1M context at low cost", "Faster alternative to Gemini 2.5 Pro for non-sensitive work"],
+      "avoid_for": ["Sensitive/regulated data", "Complex reasoning"]
+    },
+    {
+      "id": "codestral",
+      "name": "Codestral",
+      "provider": "Mistral",
+      "tier": "Coding specialist",
+      "context_k": 256,
+      "governance_warning": null,
+      "pricing": {
+        "input_per_1m": 0.30,
+        "output_per_1m": 0.90,
+        "currency": "USD",
+        "hosting": "api-or-self-hosted",
+        "note": "Mistral's code-focused model; weights available for self-hosting; strong fill-in-the-middle"
+      },
+      "dimensions": {
+        "R": { "score": 3, "sub": { "math_reasoning": 3, "scientific_reasoning": 2, "abstract_reasoning": 2, "logical_chains": 3, "debugging_chains": 4 }},
+        "E": { "score": 5, "sub": { "function_codegen": 5, "repo_scale_tasks": 4, "tool_use": 4, "agentic_planning": 3, "codebase_navigation": 4 }},
+        "S": { "score": 4, "sub": { "ttft": 4, "throughput": 4, "cost_efficiency": 5 }},
+        "B": { "score": 3, "sub": { "context_window": 4, "long_doc_faithfulness": 3, "vision": 1, "audio": 1, "video": 1, "multilingual": 4, "structured_output": 4 }},
+        "L": { "score": 3, "sub": { "instruction_following": 3, "hallucination_resistance": 3, "consistency": 3, "safety": 3, "format_adherence": 4 }},
+        "G": { "score": 4, "sub": { "data_retention_policy": 4, "data_sovereignty": 5, "self_hostable": 4, "compliance_certs": 4, "audit_logging": 3 }}
+      },
+      "best_for": ["Code completion, fill-in-the-middle, function codegen", "EU-governed coding tasks", "Self-hosted coding at lower cost than Claude Sonnet"],
+      "avoid_for": ["General reasoning or chat", "Vision/multimodal", "Novel architecture design"]
+    },
+    {
+      "id": "mistral-medium-3",
+      "name": "Mistral Medium 3",
+      "provider": "Mistral",
+      "tier": "Mid-tier",
+      "context_k": 128,
+      "governance_warning": null,
+      "pricing": {
+        "input_per_1m": 0.40,
+        "output_per_1m": 2.0,
+        "currency": "USD",
+        "hosting": "api",
+        "note": "Between Small and Large; good balance of speed and capability"
+      },
+      "dimensions": {
+        "R": { "score": 3, "sub": { "math_reasoning": 3, "scientific_reasoning": 3, "abstract_reasoning": 3, "logical_chains": 3, "debugging_chains": 3 }},
+        "E": { "score": 3, "sub": { "function_codegen": 3, "repo_scale_tasks": 3, "tool_use": 3, "agentic_planning": 3, "codebase_navigation": 3 }},
+        "S": { "score": 4, "sub": { "ttft": 4, "throughput": 4, "cost_efficiency": 4 }},
+        "B": { "score": 3, "sub": { "context_window": 3, "long_doc_faithfulness": 3, "vision": 2, "audio": 1, "video": 1, "multilingual": 4, "structured_output": 4 }},
+        "L": { "score": 3, "sub": { "instruction_following": 3, "hallucination_resistance": 3, "consistency": 3, "safety": 3, "format_adherence": 3 }},
+        "G": { "score": 4, "sub": { "data_retention_policy": 4, "data_sovereignty": 5, "self_hostable": 3, "compliance_certs": 4, "audit_logging": 3 }}
+      },
+      "best_for": ["Mid-tier EU workloads", "Budget-constrained tasks needing more than Mistral Small"],
+      "avoid_for": ["Frontier reasoning or coding", "Multimodal"]
+    },
+    {
+      "id": "mistral-small-3",
+      "name": "Mistral Small 3",
+      "provider": "Mistral",
+      "tier": "Small / fast",
+      "context_k": 32,
+      "governance_warning": null,
+      "pricing": {
+        "input_per_1m": 0.10,
+        "output_per_1m": 0.30,
+        "currency": "USD",
+        "hosting": "api",
+        "note": "Mistral's entry-level model; very cheap, EU-based; good for classification and routing"
+      },
+      "dimensions": {
+        "R": { "score": 2, "sub": { "math_reasoning": 2, "scientific_reasoning": 2, "abstract_reasoning": 2, "logical_chains": 2, "debugging_chains": 2 }},
+        "E": { "score": 3, "sub": { "function_codegen": 3, "repo_scale_tasks": 2, "tool_use": 3, "agentic_planning": 2, "codebase_navigation": 2 }},
+        "S": { "score": 5, "sub": { "ttft": 5, "throughput": 5, "cost_efficiency": 5 }},
+        "B": { "score": 2, "sub": { "context_window": 2, "long_doc_faithfulness": 2, "vision": 1, "audio": 1, "video": 1, "multilingual": 4, "structured_output": 3 }},
+        "L": { "score": 3, "sub": { "instruction_following": 3, "hallucination_resistance": 2, "consistency": 3, "safety": 3, "format_adherence": 3 }},
+        "G": { "score": 4, "sub": { "data_retention_policy": 4, "data_sovereignty": 5, "self_hostable": 3, "compliance_certs": 4, "audit_logging": 3 }}
+      },
+      "best_for": ["Classification, routing, and triage tasks", "EU-compliant high-volume at minimal cost"],
+      "avoid_for": ["Complex reasoning", "Long documents", "Production code generation"]
+    },
+    {
+      "id": "mistral-deep-think",
+      "name": "Mistral Deep Think",
+      "provider": "Mistral",
+      "tier": "Reasoning / extended thinking",
+      "context_k": 128,
+      "governance_warning": null,
+      "pricing": {
+        "input_per_1m": 1.50,
+        "output_per_1m": 6.0,
+        "currency": "USD",
+        "hosting": "api",
+        "note": "Mistral's reasoning-mode model; EU-based alternative to o3/DeepSeek R1 for regulated data"
+      },
+      "dimensions": {
+        "R": { "score": 4, "sub": { "math_reasoning": 4, "scientific_reasoning": 4, "abstract_reasoning": 4, "logical_chains": 5, "debugging_chains": 4 }},
+        "E": { "score": 4, "sub": { "function_codegen": 4, "repo_scale_tasks": 4, "tool_use": 4, "agentic_planning": 4, "codebase_navigation": 4 }},
+        "S": { "score": 2, "sub": { "ttft": 2, "throughput": 2, "cost_efficiency": 3 }},
+        "B": { "score": 3, "sub": { "context_window": 3, "long_doc_faithfulness": 3, "vision": 2, "audio": 1, "video": 1, "multilingual": 4, "structured_output": 4 }},
+        "L": { "score": 4, "sub": { "instruction_following": 4, "hallucination_resistance": 4, "consistency": 4, "safety": 3, "format_adherence": 4 }},
+        "G": { "score": 4, "sub": { "data_retention_policy": 4, "data_sovereignty": 5, "self_hostable": 3, "compliance_certs": 4, "audit_logging": 3 }}
+      },
+      "best_for": ["Extended reasoning on EU-governed or GDPR-sensitive data", "Alternative to o3/DeepSeek R1 when G:4 is required"],
+      "avoid_for": ["Simple tasks (overkill)", "Real-time/interactive UX"]
+    },
+    {
+      "id": "qwen3-235b",
+      "name": "Qwen3 235B (MoE)",
+      "provider": "Alibaba / Open",
+      "tier": "Open-source frontier flagship",
+      "context_k": 128,
+      "governance_warning": "Via Alibaba Cloud API: G:1. Self-hosted (Apache 2.0): G:4.",
+      "pricing": {
+        "input_per_1m": null,
+        "output_per_1m": null,
+        "currency": "USD",
+        "hosting": "self-hosted",
+        "note": "Massive MoE (235B params, 22B active); open weights; GPU cluster required for self-hosting. Via third-party APIs: pricing varies (~$0.50-2.00/1M)."
+      },
+      "dimensions": {
+        "R": { "score": 5, "sub": { "math_reasoning": 5, "scientific_reasoning": 4, "abstract_reasoning": 4, "logical_chains": 5, "debugging_chains": 4 }},
+        "E": { "score": 5, "sub": { "function_codegen": 5, "repo_scale_tasks": 4, "tool_use": 4, "agentic_planning": 4, "codebase_navigation": 4 }},
+        "S": { "score": 3, "sub": { "ttft": 3, "throughput": 3, "cost_efficiency": 4 }},
+        "B": { "score": 3, "sub": { "context_window": 3, "long_doc_faithfulness": 3, "vision": 2, "audio": 1, "video": 1, "multilingual": 5, "structured_output": 4 }},
+        "L": { "score": 4, "sub": { "instruction_following": 4, "hallucination_resistance": 4, "consistency": 4, "safety": 3, "format_adherence": 4 }},
+        "G": { "score": 4, "sub": { "data_retention_policy": 5, "data_sovereignty": 5, "self_hostable": 5, "compliance_certs": 2, "audit_logging": 3 }}
+      },
+      "best_for": ["Frontier-class open-source reasoning and coding", "Strong multilingual (especially Asian languages)", "Self-hosted alternative to Claude Opus/GPT-5 where G:4 is sufficient"],
+      "avoid_for": ["Requires significant GPU infrastructure", "Via Alibaba API for any sensitive data", "Multimodal tasks"]
+    },
+
+    {
+      "_estimated": true,
+      "id": "gpt-5",
+      "name": "GPT-5",
+      "provider": "OpenAI",
+      "tier": "Frontier flagship (estimated)",
+      "context_k": 256,
+      "governance_warning": null,
+      "pricing": {
+        "input_per_1m": 5.0,
+        "output_per_1m": 20.0,
+        "currency": "USD",
+        "hosting": "api",
+        "note": "ESTIMATED — scores based on extrapolation from GPT-4o trajectory. Run Workflow C to validate."
+      },
+      "dimensions": {
+        "R": { "score": 5, "sub": { "math_reasoning": 5, "scientific_reasoning": 5, "abstract_reasoning": 5, "logical_chains": 5, "debugging_chains": 5 }},
+        "E": { "score": 5, "sub": { "function_codegen": 5, "repo_scale_tasks": 5, "tool_use": 5, "agentic_planning": 5, "codebase_navigation": 5 }},
+        "S": { "score": 3, "sub": { "ttft": 3, "throughput": 3, "cost_efficiency": 2 }},
+        "B": { "score": 5, "sub": { "context_window": 4, "long_doc_faithfulness": 4, "vision": 5, "audio": 5, "video": 4, "multilingual": 5, "structured_output": 5 }},
+        "L": { "score": 5, "sub": { "instruction_following": 5, "hallucination_resistance": 5, "consistency": 5, "safety": 5, "format_adherence": 5 }},
+        "G": { "score": 2, "sub": { "data_retention_policy": 2, "data_sovereignty": 2, "self_hostable": 1, "compliance_certs": 3, "audit_logging": 2 }}
+      },
+      "best_for": ["Frontier general tasks (estimated)", "Strong multimodal reasoning"],
+      "avoid_for": ["Sensitive/regulated data without enterprise DPA", "Cost-sensitive workflows"]
+    },
+    {
+      "_estimated": true,
+      "id": "gpt-5-pro",
+      "name": "GPT-5.4 Pro",
+      "provider": "OpenAI",
+      "tier": "Frontier flagship premium (estimated)",
+      "context_k": 256,
+      "governance_warning": null,
+      "pricing": {
+        "input_per_1m": 15.0,
+        "output_per_1m": 60.0,
+        "currency": "USD",
+        "hosting": "api",
+        "note": "ESTIMATED — premium/slower variant analogous to Opus 4.6. Run Workflow C to validate."
+      },
+      "dimensions": {
+        "R": { "score": 5, "sub": { "math_reasoning": 5, "scientific_reasoning": 5, "abstract_reasoning": 5, "logical_chains": 5, "debugging_chains": 5 }},
+        "E": { "score": 5, "sub": { "function_codegen": 5, "repo_scale_tasks": 5, "tool_use": 5, "agentic_planning": 5, "codebase_navigation": 5 }},
+        "S": { "score": 2, "sub": { "ttft": 2, "throughput": 2, "cost_efficiency": 1 }},
+        "B": { "score": 5, "sub": { "context_window": 4, "long_doc_faithfulness": 5, "vision": 5, "audio": 5, "video": 5, "multilingual": 5, "structured_output": 5 }},
+        "L": { "score": 5, "sub": { "instruction_following": 5, "hallucination_resistance": 5, "consistency": 5, "safety": 5, "format_adherence": 5 }},
+        "G": { "score": 2, "sub": { "data_retention_policy": 2, "data_sovereignty": 2, "self_hostable": 1, "compliance_certs": 3, "audit_logging": 2 }}
+      },
+      "best_for": ["Hardest tasks requiring SOTA across all dimensions (estimated)"],
+      "avoid_for": ["Cost-sensitive work", "Sensitive/regulated data without enterprise DPA"]
+    },
+    {
+      "_estimated": true,
+      "id": "grok-3.5",
+      "name": "Grok 3.5",
+      "provider": "xAI",
+      "tier": "Frontier flagship (estimated)",
+      "context_k": 128,
+      "governance_warning": null,
+      "pricing": {
+        "input_per_1m": 3.0,
+        "output_per_1m": 15.0,
+        "currency": "USD",
+        "hosting": "api",
+        "note": "ESTIMATED — incremental improvement over Grok 3. Run Workflow C to validate."
+      },
+      "dimensions": {
+        "R": { "score": 5, "sub": { "math_reasoning": 5, "scientific_reasoning": 5, "abstract_reasoning": 5, "logical_chains": 5, "debugging_chains": 4 }},
+        "E": { "score": 5, "sub": { "function_codegen": 5, "repo_scale_tasks": 4, "tool_use": 4, "agentic_planning": 4, "codebase_navigation": 4 }},
+        "S": { "score": 3, "sub": { "ttft": 3, "throughput": 3, "cost_efficiency": 3 }},
+        "B": { "score": 4, "sub": { "context_window": 3, "long_doc_faithfulness": 3, "vision": 4, "audio": 1, "video": 1, "multilingual": 4, "structured_output": 4 }},
+        "L": { "score": 4, "sub": { "instruction_following": 4, "hallucination_resistance": 4, "consistency": 4, "safety": 3, "format_adherence": 4 }},
+        "G": { "score": 2, "sub": { "data_retention_policy": 2, "data_sovereignty": 2, "self_hostable": 1, "compliance_certs": 2, "audit_logging": 2 }}
+      },
+      "best_for": ["Frontier reasoning with real-time data access (estimated)"],
+      "avoid_for": ["Sensitive/regulated data", "Well-documented compliance posture required"]
+    },
+    {
+      "_estimated": true,
+      "id": "grok-4",
+      "name": "Grok 4",
+      "provider": "xAI",
+      "tier": "Frontier flagship (estimated)",
+      "context_k": 256,
+      "governance_warning": null,
+      "pricing": {
+        "input_per_1m": 5.0,
+        "output_per_1m": 20.0,
+        "currency": "USD",
+        "hosting": "api",
+        "note": "ESTIMATED — major xAI release. Run Workflow C to validate."
+      },
+      "dimensions": {
+        "R": { "score": 5, "sub": { "math_reasoning": 5, "scientific_reasoning": 5, "abstract_reasoning": 5, "logical_chains": 5, "debugging_chains": 5 }},
+        "E": { "score": 5, "sub": { "function_codegen": 5, "repo_scale_tasks": 5, "tool_use": 5, "agentic_planning": 5, "codebase_navigation": 5 }},
+        "S": { "score": 3, "sub": { "ttft": 3, "throughput": 3, "cost_efficiency": 3 }},
+        "B": { "score": 4, "sub": { "context_window": 4, "long_doc_faithfulness": 4, "vision": 5, "audio": 2, "video": 2, "multilingual": 4, "structured_output": 5 }},
+        "L": { "score": 5, "sub": { "instruction_following": 5, "hallucination_resistance": 4, "consistency": 5, "safety": 3, "format_adherence": 5 }},
+        "G": { "score": 2, "sub": { "data_retention_policy": 2, "data_sovereignty": 2, "self_hostable": 1, "compliance_certs": 2, "audit_logging": 2 }}
+      },
+      "best_for": ["Frontier reasoning and engineering (estimated)", "Real-time data + strong capability"],
+      "avoid_for": ["Sensitive/regulated data", "Compliance-heavy contexts"]
+    },
+    {
+      "_estimated": true,
+      "id": "grok-4.1",
+      "name": "Grok 4.1",
+      "provider": "xAI",
+      "tier": "Frontier flagship (estimated)",
+      "context_k": 256,
+      "governance_warning": null,
+      "pricing": {
+        "input_per_1m": 5.0,
+        "output_per_1m": 20.0,
+        "currency": "USD",
+        "hosting": "api",
+        "note": "ESTIMATED — minor update to Grok 4. Run Workflow C to validate."
+      },
+      "dimensions": {
+        "R": { "score": 5, "sub": { "math_reasoning": 5, "scientific_reasoning": 5, "abstract_reasoning": 5, "logical_chains": 5, "debugging_chains": 5 }},
+        "E": { "score": 5, "sub": { "function_codegen": 5, "repo_scale_tasks": 5, "tool_use": 5, "agentic_planning": 5, "codebase_navigation": 5 }},
+        "S": { "score": 3, "sub": { "ttft": 3, "throughput": 3, "cost_efficiency": 3 }},
+        "B": { "score": 5, "sub": { "context_window": 4, "long_doc_faithfulness": 4, "vision": 5, "audio": 3, "video": 3, "multilingual": 5, "structured_output": 5 }},
+        "L": { "score": 5, "sub": { "instruction_following": 5, "hallucination_resistance": 5, "consistency": 5, "safety": 3, "format_adherence": 5 }},
+        "G": { "score": 2, "sub": { "data_retention_policy": 2, "data_sovereignty": 2, "self_hostable": 1, "compliance_certs": 2, "audit_logging": 2 }}
+      },
+      "best_for": ["SOTA frontier tasks (estimated)", "Real-time web + reasoning"],
+      "avoid_for": ["Sensitive/regulated data"]
+    },
+    {
+      "_estimated": true,
+      "id": "grok-4-heavy",
+      "name": "Grok 4 Heavy",
+      "provider": "xAI",
+      "tier": "Frontier reasoning flagship (estimated)",
+      "context_k": 256,
+      "governance_warning": null,
+      "pricing": {
+        "input_per_1m": 10.0,
+        "output_per_1m": 40.0,
+        "currency": "USD",
+        "hosting": "api",
+        "note": "ESTIMATED — compute-heavy reasoning variant analogous to o3. Run Workflow C to validate."
+      },
+      "dimensions": {
+        "R": { "score": 5, "sub": { "math_reasoning": 5, "scientific_reasoning": 5, "abstract_reasoning": 5, "logical_chains": 5, "debugging_chains": 5 }},
+        "E": { "score": 5, "sub": { "function_codegen": 5, "repo_scale_tasks": 5, "tool_use": 4, "agentic_planning": 5, "codebase_navigation": 5 }},
+        "S": { "score": 1, "sub": { "ttft": 1, "throughput": 1, "cost_efficiency": 1 }},
+        "B": { "score": 4, "sub": { "context_window": 4, "long_doc_faithfulness": 4, "vision": 4, "audio": 1, "video": 1, "multilingual": 4, "structured_output": 4 }},
+        "L": { "score": 5, "sub": { "instruction_following": 5, "hallucination_resistance": 5, "consistency": 5, "safety": 3, "format_adherence": 5 }},
+        "G": { "score": 2, "sub": { "data_retention_policy": 2, "data_sovereignty": 2, "self_hostable": 1, "compliance_certs": 2, "audit_logging": 2 }}
+      },
+      "best_for": ["Hardest reasoning tasks requiring deep compute (estimated)", "Alternative to o3 with real-time data"],
+      "avoid_for": ["Interactive use", "Cost-sensitive work", "Sensitive data"]
+    },
+    {
+      "_estimated": true,
+      "id": "gemini-3-flash",
+      "name": "Gemini 3 Flash",
+      "provider": "Google",
+      "tier": "Frontier fast (estimated)",
+      "context_k": 2000,
+      "governance_warning": null,
+      "pricing": {
+        "input_per_1m": 0.05,
+        "output_per_1m": 0.20,
+        "currency": "USD",
+        "hosting": "api",
+        "note": "ESTIMATED — next-gen Google Flash. Run Workflow C to validate."
+      },
+      "dimensions": {
+        "R": { "score": 4, "sub": { "math_reasoning": 4, "scientific_reasoning": 3, "abstract_reasoning": 3, "logical_chains": 4, "debugging_chains": 3 }},
+        "E": { "score": 3, "sub": { "function_codegen": 3, "repo_scale_tasks": 3, "tool_use": 4, "agentic_planning": 3, "codebase_navigation": 3 }},
+        "S": { "score": 5, "sub": { "ttft": 5, "throughput": 5, "cost_efficiency": 5 }},
+        "B": { "score": 5, "sub": { "context_window": 5, "long_doc_faithfulness": 5, "vision": 5, "audio": 5, "video": 5, "multilingual": 5, "structured_output": 5 }},
+        "L": { "score": 3, "sub": { "instruction_following": 3, "hallucination_resistance": 3, "consistency": 3, "safety": 4, "format_adherence": 4 }},
+        "G": { "score": 2, "sub": { "data_retention_policy": 2, "data_sovereignty": 2, "self_hostable": 1, "compliance_certs": 3, "audit_logging": 2 }}
+      },
+      "best_for": ["Massive context + multimodal at minimal cost (estimated)"],
+      "avoid_for": ["Sensitive data", "Tasks requiring high reliability"]
+    },
+    {
+      "_estimated": true,
+      "id": "gemini-3.1-pro",
+      "name": "Gemini 3.1 Pro",
+      "provider": "Google",
+      "tier": "Frontier flagship (estimated)",
+      "context_k": 2000,
+      "governance_warning": null,
+      "pricing": {
+        "input_per_1m": 2.0,
+        "output_per_1m": 8.0,
+        "currency": "USD",
+        "hosting": "api",
+        "note": "ESTIMATED — next-gen Google Pro. Run Workflow C to validate."
+      },
+      "dimensions": {
+        "R": { "score": 5, "sub": { "math_reasoning": 5, "scientific_reasoning": 5, "abstract_reasoning": 5, "logical_chains": 5, "debugging_chains": 5 }},
+        "E": { "score": 5, "sub": { "function_codegen": 5, "repo_scale_tasks": 5, "tool_use": 5, "agentic_planning": 5, "codebase_navigation": 5 }},
+        "S": { "score": 3, "sub": { "ttft": 3, "throughput": 3, "cost_efficiency": 3 }},
+        "B": { "score": 5, "sub": { "context_window": 5, "long_doc_faithfulness": 5, "vision": 5, "audio": 5, "video": 5, "multilingual": 5, "structured_output": 5 }},
+        "L": { "score": 5, "sub": { "instruction_following": 5, "hallucination_resistance": 5, "consistency": 4, "safety": 4, "format_adherence": 5 }},
+        "G": { "score": 2, "sub": { "data_retention_policy": 2, "data_sovereignty": 2, "self_hostable": 1, "compliance_certs": 3, "audit_logging": 2 }}
+      },
+      "best_for": ["2M context, frontier multimodal + reasoning (estimated)"],
+      "avoid_for": ["Sensitive/regulated data without Cloud DPA"]
+    },
+    {
+      "_estimated": true,
+      "id": "minimax-m2.5",
+      "name": "MiniMax M2.5",
+      "provider": "MiniMax",
+      "tier": "Long-context (estimated)",
+      "context_k": 1000,
+      "governance_warning": "Chinese company. Via MiniMax API: G:1. Self-hosted open weights raise governance to G:3.",
+      "pricing": {
+        "input_per_1m": 0.20,
+        "output_per_1m": 1.10,
+        "currency": "USD",
+        "hosting": "api-or-self-hosted",
+        "note": "ESTIMATED — updated MiniMax. Run Workflow C to validate."
+      },
+      "dimensions": {
+        "R": { "score": 4, "sub": { "math_reasoning": 4, "scientific_reasoning": 3, "abstract_reasoning": 3, "logical_chains": 4, "debugging_chains": 3 }},
+        "E": { "score": 3, "sub": { "function_codegen": 3, "repo_scale_tasks": 3, "tool_use": 3, "agentic_planning": 3, "codebase_navigation": 3 }},
+        "S": { "score": 3, "sub": { "ttft": 3, "throughput": 3, "cost_efficiency": 5 }},
+        "B": { "score": 5, "sub": { "context_window": 5, "long_doc_faithfulness": 4, "vision": 3, "audio": 2, "video": 1, "multilingual": 4, "structured_output": 3 }},
+        "L": { "score": 3, "sub": { "instruction_following": 3, "hallucination_resistance": 3, "consistency": 3, "safety": 3, "format_adherence": 3 }},
+        "G": { "score": 2, "sub": { "data_retention_policy": 2, "data_sovereignty": 2, "self_hostable": 4, "compliance_certs": 1, "audit_logging": 2 }}
+      },
+      "best_for": ["1M context at low cost, non-sensitive data (estimated)"],
+      "avoid_for": ["Sensitive/regulated data via API", "Tasks requiring strong coding capability"]
+    }
+  ]
+}

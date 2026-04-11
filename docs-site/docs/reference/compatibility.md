@@ -12,6 +12,8 @@ below shows the minimum compatible processkit version for each aibox release.
 
 | aibox version | Min. processkit | Notes |
 |--------------|-----------------|-------|
+| 0.17.16 | v0.13.0 | **BREAKING**: rename `providers = ["codex"]` → `["openai"]`; fix zellij `--layout` flag; fix Rust x86_64 cross-compile target |
+| 0.17.15 | v0.13.0 | MCP config model, zjstatus hints, Zellij Ctrl+q, processkit v0.13.0 |
 | 0.17.5 | v0.8.0 | processkit v0.8.0 GrandLily src/ restructure |
 | 0.17.4 | v0.6.0 | content migration documents (pending/in-progress/applied) |
 | 0.17.3 | v0.6.0 | Claude Code slash-command adapters |

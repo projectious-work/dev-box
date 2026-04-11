@@ -1,0 +1,128 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: Schema
+metadata:
+  id: SCHEMA-note
+  target_kind: Note
+  version: "1.0.0"
+  created: 2026-04-08T00:00:00Z
+spec:
+  description: >
+    A captured thought, insight, or reference — the lightweight capture
+    unit in processkit. Notes are intentionally low-structure on entry:
+    the user records quickly, reviews periodically, and promotes to more
+    structured primitives (WorkItems, DecisionRecords, etc.) when a note
+    has ripened into something actionable. Inspired by the Zettelkasten
+    model: capture fast, refine deliberately, link explicitly.
+
+    Note types map to the Luhmann/Ahrens taxonomy: fleeting → fleeting
+    note (quick capture, process within a week); insight → permanent note
+    (a self-contained conclusion; never discarded, it becomes part of the
+    knowledge base); reference → literature note (tied to an external
+    source, with your own summary); question → open question (may promote
+    to a WorkItem spike or Discussion).
+
+    Permanent notes (type: insight) are NOT ephemeral — they are the
+    durable knowledge base. Only fleeting notes are temporary.
+
+    Note vs Artifact: a Note is a thought in transit with a promotion
+    lifecycle. An Artifact is a completed deliverable (self-hosted
+    Markdown document or pointer to an external resource). When a Note
+    is done, promote it via the promotes_to field.
+  id_prefix: NOTE
+  state_machine: note
+  default_directory: context/notes
+  spec_schema:
+    $schema: https://json-schema.org/draft/2020-12/schema
+    type: object
+    required: [title, body, type, state]
+    additionalProperties: true
+    properties:
+      title:
+        type: string
+        minLength: 1
+        maxLength: 120
+        description: "One-line summary. Should be a self-contained claim or question, not a topic label."
+      body:
+        type: string
+        description: "The note content. Fleeting notes may be a single sentence; permanent notes should be self-contained."
+      type:
+        type: string
+        enum: [fleeting, insight, reference, question]
+        description: >
+          Note type (maps to Luhmann/Ahrens taxonomy).
+          fleeting: quick capture, not yet refined — review within a week.
+          insight: permanent note — a self-contained conclusion or
+          realization; part of the knowledge base, not discarded on review.
+          reference: literature note — pointer to an external source with
+          your own summary; cite the source in the source field.
+          question: an open question — may promote to a WorkItem (spike)
+          or Discussion.
+      state:
+        type: string
+        description: "Current state per the note state machine."
+      tags:
+        type: array
+        items:
+          type: string
+        description: "Free-form tags for discoverability. Prefer existing tags over new ones."
+      source:
+        type: string
+        description: "For reference notes: URL, book title, or conversation description."
+      promotes_to:
+        type: object
+        description: "When a note is promoted, record the target primitive kind and ID."
+        properties:
+          kind:
+            type: string
+            enum: [WorkItem, DecisionRecord, Artifact, Discussion]
+          id:
+            type: string
+        required: [kind, id]
+      review_due:
+        type: string
+        format: date
+        description: "Date by which this note should be reviewed. Set automatically on capture."
+      links:
+        type: array
+        description: >
+          Qualified connections to other Notes. Each link must carry a
+          relation type and a one-sentence context explaining *why* the
+          connection matters — this is what distinguishes Zettelkasten
+          linking from tag-based clustering. Tags group notes by topic;
+          links build arguments.
+        items:
+          type: object
+          required: [target, relation, context]
+          additionalProperties: false
+          properties:
+            target:
+              type: string
+              pattern: "^NOTE-[a-zA-Z0-9_-]+"
+              description: "The NOTE-id of the linked note."
+            relation:
+              type: string
+              enum:
+                - elaborates
+                - contradicts
+                - supports
+                - is-example-of
+                - see-also
+                - refines
+                - sourced-from
+              description: >
+                The semantic relationship from this note to the target.
+                elaborates: this note expands on the target.
+                contradicts: this note challenges or refutes the target.
+                supports: this note provides evidence for the target.
+                is-example-of: this note is a concrete case of the target.
+                see-also: loosely related; reader may find target relevant.
+                refines: this note improves on or supersedes the target.
+                sourced-from: this note's ideas draw from the target
+                (use for literature notes citing another note).
+            context:
+              type: string
+              minLength: 10
+              description: >
+                One sentence explaining why this link exists. Required —
+                a link without context is nearly worthless for reasoning.

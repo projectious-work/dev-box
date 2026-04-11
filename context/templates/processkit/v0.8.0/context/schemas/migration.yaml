@@ -1,0 +1,121 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: Schema
+metadata:
+  id: SCHEMA-migration
+  target_kind: Migration
+  version: "1.0.0"
+  created: 2026-04-07T00:00:00Z
+spec:
+  description: >
+    A pending, in-progress, or applied transition between two versions of an
+    upstream source (processkit, aibox, or a community package). Migrations
+    are first-class entities so they can be queried, listed, and reasoned
+    about by agents. The state machine governs the lifecycle (pending →
+    in-progress → applied; rejected as a side branch).
+
+    Migrations are written by tools like `aibox sync` when an upstream version
+    bump is detected, and worked through by humans + agents over multiple
+    sessions. The body of a Migration entity is the briefing — a structured
+    summary of what changed upstream, which project files are affected, and
+    a project-specific plan that the user has approved.
+  id_prefix: MIG
+  state_machine: migration
+  default_directory: context/migrations
+  spec_schema:
+    $schema: https://json-schema.org/draft/2020-12/schema
+    type: object
+    required: [source, from_version, to_version, state]
+    additionalProperties: true
+    properties:
+      source:
+        type: string
+        description: >
+          Identifier of the upstream source: "aibox", "processkit",
+          "processkit-acme", or any community package name. Should match the
+          [project] field in PROVENANCE.toml of that source.
+      source_url:
+        type: string
+        description: >
+          The git URL of the upstream source at the time the migration was
+          generated. Optional but recommended — lets a future agent re-fetch
+          the cache content if needed.
+      from_version:
+        type: string
+        description: "Source version the project is migrating FROM (semver tag)."
+      to_version:
+        type: string
+        description: "Source version the project is migrating TO (semver tag)."
+      state:
+        type: string
+        description: "Current state in the migration state machine."
+      generated_by:
+        type: string
+        description: >
+          What generated the migration: "aibox sync", "user", or another tool.
+          Helps distinguish auto-generated briefings from hand-authored ones.
+      generated_at:
+        type: string
+        format: date-time
+        description: "When the migration document was first written."
+      summary:
+        type: string
+        description: "One-line summary for INDEX.md and listings."
+      affected_files:
+        type: array
+        description: >
+          Files in the project that the migration touches. Each entry has
+          a path and a classification (changed-upstream-only, changed-locally-only,
+          conflict, new-upstream, removed-upstream).
+        items:
+          type: object
+          required: [path, classification]
+          properties:
+            path:
+              type: string
+            classification:
+              type: string
+              enum:
+                - changed-upstream-only
+                - changed-locally-only
+                - conflict
+                - new-upstream
+                - removed-upstream
+            group:
+              type: string
+              description: "The group this file belongs to (from PROVENANCE.toml or similar)."
+      affected_groups:
+        type: array
+        description: >
+          Logical groups affected by the migration. Used for grouped review
+          (Strawman D.1) — the unit of auto-update is the group, not the file.
+        items:
+          type: string
+      plan:
+        type: string
+        description: >
+          The project-specific migration plan, drafted by an agent and approved
+          by the user. Empty until the user reviews the briefing.
+      progress_notes:
+        type: array
+        description: "Append-only notes recorded as the migration is worked through."
+        items:
+          type: object
+          properties:
+            timestamp:
+              type: string
+              format: date-time
+            note:
+              type: string
+            actor:
+              type: string
+      applied_at:
+        type: string
+        format: date-time
+        description: "When the migration reached the applied state."
+      applied_by:
+        type: string
+        description: "Actor ID that finalized the migration."
+      rejected_reason:
+        type: string
+        description: "If rejected, why."

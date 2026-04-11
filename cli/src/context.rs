@@ -284,7 +284,7 @@ fn scaffold_provider_pointers(config: &AiboxConfig) -> Result<()> {
             | AiProvider::Gemini
             | AiProvider::Mistral
             | AiProvider::Cursor
-            | AiProvider::Codex
+            | AiProvider::OpenAI
             | AiProvider::Continue
             | AiProvider::Copilot => {}
         }

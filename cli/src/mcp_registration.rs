@@ -322,8 +322,8 @@ pub fn regenerate_mcp_configs(config: &AiboxConfig, project_root: &Path) -> Resu
         ));
     }
 
-    // 2. Codex — TOML translator.
-    if providers.contains(&AiProvider::Codex) {
+    // 2. OpenAI Codex CLI — TOML translator.
+    if providers.contains(&AiProvider::OpenAI) {
         let path = project_root.join(".codex/config.toml");
         write_codex_config_toml(&specs, &managed, &path)?;
         output::ok(&format!(
@@ -351,7 +351,7 @@ pub fn regenerate_mcp_configs(config: &AiboxConfig, project_root: &Path) -> Resu
             "`aider` is in [ai].providers but does not have a built-in MCP client. \
              processkit's MCP-based skills (workitem-management, decision-record, …) \
              will not be available when using Aider. Consider also listing one of: \
-             claude, cursor, gemini, codex, continue, copilot, mistral.",
+             claude, cursor, gemini, openai, continue, copilot, mistral.",
         );
     }
 

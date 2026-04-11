@@ -1,0 +1,17 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: Scope
+metadata:
+  id: SCOPE-TODO
+  created: TODO
+spec:
+  name: TODO
+  kind: sprint          # sprint | milestone | quarter | project | release | other
+  state: planned        # planned | active | completed | cancelled
+  starts_at: null
+  ends_at: null
+  description: TODO
+  goals:
+    - TODO
+  parent: null
+---

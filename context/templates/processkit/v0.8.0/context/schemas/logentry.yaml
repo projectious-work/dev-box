@@ -1,0 +1,51 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: Schema
+metadata:
+  id: SCHEMA-logentry
+  target_kind: LogEntry
+  version: "1.0.0"
+  created: 2026-04-06T00:00:00Z
+spec:
+  description: >
+    An immutable record of something that happened. LogEntries are append-only —
+    once written they are never edited. They form the event log for the project
+    and are the source of truth for "what happened and when." Per DISC-002,
+    LogEntries are probabilistic (agent-written via the event-log skill); there
+    is no second deterministic event source.
+  id_prefix: LOG
+  state_machine: null
+  default_directory: context/logs
+  append_only: true
+  spec_schema:
+    $schema: https://json-schema.org/draft/2020-12/schema
+    type: object
+    required: [event_type, actor, timestamp]
+    additionalProperties: true
+    properties:
+      event_type:
+        type: string
+        description: "Short machine-readable event type (e.g. workitem.created, decision.recorded)."
+      timestamp:
+        type: string
+        format: date-time
+        description: "When the event occurred (ISO 8601 UTC). Distinct from metadata.created which is when the log file was written."
+      actor:
+        type: string
+        description: "ID of the actor who caused the event. May be an ACTOR- ID or a raw agent name."
+      subject:
+        type: string
+        description: "ID of the entity the event concerns (work item, decision, etc.)."
+      subject_kind:
+        type: string
+        description: "Kind of the subject entity, for fast filtering."
+      summary:
+        type: string
+        description: "One-line human-readable summary."
+      details:
+        type: object
+        description: "Event-specific structured payload. Shape depends on event_type."
+        additionalProperties: true
+      correlation_id:
+        type: string
+        description: "Optional ID linking related events (e.g. all events in one workflow run)."

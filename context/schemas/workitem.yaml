@@ -1,0 +1,90 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: Schema
+metadata:
+  id: SCHEMA-workitem
+  target_kind: WorkItem
+  version: "1.0.0"
+  created: 2026-04-06T00:00:00Z
+spec:
+  description: >
+    A unit of work: task, story, bug, epic, ticket. The fundamental tracked
+    item in nearly every process methodology. Has a state machine governing
+    valid transitions, an assignee, optional parent/child relationships, and
+    optional relationships to other primitives (decisions, artifacts, scopes).
+  id_prefix: BACK
+  state_machine: workitem
+  default_directory: context/workitems
+  spec_schema:
+    $schema: https://json-schema.org/draft/2020-12/schema
+    type: object
+    required: [title, state]
+    additionalProperties: true
+    properties:
+      title:
+        type: string
+        minLength: 1
+        maxLength: 200
+        description: "Short, actionable title."
+      description:
+        type: string
+        description: "Long-form description, acceptance criteria, notes."
+      state:
+        type: string
+        description: "Current state. Must be a state in the referenced state machine."
+      type:
+        type: string
+        enum: [task, story, bug, epic, spike, chore]
+        default: task
+        description: "Subtype of work item. Conventions; not enforced by the state machine."
+      priority:
+        type: string
+        enum: [critical, high, medium, low]
+        description: "Business priority."
+      assignee:
+        type: string
+        pattern: "^ACTOR-[a-zA-Z0-9_-]+$"
+        description: "ID of the Actor currently responsible. Use a Binding for scoped assignments."
+      parent:
+        type: string
+        pattern: "^BACK-[a-zA-Z0-9_-]+$"
+        description: "ID of a parent work item (for hierarchical decomposition)."
+      children:
+        type: array
+        items:
+          type: string
+          pattern: "^BACK-[a-zA-Z0-9_-]+$"
+        description: "IDs of child work items."
+      blocks:
+        type: array
+        items:
+          type: string
+          pattern: "^BACK-[a-zA-Z0-9_-]+$"
+        description: "IDs of work items that cannot proceed until this one is done."
+      blocked_by:
+        type: array
+        items:
+          type: string
+          pattern: "^BACK-[a-zA-Z0-9_-]+$"
+        description: "IDs of work items that must be done before this one can proceed."
+      related_decisions:
+        type: array
+        items:
+          type: string
+          pattern: "^DEC-[a-zA-Z0-9_-]+$"
+        description: "DecisionRecord IDs that motivated or constrained this work."
+      scope:
+        type: string
+        description: "Scope ID (sprint, milestone, project). For scoped, temporal assignment use a Binding instead."
+      estimate:
+        type: object
+        description: "Effort estimate. Freeform — use what your team estimates in."
+        additionalProperties: true
+      started_at:
+        type: string
+        format: date-time
+        description: "When work actually began (distinct from metadata.created)."
+      completed_at:
+        type: string
+        format: date-time
+        description: "When the work reached a terminal state."

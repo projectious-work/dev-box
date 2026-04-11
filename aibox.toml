@@ -1,0 +1,151 @@
+# =============================================================================
+# aibox.toml — single source of truth for your aibox project.
+# All .devcontainer/ files are generated from this. Edit here, run `aibox sync`.
+# Reference: https://projectious-work.github.io/aibox/docs/reference/configuration
+# =============================================================================
+
+[aibox]
+version = "latest"             # Target aibox CLI version. Update this when intentionally upgrading aibox.
+                               # Use "latest" to always track the newest release without pinning.
+base    = "debian"             # Base image flavor. Options: debian
+
+# =============================================================================
+# [container] — runtime and build configuration
+# =============================================================================
+[container]
+name     = "aibox"              # Container name used by docker/podman
+hostname = "aibox"              # Hostname visible inside the container
+user     = "aibox"              # User inside the container (controls mount paths)
+
+# --- Lifecycle ---
+# post_create_command = "npm install"  # Shell command run once after container first starts
+# keepalive           = true           # Send periodic keepalive (prevents NAT idle dropout in OrbStack/VMs)
+
+# =============================================================================
+# [context] — context system and process packages
+# =============================================================================
+[context]
+schema_version = "1.0.0"      # Context schema version — updated automatically by `aibox sync`
+# processkit packages (one or more, choose by tier):
+#   minimal   solo developers and small side projects
+#   managed   small teams with a shared backlog (recommended default)
+#   software  software engineering teams (extends managed)
+#   research  research, data science, ML projects (extends managed)
+#   product   full product development (extends software)
+# See context/templates/processkit/<version>/packages/ for the YAML definitions.
+packages = ["product"]
+
+# =============================================================================
+# [skills] — fine-tune which skills are deployed
+# =============================================================================
+# Skills are automatically selected from process packages and addons.
+# Use include/exclude to override.
+# [skills]
+# include = ["skill-name"]    # Explicitly add skills beyond defaults
+# exclude = ["skill-name"]    # Remove skills you don't need
+
+# =============================================================================
+# [addons] — language runtimes and tool bundles
+# =============================================================================
+# Each addon installs a tool set into the container at build time.
+# Selected addons land here pre-populated with default-enabled tools at
+# their default versions; edit the version strings to switch.
+#
+# Version strings:
+#   "1.2.3"  — pin to a specific version
+#   "latest" — always install the newest version (skips pinning)
+#   ""       — use the addon's built-in default version
+#
+# Run `aibox addon list` to see all available addons.
+# Run `aibox addon info <name>` to see every supported tool/version per addon.
+#
+# To add an addon after init, edit this file and re-run `aibox sync`,
+# or use `aibox addon add <name>` (which also pulls in transitive `requires`).
+
+[addons.ai-claude.tools]
+
+[addons.docs-docusaurus.tools]
+docusaurus = { version = "3" }
+
+[addons.node.tools]
+node = { version = "22" }
+pnpm = { version = "10" }
+
+[addons.python.tools]
+python = { version = "3.13" }
+uv = { version = "0.7" }
+
+[addons.rust.tools]
+cargo-audit = {}
+clippy = {}
+rustc = { version = "1.89" }
+rustfmt = {}
+
+# =============================================================================
+# [ai] — AI coding assistant providers
+# =============================================================================
+# Each provider listed here is automatically installed as an addon.
+# Options: claude, aider, gemini, mistral, openai, copilot, continue
+# (cursor is MCP-registration only — host-side IDE, no container CLI)
+[ai]
+providers = ["claude", "openai"]
+
+# =============================================================================
+# [processkit] — content layer source (skills, primitives, processes)
+# =============================================================================
+# processkit ships the skills and primitives that aibox installs into the
+# project. The default upstream is the canonical projectious-work/processkit
+# repo. Companies can fork processkit and have their projects consume the fork
+# by changing `source` to point at their fork.
+#
+# `version` is the git tag of the processkit source to consume. Special values:
+#   "unset"  — no version pinned yet; processkit content is not installed.
+#   "latest" — resolve to the newest available tag at every `aibox sync`.
+[processkit]
+source   = "https://github.com/projectious-work/processkit.git"
+version  = "latest"
+src_path = "src"
+# branch = "main"   # optional — for tracking a moving branch (discouraged)
+#
+# Optional release-asset URL template for non-GitHub hosts (Gitea, GitLab,
+# self-hosted). When unset, the fetcher uses the GitHub-style default:
+#   {source}/releases/download/{version}/{name}-{version}.tar.gz
+# Placeholders: {source} (.git stripped), {version}, {org}, {name}.
+# release_asset_url_template = "https://gitea.example.com/{org}/{name}/releases/download/{version}/payload.tar.gz"
+
+# =============================================================================
+# [agents] — canonical AGENTS.md + provider-specific entry files
+# =============================================================================
+# AGENTS.md is the canonical, provider-neutral instruction document for AI
+# coding agents. Provider files (CLAUDE.md, future CODEX.md, …) are thin
+# pointers that simply say "see AGENTS.md". This matches the agents.md
+# ecosystem convention and avoids keeping N copies of the same instructions.
+#
+# `provider_mode` options:
+#   pointer (default) — provider files are thin pointers to AGENTS.md
+#   full              — provider files contain rich provider-flavored content
+#                       (use only when you genuinely need different content per harness)
+[agents]
+canonical     = "AGENTS.md"
+provider_mode = "pointer"
+
+# =============================================================================
+# [customization] — color theme, shell prompt, and zellij layout
+# =============================================================================
+# Theme is applied consistently across Zellij, Vim, Yazi, lazygit, and bat.
+# Options: gruvbox-dark | catppuccin-mocha | catppuccin-latte | dracula | tokyo-night | nord | projectious
+[customization]
+theme  = "nord"
+# Starship prompt preset.
+# Options: default | plain | minimal | nerd-font | pastel | bracketed | arrow
+prompt = "arrow"
+# Default zellij layout. Options: dev | focus | cowork | cowork-swap | browse | ai
+layout = "ai"
+
+# =============================================================================
+# [audio] — PulseAudio bridging for voice features (e.g., Claude Code voice)
+# =============================================================================
+# Requires host-side setup: run `aibox audio setup` on the host first.
+[audio]
+enabled = true
+# pulse_server = "tcp:host.docker.internal:4714"  # PulseAudio TCP endpoint (default port: 4714)
