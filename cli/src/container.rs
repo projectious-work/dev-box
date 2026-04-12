@@ -1077,7 +1077,7 @@ pub fn cmd_init(config_path: &Option<String>, params: InitParams) -> Result<()> 
         addons: {
             // Build the addon section in four steps:
             //   1. Combine user-selected addons with AI provider addons so
-            //      their `requires` deps (e.g. ai-openai → node) are pulled
+            //      their `requires` deps (e.g. ai-codex → node) are pulled
             //      in transitively alongside the rest.
             //   2. Transitively expand `requires` on the combined list.
             //   3. Parse the repeated --addon-tool flag values into a

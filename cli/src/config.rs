@@ -1309,6 +1309,18 @@ impl AiboxConfig {
     pub fn resolve_ai_provider_addons(&mut self) {
         // Migrate legacy providers → harnesses if needed.
         self.ai.migrate_legacy();
+
+        // Migrate legacy addon name: ai-openai → ai-codex.
+        // Before v0.18.1 the Codex harness addon was named "ai-openai".
+        // Users with [addons.ai-openai.tools] in their aibox.toml need the
+        // tools carried over to the new name.
+        if let Some(legacy) = self.addons.addons.remove("ai-openai") {
+            self.addons
+                .addons
+                .entry("ai-codex".to_string())
+                .or_insert(legacy);
+        }
+
         for harness in &self.ai.harnesses {
             if !harness.is_active() {
                 continue;

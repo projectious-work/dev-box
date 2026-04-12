@@ -207,11 +207,13 @@ main() {
     docs/docs-hugo.yaml
     ai/ai-claude.yaml
     ai/ai-aider.yaml
-    ai/ai-openai.yaml
+    ai/ai-codex.yaml
     ai/ai-continue.yaml
     ai/ai-copilot.yaml
     ai/ai-gemini.yaml
+    ai/ai-hermes.yaml
     ai/ai-mistral.yaml
+    ai/ai-opencode.yaml
   "
   local failed=0
   for file in ${addon_files}; do

@@ -67,6 +67,6 @@ args    = ["-y", "@acme/internal-mcp-server"]
 Codex CLI is installed via npm (`npm install -g @openai/codex`). To pin a specific version, set it in `aibox.toml`:
 
 ```toml
-[addons.ai-openai.tools]
+[addons.ai-codex.tools]
 codex = { version = "0.1.0" }
 ```

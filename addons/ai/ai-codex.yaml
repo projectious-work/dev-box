@@ -1,4 +1,4 @@
-name: ai-openai
+name: ai-codex
 version: "1.1.0"
 description: "OpenAI Codex CLI"
 builder_weight: null
@@ -14,11 +14,11 @@ tools:
 builder: null
 
 runtime: |
-  # Addon: ai-openai
+  # Addon: ai-codex
   # OpenAI Codex CLI: https://github.com/openai/codex
   # npm package: @openai/codex | Binary: codex | Config: ~/.codex/
   # Auth: OPENAI_API_KEY (or ChatGPT Plus/Pro/Team/Enterprise account)
-  # To pin a version: set [addons.ai-openai.tools.codex] version in aibox.toml
+  # To pin a version: set [addons.ai-codex.tools.codex] version in aibox.toml
   {% if tools.codex.version %}
   RUN npm install -g @openai/codex@{{ tools.codex.version }}
   {% else %}

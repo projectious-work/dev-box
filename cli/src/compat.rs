@@ -125,6 +125,11 @@ pub static COMPAT_TABLE: &[CompatEntry] = &[
         processkit_version: "v0.13.0",
         note: "fix: rust addon COPY --from=rust-builder left .cargo/.rustup owned by root; add chown before USER aibox switch",
     },
+    CompatEntry {
+        aibox_version: "0.18.1",
+        processkit_version: "v0.13.0",
+        note: "fix: rename ai-openai addon → ai-codex to match AiHarness::Codex addon_name(); add backward compat migration for [addons.ai-openai.tools]",
+    },
 ];
 
 /// Find the minimum compatible processkit version for the given aibox version.
