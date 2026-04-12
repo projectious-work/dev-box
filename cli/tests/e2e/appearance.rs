@@ -181,65 +181,60 @@ fn theme_catppuccin_mocha_renders() {
 }
 
 #[test]
-fn theme_change_updates_all_files() {
+fn theme_change_writes_runtime_migration_without_overwriting_live_files() {
     let dir = tempfile::tempdir().unwrap();
     init_with_appearance(dir.path(), "gruvbox-dark", "default");
 
     let aibox_home = dir.path().join(".aibox-home");
 
-    // Verify initial theme across all tools
-    let zellij = fs::read_to_string(aibox_home.join(".config/zellij/config.kdl")).unwrap();
-    assert!(zellij.contains("gruvbox-dark"));
-    let vimrc = fs::read_to_string(aibox_home.join(".vim/vimrc")).unwrap();
-    assert!(vimrc.contains("gruvbox"));
-    let yazi_theme = fs::read_to_string(aibox_home.join(".config/yazi/theme.toml")).unwrap();
-    let yazi_initial_len = yazi_theme.len();
-    assert!(yazi_initial_len > 0, "yazi theme should not be empty");
+    let zellij_before = fs::read_to_string(aibox_home.join(".config/zellij/config.kdl")).unwrap();
+    assert!(zellij_before.contains("gruvbox-dark"));
+    let vimrc_before = fs::read_to_string(aibox_home.join(".vim/vimrc")).unwrap();
+    assert!(vimrc_before.contains("gruvbox"));
+    let yazi_before = fs::read_to_string(aibox_home.join(".config/yazi/theme.toml")).unwrap();
+    assert!(!yazi_before.is_empty(), "yazi theme should not be empty");
 
-    // Change theme
     change_appearance(dir.path(), "dracula", "default");
 
-    // Verify zellij updated
-    let zellij = fs::read_to_string(aibox_home.join(".config/zellij/config.kdl")).unwrap();
+    let zellij_after = fs::read_to_string(aibox_home.join(".config/zellij/config.kdl")).unwrap();
+    assert_eq!(zellij_after, zellij_before, "zellij config should remain unchanged until the runtime migration is applied");
+    let vimrc_after = fs::read_to_string(aibox_home.join(".vim/vimrc")).unwrap();
+    assert_eq!(vimrc_after, vimrc_before, "vimrc should remain unchanged until the runtime migration is applied");
+    let yazi_after = fs::read_to_string(aibox_home.join(".config/yazi/theme.toml")).unwrap();
+    assert_eq!(yazi_after, yazi_before, "yazi theme should remain unchanged until the runtime migration is applied");
+
+    let pending_dir = dir.path().join("context/migrations/pending");
+    let docs: Vec<_> = fs::read_dir(&pending_dir)
+        .unwrap()
+        .filter_map(|entry| entry.ok())
+        .map(|entry| entry.path())
+        .filter(|path| path.extension().and_then(|s| s.to_str()) == Some("md"))
+        .collect();
     assert!(
-        zellij.contains("dracula"),
-        "zellij config should be updated to dracula after theme change"
-    );
-    assert!(
-        !zellij.contains("gruvbox-dark"),
-        "gruvbox-dark should no longer appear after theme change"
+        !docs.is_empty(),
+        "expected at least one pending migration document after theme change"
     );
 
-    // Verify vim updated
-    let vimrc = fs::read_to_string(aibox_home.join(".vim/vimrc")).unwrap();
-    assert!(
-        vimrc.contains("dracula"),
-        "vimrc colorscheme should be updated to dracula, got: {}",
-        vimrc
-            .lines()
-            .find(|l| l.contains("colorscheme"))
-            .unwrap_or("no colorscheme line")
-    );
+    let runtime_doc = docs
+        .iter()
+        .find(|path| {
+            path.file_name()
+                .and_then(|s| s.to_str())
+                .map(|name| name.starts_with("MIG-RUNTIME-"))
+                .unwrap_or(false)
+        })
+        .expect("expected a runtime migration document with MIG-RUNTIME- prefix");
 
-    // Verify yazi theme updated (content should differ from gruvbox)
-    let yazi_theme = fs::read_to_string(aibox_home.join(".config/yazi/theme.toml")).unwrap();
+    let migration = fs::read_to_string(runtime_doc).unwrap();
     assert!(
-        !yazi_theme.is_empty(),
-        "yazi theme should not be empty after theme change"
+        migration.contains("runtime-zellij")
+            || migration.contains("runtime-vim")
+            || migration.contains("runtime-yazi"),
+        "runtime migration should mention at least one themed runtime group"
     );
-
-    // Verify lazygit updated
-    let lazygit = fs::read_to_string(aibox_home.join(".config/lazygit/config.yml")).unwrap();
     assert!(
-        !lazygit.is_empty(),
-        "lazygit config should not be empty after theme change"
-    );
-
-    // Verify starship updated
-    let starship = fs::read_to_string(aibox_home.join(".config/starship.toml")).unwrap();
-    assert!(
-        !starship.is_empty(),
-        "starship config should not be empty after theme change"
+        migration.contains(".aibox-home/.config/zellij/config.kdl")
+            || migration.contains(".aibox-home/.vim/vimrc")
     );
 }
 

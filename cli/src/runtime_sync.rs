@@ -223,7 +223,7 @@ fn write_migration_document(
 
     let now = chrono::Utc::now();
     let now_iso = now.format("%Y-%m-%dT%H:%M:%SZ").to_string();
-    let id = format!("MIG-{}", now.format("%Y%m%dT%H%M%S"));
+    let id = format!("MIG-RUNTIME-{}", now.format("%Y%m%dT%H%M%S"));
     let out_path = pending_dir.join(format!("{}.md", id));
 
     let mut affected_groups = BTreeSet::new();
