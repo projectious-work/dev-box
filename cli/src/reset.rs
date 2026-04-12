@@ -22,6 +22,9 @@ const MANAGED_ITEMS: &[(&str, bool)] = &[
     // ── Core aibox files ────────────────────────────────────────────────
     ("aibox.toml", true),
     ("aibox.lock", true),
+    // Backup the full .devcontainer tree so repo-local files survive reset.
+    // Deletion remains selective via the file-level entries below.
+    (".devcontainer", false),
     (".devcontainer/Dockerfile", true),
     (".devcontainer/docker-compose.yml", true),
     (".devcontainer/devcontainer.json", true),
@@ -728,10 +731,7 @@ name = "test-project"
         assert_backup(".devcontainer/devcontainer.json", "\"name\": \"test\"");
         assert_backup(".devcontainer/Dockerfile.local", "local-user-layer");
         assert_backup(".devcontainer/docker-compose.override.yml", "postgres:16");
-        assert!(
-            !backup_dir.join(".devcontainer/local-secrets.txt").exists(),
-            "backup should not copy arbitrary local .devcontainer files"
-        );
+        assert_backup(".devcontainer/local-secrets.txt", "super-secret");
         assert_backup(".aibox-home/.config/yazi/keymap.toml", "user tweak");
         assert_backup("context/DECISIONS.md", "user note");
         assert_backup("CLAUDE.md", "user note");
