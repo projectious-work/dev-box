@@ -355,10 +355,12 @@ RUN chown -R aibox:aibox /home/aibox
 # ── Entrypoint for UID/GID remapping ───────────────────────────────────────
 COPY --chmod=755 config/entrypoint.sh /usr/local/bin/entrypoint.sh
 
-# ── Ensure user-local bin is on PATH ────────────────────────────────────────
-# AI coding agents (Claude, Aider, etc.) are installed per-project via addons,
-# not baked into the base image — see DEC-016.
-ENV PATH="/home/aibox/.local/bin:${PATH}"
+# ── Tool install locations ───────────────────────────────────────────────────
+# Addon-provided executables should land in canonical system locations.
+# Keep user-local bin on PATH as a convenience for ad-hoc installs, but do not
+# rely on it for scaffolded tools.
+ENV UV_TOOL_BIN_DIR="/usr/local/bin" \
+    PATH="/home/aibox/.local/bin:${PATH}"
 
 # ── Entrypoint ────────────────────────────────────────────────────────────────
 # Root so the entrypoint can remap UID/GID if needed before dropping to aibox

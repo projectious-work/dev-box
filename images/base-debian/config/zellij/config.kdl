@@ -38,6 +38,9 @@ pane_frames true
 //
 // Quick reference:
 //   Alt+h/j/k/l          Navigate panes (no leader needed; shown in status bar)
+//   Alt+p               Toggle scratch notepad
+//   Alt+[/]             Previous/next tab
+//   Alt+1-5             Jump to tab (see top tab bar for names per layout)
 //   Ctrl+g → h/j/k/l    Navigate panes (leader variant)
 //   Ctrl+g → n           New pane
 //   Ctrl+g → d           Split down
@@ -72,6 +75,14 @@ keybinds clear-defaults=true {
         bind "Alt j" { MoveFocus "Down"; }
         bind "Alt k" { MoveFocus "Up"; }
         bind "Alt l" { MoveFocus "Right"; }
+        bind "Alt p" { ToggleFloatingPanes; }
+        bind "Alt [" { GoToPreviousTab; }
+        bind "Alt ]" { GoToNextTab; }
+        bind "Alt 1" { GoToTab 1; }
+        bind "Alt 2" { GoToTab 2; }
+        bind "Alt 3" { GoToTab 3; }
+        bind "Alt 4" { GoToTab 4; }
+        bind "Alt 5" { GoToTab 5; }
     }
 
     // ── Shared — Ctrl+q always quits (fallback for terminals that catch Ctrl+q)

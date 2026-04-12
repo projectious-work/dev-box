@@ -24,7 +24,7 @@ layout {
         }
     }
 
-    tab name="files" focus=true {
+    tab name="files" focus=true hide_floating_panes=true {
         pane name="yazi" {
             command "bash"
             args "-c" "AIBOX_EDITOR_DIR=tab exec yazi"
@@ -32,7 +32,7 @@ layout {
         }
     }
 
-    tab name="editor" {
+    tab name="editor" hide_floating_panes=true {
         pane name="vim" {
             command "bash"
             args "-c" "AIBOX_EDITOR_DIR=tab exec vim-loop"
@@ -40,21 +40,21 @@ layout {
         }
     }
 
-    tab name="claude" {
+    tab name="claude" hide_floating_panes=true {
         pane name="claude" {
             command "claude"
             cwd "/workspace"
         }
     }
 
-    tab name="git" {
+    tab name="git" hide_floating_panes=true {
         pane name="lazygit" {
             command "lazygit"
             cwd "/workspace"
         }
     }
 
-    tab name="shell" {
+    tab name="shell" hide_floating_panes=true {
         pane name="bash" {
             command "bash"
             cwd "/workspace"

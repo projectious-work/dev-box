@@ -875,6 +875,15 @@ mod tests {
     }
 
     #[test]
+    fn base_image_routes_uv_tool_bins_to_usr_local_bin() {
+        let content = include_str!("../../images/base-debian/Dockerfile");
+        assert!(
+            content.contains("UV_TOOL_BIN_DIR=\"/usr/local/bin\""),
+            "base image should route uv tool executables to /usr/local/bin"
+        );
+    }
+
+    #[test]
     fn compose_includes_aider_volume() {
         let dir = tempfile::tempdir().unwrap();
         let mut config = make_config(&[], false);

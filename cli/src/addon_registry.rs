@@ -270,6 +270,10 @@ mod tests {
         );
         assert!(cmds.contains("gcc"), "missing gcc install in:\n{cmds}");
         assert!(
+            cmds.contains("/usr/local/bin/"),
+            "missing canonical bin links in:\n{cmds}"
+        );
+        assert!(
             cmds.contains("x86_64-unknown-linux-gnu"),
             "missing x86_64 target add in:\n{cmds}"
         );

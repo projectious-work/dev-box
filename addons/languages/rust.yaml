@@ -52,6 +52,11 @@ builder: |
 
   RUN cargo install cargo-audit
 
+  RUN install -d /usr/local/bin && \
+      for bin in /home/aibox/.cargo/bin/*; do \
+        ln -sf "$bin" "/usr/local/bin/$(basename "$bin")"; \
+      done
+
   # Pre-install the x86_64 cross-compilation target in the builder where
   # rustup can freely download components (no directory or permission issues).
   RUN rustup target add x86_64-unknown-linux-gnu
@@ -64,7 +69,10 @@ runtime: |
   # COPY runs as root, so fix ownership before switching to the aibox user.
   RUN chown -R aibox:aibox /home/aibox/.cargo /home/aibox/.rustup
 
-  ENV PATH="/home/aibox/.cargo/bin:${PATH}"
+  RUN install -d /usr/local/bin && \
+      for bin in /home/aibox/.cargo/bin/*; do \
+        ln -sf "$bin" "/usr/local/bin/$(basename "$bin")"; \
+      done
 
   # The builder stage has build-essential, but only the toolchain is copied to
   # the runtime image. Without a C linker, `cargo build` and `cargo test` fail.

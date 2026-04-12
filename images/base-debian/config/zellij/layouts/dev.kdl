@@ -33,7 +33,7 @@ layout {
         }
     }
 
-    tab name="dev" focus=true {
+    tab name="dev" focus=true hide_floating_panes=true {
         pane split_direction="vertical" {
             pane size="40%" name="files" focus=true {
                 command "yazi"
@@ -46,21 +46,21 @@ layout {
         }
     }
 
-    tab name="claude" {
+    tab name="claude" hide_floating_panes=true {
         pane name="claude" {
             command "claude"
             cwd "/workspace"
         }
     }
 
-    tab name="git" {
+    tab name="git" hide_floating_panes=true {
         pane name="lazygit" {
             command "lazygit"
             cwd "/workspace"
         }
     }
 
-    tab name="shell" {
+    tab name="shell" hide_floating_panes=true {
         pane name="bash" {
             command "bash"
             cwd "/workspace"

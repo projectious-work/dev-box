@@ -55,4 +55,3 @@ runtime: |
   RUN pip3 install --no-cache-dir 'pdm~={{ tools.pdm.version }}.0'
   {% endif %}
 
-  ENV PATH="/home/aibox/.local/bin:${PATH}"

@@ -115,7 +115,10 @@ pane_frames true
 
 // Leader: Ctrl+g (press Ctrl+g, release, then press the action key)
 // Quick reference:
-//   Alt+h/j/k/l          Navigate panes (no leader needed; always shown in status bar)
+//   Alt+h/j/k/l          Navigate panes (no leader needed; shown in status bar)
+//   Alt+p               Toggle scratch notepad
+//   Alt+[/]             Previous/next tab
+//   Alt+1-5             Jump to tab (see top tab bar for names per layout)
 //   Ctrl+g → h/j/k/l    Navigate panes (leader variant)
 //   Ctrl+g → n/d/r       New pane / split down / split right
 //   Ctrl+g → x           Close pane
@@ -140,6 +143,14 @@ keybinds clear-defaults=true {
         bind "Alt j" { MoveFocus "Down"; }
         bind "Alt k" { MoveFocus "Up"; }
         bind "Alt l" { MoveFocus "Right"; }
+        bind "Alt p" { ToggleFloatingPanes; }
+        bind "Alt [" { GoToPreviousTab; }
+        bind "Alt ]" { GoToNextTab; }
+        bind "Alt 1" { GoToTab 1; }
+        bind "Alt 2" { GoToTab 2; }
+        bind "Alt 3" { GoToTab 3; }
+        bind "Alt 4" { GoToTab 4; }
+        bind "Alt 5" { GoToTab 5; }
     }
     tmux {
         bind "Ctrl g" { SwitchToMode "Normal"; }
@@ -293,32 +304,10 @@ fn generate_dev_layout(providers: &[crate::config::AiProvider]) -> String {
             }}
         }}
         pane size=1 borderless=true {{
-            // zjstatus: per-mode key hints. URL version must match Zellij API — see
-            // https://github.com/dj95/zjstatus/releases for the compatible release.
-            plugin location="https://github.com/dj95/zjstatus/releases/download/v0.21.0/zjstatus.wasm" {{
-                format_left  "{{mode}}"
-                format_right ""
-                format_space ""
-                hide_frame_for_single_pane "false"
-
-                mode_normal       "#[bg=#5e81ac,fg=#2e3440,bold] NORMAL #[bg=default,fg=#7b88a1]  ^g LEADER · g→q QUIT · g→n/d/r PANE · g→t/w TAB · Alt+h/j/k/l FOCUS"
-                mode_tmux         "#[bg=#ebcb8b,fg=#2e3440,bold] LEADER #[bg=default,fg=#7b88a1]  h/j/k/l FOCUS · n/d/r PANE · t/w TAB · [/] PREV/NEXT TAB · ,/. PREV/NEXT STACK · x CLOSE · q QUIT · Esc CANCEL"
-                mode_scroll       "#[bg=#d08770,fg=#2e3440,bold] SCROLL #[bg=default,fg=#7b88a1]  j/k SCROLL · d/u HALF · f/b PAGE · g/G TOP/BTM · / SEARCH · ^g EXIT"
-                mode_enter_search "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  Type to search… Enter CONFIRM · Esc CANCEL"
-                mode_search       "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  n/N NEXT/PREV · c CASE · w WRAP · ^g EXIT"
-                mode_locked       "#[bg=#bf616a,fg=#eceff4,bold] LOCKED #[bg=default,fg=#7b88a1]  ^g UNLOCK"
-                mode_pane         "#[bg=#a3be8c,fg=#2e3440,bold] PANE   #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_tab          "#[bg=#b48ead,fg=#2e3440,bold] TAB    #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_resize       "#[bg=#a3be8c,fg=#2e3440,bold] RESIZE #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_move         "#[bg=#a3be8c,fg=#2e3440,bold] MOVE   #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_session      "#[bg=#b48ead,fg=#2e3440,bold] SESSION #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_rename_tab   "#[bg=#b48ead,fg=#2e3440,bold] RENAME TAB #[bg=default,fg=#7b88a1]  Enter CONFIRM · Esc CANCEL"
-                mode_rename_pane  "#[bg=#b48ead,fg=#2e3440,bold] RENAME PANE #[bg=default,fg=#7b88a1]  Enter CONFIRM · Esc CANCEL"
-                mode_prompt       "#[bg=#81a1c1,fg=#2e3440,bold] PROMPT #[bg=default,fg=#7b88a1]  ^g EXIT"
-            }}
+            plugin location="zellij:status-bar"
         }}
     }}
-    tab name="dev" focus=true {{
+    tab name="dev" focus=true hide_floating_panes=true {{
         pane split_direction="vertical" {{
             pane size="40%" name="files" focus=true {{
                 command "yazi"
@@ -330,13 +319,13 @@ fn generate_dev_layout(providers: &[crate::config::AiProvider]) -> String {
             }}
         }}
     }}{ai_section}
-    tab name="git" {{
+    tab name="git" hide_floating_panes=true {{
         pane name="lazygit" {{
             command "lazygit"
             cwd "/workspace"
         }}
     }}
-    tab name="shell" {{
+    tab name="shell" hide_floating_panes=true {{
         pane name="bash" {{
             command "bash"
             cwd "/workspace"
@@ -368,52 +357,30 @@ fn generate_focus_layout(providers: &[crate::config::AiProvider]) -> String {
             }}
         }}
         pane size=1 borderless=true {{
-            // zjstatus: per-mode key hints. URL version must match Zellij API — see
-            // https://github.com/dj95/zjstatus/releases for the compatible release.
-            plugin location="https://github.com/dj95/zjstatus/releases/download/v0.21.0/zjstatus.wasm" {{
-                format_left  "{{mode}}"
-                format_right ""
-                format_space ""
-                hide_frame_for_single_pane "false"
-
-                mode_normal       "#[bg=#5e81ac,fg=#2e3440,bold] NORMAL #[bg=default,fg=#7b88a1]  ^g LEADER · g→q QUIT · g→n/d/r PANE · g→t/w TAB · Alt+h/j/k/l FOCUS"
-                mode_tmux         "#[bg=#ebcb8b,fg=#2e3440,bold] LEADER #[bg=default,fg=#7b88a1]  h/j/k/l FOCUS · n/d/r PANE · t/w TAB · [/] PREV/NEXT TAB · ,/. PREV/NEXT STACK · x CLOSE · q QUIT · Esc CANCEL"
-                mode_scroll       "#[bg=#d08770,fg=#2e3440,bold] SCROLL #[bg=default,fg=#7b88a1]  j/k SCROLL · d/u HALF · f/b PAGE · g/G TOP/BTM · / SEARCH · ^g EXIT"
-                mode_enter_search "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  Type to search… Enter CONFIRM · Esc CANCEL"
-                mode_search       "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  n/N NEXT/PREV · c CASE · w WRAP · ^g EXIT"
-                mode_locked       "#[bg=#bf616a,fg=#eceff4,bold] LOCKED #[bg=default,fg=#7b88a1]  ^g UNLOCK"
-                mode_pane         "#[bg=#a3be8c,fg=#2e3440,bold] PANE   #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_tab          "#[bg=#b48ead,fg=#2e3440,bold] TAB    #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_resize       "#[bg=#a3be8c,fg=#2e3440,bold] RESIZE #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_move         "#[bg=#a3be8c,fg=#2e3440,bold] MOVE   #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_session      "#[bg=#b48ead,fg=#2e3440,bold] SESSION #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_rename_tab   "#[bg=#b48ead,fg=#2e3440,bold] RENAME TAB #[bg=default,fg=#7b88a1]  Enter CONFIRM · Esc CANCEL"
-                mode_rename_pane  "#[bg=#b48ead,fg=#2e3440,bold] RENAME PANE #[bg=default,fg=#7b88a1]  Enter CONFIRM · Esc CANCEL"
-                mode_prompt       "#[bg=#81a1c1,fg=#2e3440,bold] PROMPT #[bg=default,fg=#7b88a1]  ^g EXIT"
-            }}
+            plugin location="zellij:status-bar"
         }}
     }}
-    tab name="files" focus=true {{
+    tab name="files" focus=true hide_floating_panes=true {{
         pane name="yazi" {{
             command "bash"
             args "-c" "AIBOX_EDITOR_DIR=tab exec yazi"
             cwd "/workspace"
         }}
     }}
-    tab name="editor" {{
+    tab name="editor" hide_floating_panes=true {{
         pane name="vim" {{
             command "bash"
             args "-c" "AIBOX_EDITOR_DIR=tab exec vim-loop"
             cwd "/workspace"
         }}
     }}{ai_section}
-    tab name="git" {{
+    tab name="git" hide_floating_panes=true {{
         pane name="lazygit" {{
             command "lazygit"
             cwd "/workspace"
         }}
     }}
-    tab name="shell" {{
+    tab name="shell" hide_floating_panes=true {{
         pane name="bash" {{
             command "bash"
             cwd "/workspace"
@@ -441,32 +408,10 @@ fn generate_cowork_layout(providers: &[crate::config::AiProvider]) -> String {
             }
         }
         pane size=1 borderless=true {
-            // zjstatus: per-mode key hints. URL version must match Zellij API — see
-            // https://github.com/dj95/zjstatus/releases for the compatible release.
-            plugin location="https://github.com/dj95/zjstatus/releases/download/v0.21.0/zjstatus.wasm" {
-                format_left  "{mode}"
-                format_right ""
-                format_space ""
-                hide_frame_for_single_pane "false"
-
-                mode_normal       "#[bg=#5e81ac,fg=#2e3440,bold] NORMAL #[bg=default,fg=#7b88a1]  ^g LEADER · g→q QUIT · g→n/d/r PANE · g→t/w TAB · Alt+h/j/k/l FOCUS"
-                mode_tmux         "#[bg=#ebcb8b,fg=#2e3440,bold] LEADER #[bg=default,fg=#7b88a1]  h/j/k/l FOCUS · n/d/r PANE · t/w TAB · [/] PREV/NEXT TAB · ,/. PREV/NEXT STACK · x CLOSE · q QUIT · Esc CANCEL"
-                mode_scroll       "#[bg=#d08770,fg=#2e3440,bold] SCROLL #[bg=default,fg=#7b88a1]  j/k SCROLL · d/u HALF · f/b PAGE · g/G TOP/BTM · / SEARCH · ^g EXIT"
-                mode_enter_search "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  Type to search… Enter CONFIRM · Esc CANCEL"
-                mode_search       "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  n/N NEXT/PREV · c CASE · w WRAP · ^g EXIT"
-                mode_locked       "#[bg=#bf616a,fg=#eceff4,bold] LOCKED #[bg=default,fg=#7b88a1]  ^g UNLOCK"
-                mode_pane         "#[bg=#a3be8c,fg=#2e3440,bold] PANE   #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_tab          "#[bg=#b48ead,fg=#2e3440,bold] TAB    #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_resize       "#[bg=#a3be8c,fg=#2e3440,bold] RESIZE #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_move         "#[bg=#a3be8c,fg=#2e3440,bold] MOVE   #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_session      "#[bg=#b48ead,fg=#2e3440,bold] SESSION #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_rename_tab   "#[bg=#b48ead,fg=#2e3440,bold] RENAME TAB #[bg=default,fg=#7b88a1]  Enter CONFIRM · Esc CANCEL"
-                mode_rename_pane  "#[bg=#b48ead,fg=#2e3440,bold] RENAME PANE #[bg=default,fg=#7b88a1]  Enter CONFIRM · Esc CANCEL"
-                mode_prompt       "#[bg=#81a1c1,fg=#2e3440,bold] PROMPT #[bg=default,fg=#7b88a1]  ^g EXIT"
-            }
+            plugin location="zellij:status-bar"
         }
     }
-    tab name="cowork" focus=true {
+    tab name="cowork" focus=true hide_floating_panes=true {
         pane split_direction="vertical" {
             pane size="40%" name="files" focus=true {
                 command "bash"
@@ -480,13 +425,13 @@ fn generate_cowork_layout(providers: &[crate::config::AiProvider]) -> String {
             }
         }
     }
-    tab name="git" {
+    tab name="git" hide_floating_panes=true {
         pane name="lazygit" {
             command "lazygit"
             cwd "/workspace"
         }
     }
-    tab name="shell" {
+    tab name="shell" hide_floating_panes=true {
         pane name="bash" {
             command "bash"
             cwd "/workspace"
@@ -509,32 +454,10 @@ fn generate_cowork_layout(providers: &[crate::config::AiProvider]) -> String {
             }}
         }}
         pane size=1 borderless=true {{
-            // zjstatus: per-mode key hints. URL version must match Zellij API — see
-            // https://github.com/dj95/zjstatus/releases for the compatible release.
-            plugin location="https://github.com/dj95/zjstatus/releases/download/v0.21.0/zjstatus.wasm" {{
-                format_left  "{{mode}}"
-                format_right ""
-                format_space ""
-                hide_frame_for_single_pane "false"
-
-                mode_normal       "#[bg=#5e81ac,fg=#2e3440,bold] NORMAL #[bg=default,fg=#7b88a1]  ^g LEADER · g→q QUIT · g→n/d/r PANE · g→t/w TAB · Alt+h/j/k/l FOCUS"
-                mode_tmux         "#[bg=#ebcb8b,fg=#2e3440,bold] LEADER #[bg=default,fg=#7b88a1]  h/j/k/l FOCUS · n/d/r PANE · t/w TAB · [/] PREV/NEXT TAB · ,/. PREV/NEXT STACK · x CLOSE · q QUIT · Esc CANCEL"
-                mode_scroll       "#[bg=#d08770,fg=#2e3440,bold] SCROLL #[bg=default,fg=#7b88a1]  j/k SCROLL · d/u HALF · f/b PAGE · g/G TOP/BTM · / SEARCH · ^g EXIT"
-                mode_enter_search "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  Type to search… Enter CONFIRM · Esc CANCEL"
-                mode_search       "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  n/N NEXT/PREV · c CASE · w WRAP · ^g EXIT"
-                mode_locked       "#[bg=#bf616a,fg=#eceff4,bold] LOCKED #[bg=default,fg=#7b88a1]  ^g UNLOCK"
-                mode_pane         "#[bg=#a3be8c,fg=#2e3440,bold] PANE   #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_tab          "#[bg=#b48ead,fg=#2e3440,bold] TAB    #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_resize       "#[bg=#a3be8c,fg=#2e3440,bold] RESIZE #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_move         "#[bg=#a3be8c,fg=#2e3440,bold] MOVE   #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_session      "#[bg=#b48ead,fg=#2e3440,bold] SESSION #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_rename_tab   "#[bg=#b48ead,fg=#2e3440,bold] RENAME TAB #[bg=default,fg=#7b88a1]  Enter CONFIRM · Esc CANCEL"
-                mode_rename_pane  "#[bg=#b48ead,fg=#2e3440,bold] RENAME PANE #[bg=default,fg=#7b88a1]  Enter CONFIRM · Esc CANCEL"
-                mode_prompt       "#[bg=#81a1c1,fg=#2e3440,bold] PROMPT #[bg=default,fg=#7b88a1]  ^g EXIT"
-            }}
+            plugin location="zellij:status-bar"
         }}
     }}
-    tab name="cowork" focus=true {{
+    tab name="cowork" focus=true hide_floating_panes=true {{
         pane split_direction="vertical" {{
             pane size="50%" split_direction="horizontal" {{
                 pane size="40%" name="files" focus=true {{
@@ -553,13 +476,13 @@ fn generate_cowork_layout(providers: &[crate::config::AiProvider]) -> String {
             }}
         }}
     }}
-    tab name="git" {{
+    tab name="git" hide_floating_panes=true {{
         pane name="lazygit" {{
             command "lazygit"
             cwd "/workspace"
         }}
     }}
-    tab name="shell" {{
+    tab name="shell" hide_floating_panes=true {{
         pane name="bash" {{
             command "bash"
             cwd "/workspace"
@@ -611,32 +534,10 @@ fn generate_cowork_swap_layout(providers: &[crate::config::AiProvider]) -> Strin
             }
         }
         pane size=1 borderless=true {
-            // zjstatus: per-mode key hints. URL version must match Zellij API — see
-            // https://github.com/dj95/zjstatus/releases for the compatible release.
-            plugin location="https://github.com/dj95/zjstatus/releases/download/v0.21.0/zjstatus.wasm" {
-                format_left  "{mode}"
-                format_right ""
-                format_space ""
-                hide_frame_for_single_pane "false"
-
-                mode_normal       "#[bg=#5e81ac,fg=#2e3440,bold] NORMAL #[bg=default,fg=#7b88a1]  ^g LEADER · g→q QUIT · g→n/d/r PANE · g→t/w TAB · Alt+h/j/k/l FOCUS"
-                mode_tmux         "#[bg=#ebcb8b,fg=#2e3440,bold] LEADER #[bg=default,fg=#7b88a1]  h/j/k/l FOCUS · n/d/r PANE · t/w TAB · [/] PREV/NEXT TAB · ,/. PREV/NEXT STACK · x CLOSE · q QUIT · Esc CANCEL"
-                mode_scroll       "#[bg=#d08770,fg=#2e3440,bold] SCROLL #[bg=default,fg=#7b88a1]  j/k SCROLL · d/u HALF · f/b PAGE · g/G TOP/BTM · / SEARCH · ^g EXIT"
-                mode_enter_search "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  Type to search… Enter CONFIRM · Esc CANCEL"
-                mode_search       "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  n/N NEXT/PREV · c CASE · w WRAP · ^g EXIT"
-                mode_locked       "#[bg=#bf616a,fg=#eceff4,bold] LOCKED #[bg=default,fg=#7b88a1]  ^g UNLOCK"
-                mode_pane         "#[bg=#a3be8c,fg=#2e3440,bold] PANE   #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_tab          "#[bg=#b48ead,fg=#2e3440,bold] TAB    #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_resize       "#[bg=#a3be8c,fg=#2e3440,bold] RESIZE #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_move         "#[bg=#a3be8c,fg=#2e3440,bold] MOVE   #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_session      "#[bg=#b48ead,fg=#2e3440,bold] SESSION #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_rename_tab   "#[bg=#b48ead,fg=#2e3440,bold] RENAME TAB #[bg=default,fg=#7b88a1]  Enter CONFIRM · Esc CANCEL"
-                mode_rename_pane  "#[bg=#b48ead,fg=#2e3440,bold] RENAME PANE #[bg=default,fg=#7b88a1]  Enter CONFIRM · Esc CANCEL"
-                mode_prompt       "#[bg=#81a1c1,fg=#2e3440,bold] PROMPT #[bg=default,fg=#7b88a1]  ^g EXIT"
-            }
+            plugin location="zellij:status-bar"
         }
     }
-    tab name="cowork-swap" focus=true {
+    tab name="cowork-swap" focus=true hide_floating_panes=true {
         pane split_direction="vertical" {
             pane size="40%" name="files" focus=true {
                 command "yazi"
@@ -648,13 +549,13 @@ fn generate_cowork_swap_layout(providers: &[crate::config::AiProvider]) -> Strin
             }
         }
     }
-    tab name="git" {
+    tab name="git" hide_floating_panes=true {
         pane name="lazygit" {
             command "lazygit"
             cwd "/workspace"
         }
     }
-    tab name="shell" {
+    tab name="shell" hide_floating_panes=true {
         pane name="bash" {
             command "bash"
             cwd "/workspace"
@@ -677,32 +578,10 @@ fn generate_cowork_swap_layout(providers: &[crate::config::AiProvider]) -> Strin
             }}
         }}
         pane size=1 borderless=true {{
-            // zjstatus: per-mode key hints. URL version must match Zellij API — see
-            // https://github.com/dj95/zjstatus/releases for the compatible release.
-            plugin location="https://github.com/dj95/zjstatus/releases/download/v0.21.0/zjstatus.wasm" {{
-                format_left  "{{mode}}"
-                format_right ""
-                format_space ""
-                hide_frame_for_single_pane "false"
-
-                mode_normal       "#[bg=#5e81ac,fg=#2e3440,bold] NORMAL #[bg=default,fg=#7b88a1]  ^g LEADER · g→q QUIT · g→n/d/r PANE · g→t/w TAB · Alt+h/j/k/l FOCUS"
-                mode_tmux         "#[bg=#ebcb8b,fg=#2e3440,bold] LEADER #[bg=default,fg=#7b88a1]  h/j/k/l FOCUS · n/d/r PANE · t/w TAB · [/] PREV/NEXT TAB · ,/. PREV/NEXT STACK · x CLOSE · q QUIT · Esc CANCEL"
-                mode_scroll       "#[bg=#d08770,fg=#2e3440,bold] SCROLL #[bg=default,fg=#7b88a1]  j/k SCROLL · d/u HALF · f/b PAGE · g/G TOP/BTM · / SEARCH · ^g EXIT"
-                mode_enter_search "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  Type to search… Enter CONFIRM · Esc CANCEL"
-                mode_search       "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  n/N NEXT/PREV · c CASE · w WRAP · ^g EXIT"
-                mode_locked       "#[bg=#bf616a,fg=#eceff4,bold] LOCKED #[bg=default,fg=#7b88a1]  ^g UNLOCK"
-                mode_pane         "#[bg=#a3be8c,fg=#2e3440,bold] PANE   #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_tab          "#[bg=#b48ead,fg=#2e3440,bold] TAB    #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_resize       "#[bg=#a3be8c,fg=#2e3440,bold] RESIZE #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_move         "#[bg=#a3be8c,fg=#2e3440,bold] MOVE   #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_session      "#[bg=#b48ead,fg=#2e3440,bold] SESSION #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_rename_tab   "#[bg=#b48ead,fg=#2e3440,bold] RENAME TAB #[bg=default,fg=#7b88a1]  Enter CONFIRM · Esc CANCEL"
-                mode_rename_pane  "#[bg=#b48ead,fg=#2e3440,bold] RENAME PANE #[bg=default,fg=#7b88a1]  Enter CONFIRM · Esc CANCEL"
-                mode_prompt       "#[bg=#81a1c1,fg=#2e3440,bold] PROMPT #[bg=default,fg=#7b88a1]  ^g EXIT"
-            }}
+            plugin location="zellij:status-bar"
         }}
     }}
-    tab name="cowork-swap" focus=true {{
+    tab name="cowork-swap" focus=true hide_floating_panes=true {{
         pane split_direction="vertical" {{
             pane size="40%" split_direction="horizontal" {{
                 pane size="40%" name="files" focus=true {{
@@ -719,13 +598,13 @@ fn generate_cowork_swap_layout(providers: &[crate::config::AiProvider]) -> Strin
             }}
         }}
     }}
-    tab name="git" {{
+    tab name="git" hide_floating_panes=true {{
         pane name="lazygit" {{
             command "lazygit"
             cwd "/workspace"
         }}
     }}
-    tab name="shell" {{
+    tab name="shell" hide_floating_panes=true {{
         pane name="bash" {{
             command "bash"
             cwd "/workspace"
@@ -762,52 +641,30 @@ fn generate_ai_layout(providers: &[crate::config::AiProvider]) -> String {
             }
         }
         pane size=1 borderless=true {
-            // zjstatus: per-mode key hints. URL version must match Zellij API — see
-            // https://github.com/dj95/zjstatus/releases for the compatible release.
-            plugin location="https://github.com/dj95/zjstatus/releases/download/v0.21.0/zjstatus.wasm" {
-                format_left  "{mode}"
-                format_right ""
-                format_space ""
-                hide_frame_for_single_pane "false"
-
-                mode_normal       "#[bg=#5e81ac,fg=#2e3440,bold] NORMAL #[bg=default,fg=#7b88a1]  ^g LEADER · g→q QUIT · g→n/d/r PANE · g→t/w TAB · Alt+h/j/k/l FOCUS"
-                mode_tmux         "#[bg=#ebcb8b,fg=#2e3440,bold] LEADER #[bg=default,fg=#7b88a1]  h/j/k/l FOCUS · n/d/r PANE · t/w TAB · [/] PREV/NEXT TAB · ,/. PREV/NEXT STACK · x CLOSE · q QUIT · Esc CANCEL"
-                mode_scroll       "#[bg=#d08770,fg=#2e3440,bold] SCROLL #[bg=default,fg=#7b88a1]  j/k SCROLL · d/u HALF · f/b PAGE · g/G TOP/BTM · / SEARCH · ^g EXIT"
-                mode_enter_search "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  Type to search… Enter CONFIRM · Esc CANCEL"
-                mode_search       "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  n/N NEXT/PREV · c CASE · w WRAP · ^g EXIT"
-                mode_locked       "#[bg=#bf616a,fg=#eceff4,bold] LOCKED #[bg=default,fg=#7b88a1]  ^g UNLOCK"
-                mode_pane         "#[bg=#a3be8c,fg=#2e3440,bold] PANE   #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_tab          "#[bg=#b48ead,fg=#2e3440,bold] TAB    #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_resize       "#[bg=#a3be8c,fg=#2e3440,bold] RESIZE #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_move         "#[bg=#a3be8c,fg=#2e3440,bold] MOVE   #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_session      "#[bg=#b48ead,fg=#2e3440,bold] SESSION #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_rename_tab   "#[bg=#b48ead,fg=#2e3440,bold] RENAME TAB #[bg=default,fg=#7b88a1]  Enter CONFIRM · Esc CANCEL"
-                mode_rename_pane  "#[bg=#b48ead,fg=#2e3440,bold] RENAME PANE #[bg=default,fg=#7b88a1]  Enter CONFIRM · Esc CANCEL"
-                mode_prompt       "#[bg=#81a1c1,fg=#2e3440,bold] PROMPT #[bg=default,fg=#7b88a1]  ^g EXIT"
-            }
+            plugin location="zellij:status-bar"
         }
     }
-    tab name="ai" focus=true {
+    tab name="ai" focus=true hide_floating_panes=true {
         pane name="files" {
             command "bash"
             args "-c" "AIBOX_EDITOR_DIR=tab exec yazi"
             cwd "/workspace"
         }
     }
-    tab name="editor" {
+    tab name="editor" hide_floating_panes=true {
         pane name="vim" {
             command "bash"
             args "-c" "AIBOX_EDITOR_DIR=tab exec vim-loop"
             cwd "/workspace"
         }
     }
-    tab name="git" {
+    tab name="git" hide_floating_panes=true {
         pane name="lazygit" {
             command "lazygit"
             cwd "/workspace"
         }
     }
-    tab name="shell" {
+    tab name="shell" hide_floating_panes=true {
         pane name="bash" {
             command "bash"
             cwd "/workspace"
@@ -830,32 +687,10 @@ fn generate_ai_layout(providers: &[crate::config::AiProvider]) -> String {
             }}
         }}
         pane size=1 borderless=true {{
-            // zjstatus: per-mode key hints. URL version must match Zellij API — see
-            // https://github.com/dj95/zjstatus/releases for the compatible release.
-            plugin location="https://github.com/dj95/zjstatus/releases/download/v0.21.0/zjstatus.wasm" {{
-                format_left  "{{mode}}"
-                format_right ""
-                format_space ""
-                hide_frame_for_single_pane "false"
-
-                mode_normal       "#[bg=#5e81ac,fg=#2e3440,bold] NORMAL #[bg=default,fg=#7b88a1]  ^g LEADER · g→q QUIT · g→n/d/r PANE · g→t/w TAB · Alt+h/j/k/l FOCUS"
-                mode_tmux         "#[bg=#ebcb8b,fg=#2e3440,bold] LEADER #[bg=default,fg=#7b88a1]  h/j/k/l FOCUS · n/d/r PANE · t/w TAB · [/] PREV/NEXT TAB · ,/. PREV/NEXT STACK · x CLOSE · q QUIT · Esc CANCEL"
-                mode_scroll       "#[bg=#d08770,fg=#2e3440,bold] SCROLL #[bg=default,fg=#7b88a1]  j/k SCROLL · d/u HALF · f/b PAGE · g/G TOP/BTM · / SEARCH · ^g EXIT"
-                mode_enter_search "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  Type to search… Enter CONFIRM · Esc CANCEL"
-                mode_search       "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  n/N NEXT/PREV · c CASE · w WRAP · ^g EXIT"
-                mode_locked       "#[bg=#bf616a,fg=#eceff4,bold] LOCKED #[bg=default,fg=#7b88a1]  ^g UNLOCK"
-                mode_pane         "#[bg=#a3be8c,fg=#2e3440,bold] PANE   #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_tab          "#[bg=#b48ead,fg=#2e3440,bold] TAB    #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_resize       "#[bg=#a3be8c,fg=#2e3440,bold] RESIZE #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_move         "#[bg=#a3be8c,fg=#2e3440,bold] MOVE   #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_session      "#[bg=#b48ead,fg=#2e3440,bold] SESSION #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_rename_tab   "#[bg=#b48ead,fg=#2e3440,bold] RENAME TAB #[bg=default,fg=#7b88a1]  Enter CONFIRM · Esc CANCEL"
-                mode_rename_pane  "#[bg=#b48ead,fg=#2e3440,bold] RENAME PANE #[bg=default,fg=#7b88a1]  Enter CONFIRM · Esc CANCEL"
-                mode_prompt       "#[bg=#81a1c1,fg=#2e3440,bold] PROMPT #[bg=default,fg=#7b88a1]  ^g EXIT"
-            }}
+            plugin location="zellij:status-bar"
         }}
     }}
-    tab name="ai" focus=true {{
+    tab name="ai" focus=true hide_floating_panes=true {{
         pane split_direction="vertical" {{
             pane size="50%" name="files" focus=true {{
                 command "bash"
@@ -867,20 +702,20 @@ fn generate_ai_layout(providers: &[crate::config::AiProvider]) -> String {
             }}
         }}
     }}
-    tab name="editor" {{
+    tab name="editor" hide_floating_panes=true {{
         pane name="vim" {{
             command "bash"
             args "-c" "AIBOX_EDITOR_DIR=tab exec vim-loop"
             cwd "/workspace"
         }}
     }}
-    tab name="git" {{
+    tab name="git" hide_floating_panes=true {{
         pane name="lazygit" {{
             command "lazygit"
             cwd "/workspace"
         }}
     }}
-    tab name="shell" {{
+    tab name="shell" hide_floating_panes=true {{
         pane name="bash" {{
             command "bash"
             cwd "/workspace"
@@ -915,52 +750,30 @@ fn generate_browse_layout(providers: &[crate::config::AiProvider]) -> String {
             }
         }
         pane size=1 borderless=true {
-            // zjstatus: per-mode key hints. URL version must match Zellij API — see
-            // https://github.com/dj95/zjstatus/releases for the compatible release.
-            plugin location="https://github.com/dj95/zjstatus/releases/download/v0.21.0/zjstatus.wasm" {
-                format_left  "{mode}"
-                format_right ""
-                format_space ""
-                hide_frame_for_single_pane "false"
-
-                mode_normal       "#[bg=#5e81ac,fg=#2e3440,bold] NORMAL #[bg=default,fg=#7b88a1]  ^g LEADER · g→q QUIT · g→n/d/r PANE · g→t/w TAB · Alt+h/j/k/l FOCUS"
-                mode_tmux         "#[bg=#ebcb8b,fg=#2e3440,bold] LEADER #[bg=default,fg=#7b88a1]  h/j/k/l FOCUS · n/d/r PANE · t/w TAB · [/] PREV/NEXT TAB · ,/. PREV/NEXT STACK · x CLOSE · q QUIT · Esc CANCEL"
-                mode_scroll       "#[bg=#d08770,fg=#2e3440,bold] SCROLL #[bg=default,fg=#7b88a1]  j/k SCROLL · d/u HALF · f/b PAGE · g/G TOP/BTM · / SEARCH · ^g EXIT"
-                mode_enter_search "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  Type to search… Enter CONFIRM · Esc CANCEL"
-                mode_search       "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  n/N NEXT/PREV · c CASE · w WRAP · ^g EXIT"
-                mode_locked       "#[bg=#bf616a,fg=#eceff4,bold] LOCKED #[bg=default,fg=#7b88a1]  ^g UNLOCK"
-                mode_pane         "#[bg=#a3be8c,fg=#2e3440,bold] PANE   #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_tab          "#[bg=#b48ead,fg=#2e3440,bold] TAB    #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_resize       "#[bg=#a3be8c,fg=#2e3440,bold] RESIZE #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_move         "#[bg=#a3be8c,fg=#2e3440,bold] MOVE   #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_session      "#[bg=#b48ead,fg=#2e3440,bold] SESSION #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_rename_tab   "#[bg=#b48ead,fg=#2e3440,bold] RENAME TAB #[bg=default,fg=#7b88a1]  Enter CONFIRM · Esc CANCEL"
-                mode_rename_pane  "#[bg=#b48ead,fg=#2e3440,bold] RENAME PANE #[bg=default,fg=#7b88a1]  Enter CONFIRM · Esc CANCEL"
-                mode_prompt       "#[bg=#81a1c1,fg=#2e3440,bold] PROMPT #[bg=default,fg=#7b88a1]  ^g EXIT"
-            }
+            plugin location="zellij:status-bar"
         }
     }
-    tab name="browse" focus=true {
+    tab name="browse" focus=true hide_floating_panes=true {
         pane name="files" focus=true {
             command "bash"
             args "-c" "AIBOX_EDITOR_DIR=tab exec yazi"
             cwd "/workspace"
         }
     }
-    tab name="editor" {
+    tab name="editor" hide_floating_panes=true {
         pane name="vim" {
             command "bash"
             args "-c" "AIBOX_EDITOR_DIR=tab exec vim-loop"
             cwd "/workspace"
         }
     }
-    tab name="git" {
+    tab name="git" hide_floating_panes=true {
         pane name="lazygit" {
             command "lazygit"
             cwd "/workspace"
         }
     }
-    tab name="shell" {
+    tab name="shell" hide_floating_panes=true {
         pane name="bash" {
             command "bash"
             cwd "/workspace"
@@ -983,32 +796,10 @@ fn generate_browse_layout(providers: &[crate::config::AiProvider]) -> String {
             }}
         }}
         pane size=1 borderless=true {{
-            // zjstatus: per-mode key hints. URL version must match Zellij API — see
-            // https://github.com/dj95/zjstatus/releases for the compatible release.
-            plugin location="https://github.com/dj95/zjstatus/releases/download/v0.21.0/zjstatus.wasm" {{
-                format_left  "{{mode}}"
-                format_right ""
-                format_space ""
-                hide_frame_for_single_pane "false"
-
-                mode_normal       "#[bg=#5e81ac,fg=#2e3440,bold] NORMAL #[bg=default,fg=#7b88a1]  ^g LEADER · g→q QUIT · g→n/d/r PANE · g→t/w TAB · Alt+h/j/k/l FOCUS"
-                mode_tmux         "#[bg=#ebcb8b,fg=#2e3440,bold] LEADER #[bg=default,fg=#7b88a1]  h/j/k/l FOCUS · n/d/r PANE · t/w TAB · [/] PREV/NEXT TAB · ,/. PREV/NEXT STACK · x CLOSE · q QUIT · Esc CANCEL"
-                mode_scroll       "#[bg=#d08770,fg=#2e3440,bold] SCROLL #[bg=default,fg=#7b88a1]  j/k SCROLL · d/u HALF · f/b PAGE · g/G TOP/BTM · / SEARCH · ^g EXIT"
-                mode_enter_search "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  Type to search… Enter CONFIRM · Esc CANCEL"
-                mode_search       "#[bg=#ebcb8b,fg=#2e3440,bold] SEARCH #[bg=default,fg=#7b88a1]  n/N NEXT/PREV · c CASE · w WRAP · ^g EXIT"
-                mode_locked       "#[bg=#bf616a,fg=#eceff4,bold] LOCKED #[bg=default,fg=#7b88a1]  ^g UNLOCK"
-                mode_pane         "#[bg=#a3be8c,fg=#2e3440,bold] PANE   #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_tab          "#[bg=#b48ead,fg=#2e3440,bold] TAB    #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_resize       "#[bg=#a3be8c,fg=#2e3440,bold] RESIZE #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_move         "#[bg=#a3be8c,fg=#2e3440,bold] MOVE   #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_session      "#[bg=#b48ead,fg=#2e3440,bold] SESSION #[bg=default,fg=#7b88a1]  ^g EXIT"
-                mode_rename_tab   "#[bg=#b48ead,fg=#2e3440,bold] RENAME TAB #[bg=default,fg=#7b88a1]  Enter CONFIRM · Esc CANCEL"
-                mode_rename_pane  "#[bg=#b48ead,fg=#2e3440,bold] RENAME PANE #[bg=default,fg=#7b88a1]  Enter CONFIRM · Esc CANCEL"
-                mode_prompt       "#[bg=#81a1c1,fg=#2e3440,bold] PROMPT #[bg=default,fg=#7b88a1]  ^g EXIT"
-            }}
+            plugin location="zellij:status-bar"
         }}
     }}
-    tab name="browse" focus=true {{
+    tab name="browse" focus=true hide_floating_panes=true {{
         pane split_direction="horizontal" {{
             pane size="60%" name="files" focus=true {{
                 command "bash"
@@ -1020,20 +811,20 @@ fn generate_browse_layout(providers: &[crate::config::AiProvider]) -> String {
             }}
         }}
     }}
-    tab name="editor" {{
+    tab name="editor" hide_floating_panes=true {{
         pane name="vim" {{
             command "bash"
             args "-c" "AIBOX_EDITOR_DIR=tab exec vim-loop"
             cwd "/workspace"
         }}
     }}
-    tab name="git" {{
+    tab name="git" hide_floating_panes=true {{
         pane name="lazygit" {{
             command "lazygit"
             cwd "/workspace"
         }}
     }}
-    tab name="shell" {{
+    tab name="shell" hide_floating_panes=true {{
         pane name="bash" {{
             command "bash"
             cwd "/workspace"

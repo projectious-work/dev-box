@@ -33,7 +33,7 @@ layout {
         }
     }
 
-    tab name="cowork" focus=true {
+    tab name="cowork" focus=true hide_floating_panes=true {
         pane split_direction="vertical" {
             pane size="50%" split_direction="horizontal" {
                 pane size="40%" name="files" focus=true {
@@ -54,14 +54,14 @@ layout {
         }
     }
 
-    tab name="git" {
+    tab name="git" hide_floating_panes=true {
         pane name="lazygit" {
             command "lazygit"
             cwd "/workspace"
         }
     }
 
-    tab name="shell" {
+    tab name="shell" hide_floating_panes=true {
         pane name="bash" {
             command "bash"
             cwd "/workspace"
