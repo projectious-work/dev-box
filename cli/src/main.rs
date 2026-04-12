@@ -39,6 +39,7 @@ mod seed;
 mod sync_perimeter;
 mod themes;
 mod update;
+mod version_resolve;
 
 use clap::{CommandFactory, Parser};
 use std::path::Path;

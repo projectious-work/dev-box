@@ -1,0 +1,27 @@
+name: ai-hermes
+version: "1.0.0"
+description: "Hermes autonomous AI agent (Nous Research, multi-provider)"
+builder_weight: null
+
+tools:
+  - name: hermes
+    default_enabled: true
+    default_version: ""
+    supported_versions: []
+
+builder: null
+
+runtime: |
+  # Addon: ai-hermes
+  # Hermes Agent: https://hermes-agent.nousresearch.com
+  # Open-source autonomous agent by Nous Research with TUI, persistent memory,
+  # and self-improving skill system. Supports multiple model providers.
+  # Config: ~/.hermes/  |  Binary: hermes
+  # Auth: Set the relevant provider API key (ANTHROPIC_API_KEY, OPENAI_API_KEY, etc.)
+  USER aibox
+  {% if tools.hermes.version %}
+  RUN curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s {{ tools.hermes.version }}
+  {% else %}
+  RUN curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+  {% endif %}
+  USER root

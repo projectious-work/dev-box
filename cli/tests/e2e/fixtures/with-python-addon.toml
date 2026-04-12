@@ -8,7 +8,7 @@ name = "e2e-python"
 hostname = "e2e-python"
 
 [ai]
-providers = ["claude"]
+harnesses = ["claude"]
 
 [audio]
 enabled = false

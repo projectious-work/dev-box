@@ -8,7 +8,7 @@ name = "e2e-basic"
 hostname = "e2e-basic"
 
 [ai]
-providers = ["claude"]
+harnesses = ["claude"]
 
 [audio]
 enabled = false

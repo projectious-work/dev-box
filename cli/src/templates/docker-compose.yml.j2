@@ -36,22 +36,38 @@ services:
       - {{ host_root }}/.config/yazi:{{ container_home }}/.config/yazi
       # Git configuration
       - {{ host_root }}/.config/git:{{ container_home }}/.config/git
-{% for provider in ai_providers %}
-{% if provider == "claude" %}
+{% for harness in ai_providers %}
+{% if harness == "claude" %}
       # Claude Code configuration and memory
       - {{ host_root }}/.claude:{{ container_home }}/.claude
 {% endif %}
-{% if provider == "aider" %}
+{% if harness == "aider" %}
       # Aider configuration
       - {{ host_root }}/.aider:{{ container_home }}/.aider
 {% endif %}
-{% if provider == "gemini" %}
+{% if harness == "gemini" %}
       # Gemini CLI configuration
       - {{ host_root }}/.gemini:{{ container_home }}/.gemini
 {% endif %}
-{% if provider == "openai" %}
+{% if harness == "codex" %}
       # OpenAI Codex CLI configuration and cached login state
       - {{ host_root }}/.codex:{{ container_home }}/.codex
+{% endif %}
+{% if harness == "continue" %}
+      # Continue configuration
+      - {{ host_root }}/.continue:{{ container_home }}/.continue
+{% endif %}
+{% if harness == "copilot" %}
+      # GitHub Copilot CLI configuration
+      - {{ host_root }}/.copilot:{{ container_home }}/.copilot
+{% endif %}
+{% if harness == "opencode" %}
+      # OpenCode configuration
+      - {{ host_root }}/.opencode:{{ container_home }}/.opencode
+{% endif %}
+{% if harness == "hermes" %}
+      # Hermes agent configuration
+      - {{ host_root }}/.hermes:{{ container_home }}/.hermes
 {% endif %}
 {% endfor %}
 {% if audio_enabled %}

@@ -286,14 +286,15 @@ pub fn regenerate_mcp_configs(config: &AiboxConfig, project_root: &Path) -> Resu
     }
 
     let managed = managed_set(&specs);
-    let providers: HashSet<&AiProvider> = config.ai.providers.iter().collect();
+    let providers: HashSet<&AiProvider> = config.ai.harnesses.iter().collect();
 
-    // 1. Claude / Mistral / Copilot use the Claude-shape `mcpServers` JSON
-    //    object at `.mcp.json`. Mistral routes there so SDK consumers can
-    //    read it; Copilot CLI reads `.mcp.json` natively.
+    // 1. Claude / Copilot / OpenCode / Hermes / Mistral use the Claude-shape
+    //    `mcpServers` JSON object at `.mcp.json`.
     let writes_dot_mcp_json = providers.contains(&AiProvider::Claude)
-        || providers.contains(&AiProvider::Mistral)
-        || providers.contains(&AiProvider::Copilot);
+        || providers.contains(&AiProvider::Copilot)
+        || providers.contains(&AiProvider::OpenCode)
+        || providers.contains(&AiProvider::Hermes)
+        || providers.contains(&AiProvider::Mistral);
     if writes_dot_mcp_json {
         let path = project_root.join(".mcp.json");
         write_mcp_servers_json(&specs, &managed, &path)?;
@@ -323,7 +324,7 @@ pub fn regenerate_mcp_configs(config: &AiboxConfig, project_root: &Path) -> Resu
     }
 
     // 2. OpenAI Codex CLI — TOML translator.
-    if providers.contains(&AiProvider::OpenAI) {
+    if providers.contains(&AiProvider::Codex) {
         let path = project_root.join(".codex/config.toml");
         write_codex_config_toml(&specs, &managed, &path)?;
         output::ok(&format!(
@@ -348,10 +349,10 @@ pub fn regenerate_mcp_configs(config: &AiboxConfig, project_root: &Path) -> Resu
     //    MCP servers (the user is missing functionality).
     if providers.contains(&AiProvider::Aider) {
         output::warn(
-            "`aider` is in [ai].providers but does not have a built-in MCP client. \
+            "`aider` is in [ai].harnesses but does not have a built-in MCP client. \
              processkit's MCP-based skills (workitem-management, decision-record, …) \
              will not be available when using Aider. Consider also listing one of: \
-             claude, cursor, gemini, openai, continue, copilot, mistral.",
+             claude, cursor, gemini, codex, continue, copilot, opencode, hermes.",
         );
     }
 

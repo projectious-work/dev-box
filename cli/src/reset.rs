@@ -405,6 +405,34 @@ pub fn cmd_reset(
         output::warn(&format!("Could not clean .claude/commands/: {}", e));
     }
 
+    // Preserve auth and cache directories from .aibox-home before deletion.
+    // These contain login tokens and cached data that should survive reset.
+    let auth_preserve_dir = PathBuf::from(".aibox/.preserved-auth");
+    let auth_dirs_to_preserve: &[&str] = &[
+        ".claude", // Claude Code login state and memory
+        ".codex",  // OpenAI Codex login state
+        ".ssh",    // SSH keys
+        ".cargo/registry",
+        ".cargo/git",
+        ".aider",
+        ".gemini",
+    ];
+    let aibox_home = PathBuf::from(".aibox-home");
+    let mut preserved_any = false;
+    if aibox_home.exists() {
+        for sub in auth_dirs_to_preserve {
+            let src = aibox_home.join(sub);
+            if src.exists() {
+                let dst = auth_preserve_dir.join(sub);
+                if let Err(e) = copy_item(&src, &dst) {
+                    output::warn(&format!("Could not preserve {}: {}", src.display(), e));
+                } else {
+                    preserved_any = true;
+                }
+            }
+        }
+    }
+
     // Delete phase
     for item in &items {
         if item.will_delete {
@@ -415,9 +443,49 @@ pub fn cmd_reset(
 
     remove_dir_if_empty(Path::new(".devcontainer"))?;
 
+    // Restore preserved auth directories into .aibox-home
+    if preserved_any && auth_preserve_dir.exists() {
+        fs::create_dir_all(&aibox_home).ok();
+        for sub in auth_dirs_to_preserve {
+            let src = auth_preserve_dir.join(sub);
+            if src.exists() {
+                let dst = aibox_home.join(sub);
+                if let Err(e) = copy_item(&src, &dst) {
+                    output::warn(&format!("Could not restore {}: {}", dst.display(), e));
+                } else {
+                    output::ok(&format!("Preserved auth: {}", sub));
+                }
+            }
+        }
+        // Clean up temp preserve dir
+        let _ = fs::remove_dir_all(&auth_preserve_dir);
+    }
+
+    // Generate post-reset migration briefing if we have a backup.
+    // This gives agents a structured document to guide reconciliation
+    // between the backup (old project state) and the fresh scaffold.
+    if let Some(ref bp) = backup_path {
+        match generate_reset_migration_briefing(bp) {
+            Ok(Some(path)) => {
+                output::ok(&format!("Reset recovery migration: {}", path.display()));
+            }
+            Ok(None) => {} // no user content found in backup
+            Err(e) => {
+                output::warn(&format!(
+                    "Could not generate reset migration briefing: {}",
+                    e
+                ));
+            }
+        }
+    }
+
     output::ok("Reset complete. Project is back to pre-aibox state.");
     if let Some(bp) = &backup_path {
         output::info(&format!("Backup saved at: {}", bp.display()));
+        output::info(
+            "Run `aibox sync` to re-scaffold, then check context/migrations/pending/ \
+             for the reset recovery migration.",
+        );
     }
 
     Ok(())
@@ -539,6 +607,214 @@ fn ask_yes_no(prompt: &str, default: bool) -> Result<bool> {
     } else {
         Ok(trimmed == "y" || trimmed == "yes")
     }
+}
+
+// =============================================================================
+// Post-reset migration briefing
+// =============================================================================
+
+/// Walk a directory recursively and return relative paths (as strings).
+fn walk_dir_relative(base: &Path, current: &Path) -> Vec<String> {
+    let mut paths = Vec::new();
+    if let Ok(entries) = fs::read_dir(current) {
+        for entry in entries.flatten() {
+            let p = entry.path();
+            if p.is_dir() {
+                paths.extend(walk_dir_relative(base, &p));
+            } else if let Ok(rel) = p.strip_prefix(base) {
+                paths.push(rel.to_string_lossy().replace('\\', "/"));
+            }
+        }
+    }
+    paths
+}
+
+/// Generate a post-reset migration briefing document.
+///
+/// Scans the backup directory for user-created content (entities, custom
+/// configs, additional files) and writes a migration document to
+/// `context/migrations/pending/` that guides the agent through
+/// reconciliation after `aibox sync` re-scaffolds the project.
+fn generate_reset_migration_briefing(backup_dir: &Path) -> Result<Option<PathBuf>> {
+    let pending_dir = PathBuf::from("context/migrations/pending");
+
+    // Collect user content from the backup.
+    let mut user_entities: Vec<String> = Vec::new();
+    let mut custom_configs: Vec<String> = Vec::new();
+    let mut additional_devcontainer: Vec<String> = Vec::new();
+
+    // Scan context/ subdirectories for user-created entity files.
+    let backup_context = backup_dir.join("context");
+    let entity_dirs = [
+        "workitems",
+        "decisions",
+        "discussions",
+        "logs",
+        "actors",
+        "artifacts",
+        "notes",
+    ];
+    for dir_name in &entity_dirs {
+        let dir = backup_context.join(dir_name);
+        if dir.is_dir() {
+            for file in walk_dir_relative(&backup_context, &dir) {
+                if file.ends_with(".md") || file.ends_with(".yaml") || file.ends_with(".yml") {
+                    user_entities.push(format!("context/{}", file));
+                }
+            }
+        }
+    }
+
+    // Check for customized AGENTS.md
+    let agents_md = backup_dir.join("AGENTS.md");
+    if agents_md.is_file() {
+        custom_configs.push("AGENTS.md".to_string());
+    }
+
+    // Check for custom .devcontainer files beyond the managed set.
+    let backup_devcontainer = backup_dir.join(".devcontainer");
+    if backup_devcontainer.is_dir() {
+        let managed = [
+            "Dockerfile",
+            "docker-compose.yml",
+            "devcontainer.json",
+            "Dockerfile.local",
+            "docker-compose.override.yml",
+        ];
+        for file in walk_dir_relative(&backup_devcontainer, &backup_devcontainer) {
+            if !managed.contains(&file.as_str()) {
+                additional_devcontainer.push(format!(".devcontainer/{}", file));
+            }
+        }
+    }
+
+    // Check for skill customizations (edited SKILL.md files etc.)
+    let backup_skills = backup_context.join("skills");
+    if backup_skills.is_dir() {
+        // We'll note that skills existed; the agent should diff them.
+        custom_configs.push("context/skills/ (check for local edits)".to_string());
+    }
+
+    // If nothing interesting, skip.
+    if user_entities.is_empty() && custom_configs.is_empty() && additional_devcontainer.is_empty() {
+        return Ok(None);
+    }
+
+    // Generate the migration document.
+    fs::create_dir_all(&pending_dir)
+        .with_context(|| format!("failed to create {}", pending_dir.display()))?;
+
+    let now = chrono::Utc::now();
+    let now_iso = now.format("%Y-%m-%dT%H:%M:%SZ").to_string();
+    let id = format!("MIG-RESET-{}", now.format("%Y%m%dT%H%M%S"));
+    let out_path = pending_dir.join(format!("{}.md", id));
+
+    let total = user_entities.len() + custom_configs.len() + additional_devcontainer.len();
+
+    let mut body = String::new();
+    body.push_str("---\n");
+    body.push_str("apiVersion: processkit.projectious.work/v1\n");
+    body.push_str("kind: Migration\n");
+    body.push_str("metadata:\n");
+    body.push_str(&format!("  id: {}\n", id));
+    body.push_str(&format!("  created: {}\n", now_iso));
+    body.push_str("spec:\n");
+    body.push_str("  source: aibox-reset-recovery\n");
+    body.push_str("  source_url: aibox://reset-recovery\n");
+    body.push_str(&format!(
+        "  from_version: \"{}\"\n",
+        backup_dir
+            .file_name()
+            .map(|f| f.to_string_lossy())
+            .unwrap_or_default()
+    ));
+    body.push_str("  to_version: fresh-scaffold\n");
+    body.push_str("  state: pending\n");
+    body.push_str("  generated_by: aibox reset\n");
+    body.push_str(&format!("  generated_at: {}\n", now_iso));
+    body.push_str(&format!(
+        "  summary: \"{} items from backup to review for recovery\"\n",
+        total
+    ));
+    body.push_str("  affected_groups:\n");
+    if !user_entities.is_empty() {
+        body.push_str("    - user-entities\n");
+    }
+    if !custom_configs.is_empty() {
+        body.push_str("    - custom-configs\n");
+    }
+    if !additional_devcontainer.is_empty() {
+        body.push_str("    - additional-devcontainer\n");
+    }
+    body.push_str("---\n\n");
+    body.push_str(&format!("# Reset Recovery — {}\n\n", id));
+    body.push_str(&format!(
+        "This migration was generated after `aibox reset`. The backup at\n\
+         `{}` contains the previous project state.\n\n\
+         Review each section below and decide what to bring forward into\n\
+         the freshly scaffolded project. Use 3-way reasoning:\n\
+         - **Backup** = what the user had before reset\n\
+         - **Fresh scaffold** = what `aibox sync` just created\n\
+         - **Desired state** = merge of both, guided by user intent\n\n",
+        backup_dir.display()
+    ));
+
+    if !user_entities.is_empty() {
+        body.push_str("## User-created entities\n\n");
+        body.push_str(
+            "These entity files existed in the backup. Review each and copy\n\
+             those that are still relevant into the fresh `context/` tree.\n\n",
+        );
+        for f in &user_entities {
+            body.push_str(&format!("- `{}`\n", f));
+        }
+        body.push('\n');
+    }
+
+    if !custom_configs.is_empty() {
+        body.push_str("## Customized configuration files\n\n");
+        body.push_str(
+            "These files were customized in the backup. Diff them against\n\
+             the fresh versions and merge relevant changes.\n\n",
+        );
+        for f in &custom_configs {
+            body.push_str(&format!("- `{}`\n", f));
+        }
+        body.push('\n');
+    }
+
+    if !additional_devcontainer.is_empty() {
+        body.push_str("## Additional .devcontainer files\n\n");
+        body.push_str(
+            "These files are not managed by aibox and were in the backup.\n\
+             Copy them back if they are still needed.\n\n",
+        );
+        for f in &additional_devcontainer {
+            body.push_str(&format!("- `{}`\n", f));
+        }
+        body.push('\n');
+    }
+
+    body.push_str("## Auth state\n\n");
+    body.push_str(
+        "Login credentials and SSH keys from `.aibox-home/` were automatically\n\
+         preserved during reset (`.claude/`, `.codex/`, `.ssh/`, `.cargo/` caches).\n\
+         No manual action needed for auth.\n\n",
+    );
+
+    body.push_str("## AGENTS.md review\n\n");
+    body.push_str(
+        "After re-scaffolding with `aibox sync`, verify AGENTS.md is up to date:\n\
+         - processkit version matches `aibox.lock`\n\
+         - Configured AI harnesses/providers match `[ai]` in `aibox.toml`\n\
+         - Build / test / lint commands are still accurate\n\
+         - Project-specific notes and operational gotchas are current\n",
+    );
+
+    fs::write(&out_path, body)
+        .with_context(|| format!("failed to write {}", out_path.display()))?;
+
+    Ok(Some(out_path))
 }
 
 #[cfg(test)]

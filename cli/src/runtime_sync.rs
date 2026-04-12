@@ -83,6 +83,39 @@ pub fn run_runtime_sync(
         Vec::new()
     };
 
+    // Auto-apply ChangedUpstreamOnly files: the user hasn't touched them,
+    // so it's safe to overwrite with the new generated content (e.g. theme
+    // changed in aibox.toml). Also auto-apply NewUpstream files.
+    let generated = crate::seed::managed_runtime_files(config);
+    let generated_map: BTreeMap<String, String> = generated
+        .into_iter()
+        .map(|(p, c)| (p.to_string_lossy().replace('\\', "/"), c))
+        .collect();
+    let host_root = config.host_root_dir();
+    let mut auto_applied = 0usize;
+    for diff in &diffs {
+        if matches!(
+            diff.classification,
+            FileClassification::ChangedUpstreamOnly | FileClassification::NewUpstream
+        ) && let Some(content) = generated_map.get(&diff.rel_path)
+        {
+            let target = host_root.join(&diff.rel_path);
+            if let Some(parent) = target.parent() {
+                fs::create_dir_all(parent).ok();
+            }
+            fs::write(&target, content).with_context(|| {
+                format!("failed to auto-apply runtime file {}", target.display())
+            })?;
+            auto_applied += 1;
+        }
+    }
+    if auto_applied > 0 {
+        crate::output::ok(&format!(
+            "Auto-applied {} unchanged runtime file(s) with upstream updates",
+            auto_applied,
+        ));
+    }
+
     let summary = summarize(&diffs);
     let migration_document_path = if summary.has_user_relevant_changes() {
         write_migration_document(

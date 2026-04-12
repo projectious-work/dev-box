@@ -20,11 +20,11 @@ sep_inner = { open = "", close = "" }
 sep_outer = { open = "", close = "" }
 
 [mode]
-normal_main = { fg = "#2E3440", bg = "#A3BE8C", bold = true }
+normal_main = { fg = "#ECEFF4", bg = "#A3BE8C", bold = true }
 normal_alt = { fg = "#A3BE8C", bg = "#3B4252", bold = true }
-select_main = { fg = "#2E3440", bg = "#88C0D0", bold = true }
+select_main = { fg = "#ECEFF4", bg = "#5E81AC", bold = true }
 select_alt = { fg = "#88C0D0", bg = "#3B4252", bold = true }
-unset_main = { fg = "#2E3440", bg = "#B48EAD", bold = true }
+unset_main = { fg = "#ECEFF4", bg = "#B48EAD", bold = true }
 unset_alt = { fg = "#B48EAD", bg = "#3B4252", bold = true }
 
 [status]

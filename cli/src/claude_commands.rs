@@ -273,7 +273,7 @@ mod tests {
                 extra_volumes: vec![],
             },
             context: ContextSection::default(),
-            ai: AiSection { providers: vec![] },
+            ai: AiSection::default(),
             process: None,
             addons: AddonsSection::default(),
             skills: SkillsSection::default(),

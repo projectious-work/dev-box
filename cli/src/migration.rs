@@ -477,6 +477,14 @@ context/templates/processkit/v{effective_pk_version}/AGENTS.md`
 
 {processkit_state_section}
 
+## AGENTS.md Review
+
+After the upgrade, verify `AGENTS.md` is current:
+- [ ] processkit version reference matches `aibox.lock` (`v{effective_pk_version}`)
+- [ ] Configured AI harnesses/providers match the `[ai]` section in `aibox.toml`
+- [ ] Build / test / lint commands are still accurate
+- [ ] Project-specific notes and operational gotchas are up to date
+
 ## Verification Summary
 
 After all host actions are confirmed and agent verifications pass, mark Status as \"completed\".
@@ -962,6 +970,7 @@ mod tests {
                 synced_at: "2026-04-01T00:00:00Z".to_string(),
             },
             processkit: None,
+            addons: None,
         };
         crate::lock::write_lock(root, &lock).unwrap();
     }

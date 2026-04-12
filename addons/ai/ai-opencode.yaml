@@ -1,0 +1,27 @@
+name: ai-opencode
+version: "1.0.0"
+description: "OpenCode AI coding agent (open-source, multi-provider)"
+builder_weight: null
+
+tools:
+  - name: opencode
+    default_enabled: true
+    default_version: ""
+    supported_versions: []
+
+builder: null
+
+runtime: |
+  # Addon: ai-opencode
+  # OpenCode: https://opencode.ai  |  https://github.com/opencode-ai/opencode
+  # Go-based open-source AI coding agent with TUI. Supports 75+ models from
+  # Anthropic, OpenAI, Google, Mistral, local models, and others.
+  # Config: ~/.opencode/  |  Binary: opencode
+  # Auth: Set the relevant provider API key (ANTHROPIC_API_KEY, OPENAI_API_KEY, etc.)
+  USER aibox
+  {% if tools.opencode.version %}
+  RUN curl -fsSL https://opencode.ai/install | bash -s {{ tools.opencode.version }}
+  {% else %}
+  RUN curl -fsSL https://opencode.ai/install | bash
+  {% endif %}
+  USER root

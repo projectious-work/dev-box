@@ -152,8 +152,8 @@ fn generate_docker_compose(
         env_vars.insert("AUDIODRIVER".to_string(), "pulseaudio".to_string());
     }
 
-    // Build list of AI provider strings for template
-    let ai_providers: Vec<String> = config.ai.providers.iter().map(|p| p.to_string()).collect();
+    // Build list of AI harness strings for template
+    let ai_providers: Vec<String> = config.ai.harnesses.iter().map(|h| h.to_string()).collect();
 
     // Container home path
     let container_home = config.container_home();
@@ -269,20 +269,15 @@ fn generate_devcontainer_json(config: &AiboxConfig, dir: &Path) -> Result<bool> 
         }
     });
 
-    for provider in &config.ai.providers {
+    for provider in &config.ai.harnesses {
         // Cursor is a host-side IDE extension with no container binary.
         // All other providers have a container CLI installed by their addon.
         // Continue's binary is `cn` (not `continue`); use binary_name() for the path.
-        let (name, path) = match provider {
-            crate::config::AiProvider::Claude => ("claude", "/usr/local/bin/claude"),
-            crate::config::AiProvider::Aider => ("aider", "/usr/local/bin/aider"),
-            crate::config::AiProvider::Gemini => ("gemini", "/usr/local/bin/gemini"),
-            crate::config::AiProvider::Mistral => ("mistral", "/usr/local/bin/mistral"),
-            crate::config::AiProvider::OpenAI => ("codex", "/usr/local/bin/codex"),
-            crate::config::AiProvider::Continue => ("cn", "/usr/local/bin/cn"),
-            crate::config::AiProvider::Copilot => ("copilot", "/usr/local/bin/copilot"),
-            crate::config::AiProvider::Cursor => continue,
-        };
+        if !provider.is_active() || matches!(provider, crate::config::AiProvider::Cursor) {
+            continue;
+        }
+        let name = provider.binary_name();
+        let path = format!("/usr/local/bin/{}", name);
         terminal_profiles
             .as_object_mut()
             .unwrap()
@@ -832,7 +827,7 @@ mod tests {
     fn devcontainer_json_no_ai_terminal_profiles_when_empty() {
         let dir = tempfile::tempdir().unwrap();
         let mut config = make_config(&[], false);
-        config.ai.providers = vec![];
+        config.ai.harnesses = vec![];
         config.resolve_ai_provider_addons();
         generate_devcontainer_json(&config, dir.path()).unwrap();
         let content = fs::read_to_string(dir.path().join("devcontainer.json")).unwrap();
@@ -848,7 +843,7 @@ mod tests {
     fn devcontainer_json_aider_terminal_profile() {
         let dir = tempfile::tempdir().unwrap();
         let mut config = make_config(&[], false);
-        config.ai.providers = vec![crate::config::AiProvider::Aider];
+        config.ai.harnesses = vec![crate::config::AiProvider::Aider];
         config.resolve_ai_provider_addons();
         generate_devcontainer_json(&config, dir.path()).unwrap();
         let content = fs::read_to_string(dir.path().join("devcontainer.json")).unwrap();
@@ -863,7 +858,7 @@ mod tests {
     fn dockerfile_includes_aider_install() {
         let dir = tempfile::tempdir().unwrap();
         let mut config = make_config(&[], false);
-        config.ai.providers = vec![crate::config::AiProvider::Aider];
+        config.ai.harnesses = vec![crate::config::AiProvider::Aider];
         config.resolve_ai_provider_addons();
         generate_dockerfile(&config, dir.path(), &test_env()).unwrap();
         let content = fs::read_to_string(dir.path().join("Dockerfile")).unwrap();
@@ -878,7 +873,7 @@ mod tests {
     fn dockerfile_claude_installed_via_addon() {
         let dir = tempfile::tempdir().unwrap();
         let mut config = make_config(&[], false);
-        config.ai.providers = vec![crate::config::AiProvider::Claude];
+        config.ai.harnesses = vec![crate::config::AiProvider::Claude];
         config.resolve_ai_provider_addons();
         generate_dockerfile(&config, dir.path(), &test_env()).unwrap();
         let content = fs::read_to_string(dir.path().join("Dockerfile")).unwrap();
@@ -904,7 +899,7 @@ mod tests {
     fn compose_includes_aider_volume() {
         let dir = tempfile::tempdir().unwrap();
         let mut config = make_config(&[], false);
-        config.ai.providers = vec![crate::config::AiProvider::Aider];
+        config.ai.harnesses = vec![crate::config::AiProvider::Aider];
         config.resolve_ai_provider_addons();
         generate_docker_compose(&config, dir.path(), &test_env()).unwrap();
         let content = fs::read_to_string(dir.path().join("docker-compose.yml")).unwrap();
@@ -915,7 +910,7 @@ mod tests {
     fn compose_includes_gemini_volume() {
         let dir = tempfile::tempdir().unwrap();
         let mut config = make_config(&[], false);
-        config.ai.providers = vec![crate::config::AiProvider::Gemini];
+        config.ai.harnesses = vec![crate::config::AiProvider::Gemini];
         config.resolve_ai_provider_addons();
         generate_docker_compose(&config, dir.path(), &test_env()).unwrap();
         let content = fs::read_to_string(dir.path().join("docker-compose.yml")).unwrap();
@@ -929,7 +924,7 @@ mod tests {
     fn compose_includes_codex_volume() {
         let dir = tempfile::tempdir().unwrap();
         let mut config = make_config(&[], false);
-        config.ai.providers = vec![crate::config::AiProvider::OpenAI];
+        config.ai.harnesses = vec![crate::config::AiProvider::Codex];
         config.resolve_ai_provider_addons();
         generate_docker_compose(&config, dir.path(), &test_env()).unwrap();
         let content = fs::read_to_string(dir.path().join("docker-compose.yml")).unwrap();
@@ -944,7 +939,7 @@ mod tests {
     fn compose_no_ai_volumes_when_empty() {
         let dir = tempfile::tempdir().unwrap();
         let mut config = make_config(&[], false);
-        config.ai.providers = vec![];
+        config.ai.harnesses = vec![];
         config.resolve_ai_provider_addons();
         generate_docker_compose(&config, dir.path(), &test_env()).unwrap();
         let content = fs::read_to_string(dir.path().join("docker-compose.yml")).unwrap();

@@ -242,7 +242,7 @@ pub fn lazygit_theme(theme: &Theme) -> &'static str {
     optionsTextColor:
       - '#1E66F5'
     selectedLineBgColor:
-      - '#CCD0DA'
+      - '#ACB0BE'
     cherryPickedCommitBgColor:
       - '#BCC0CC'
     cherryPickedCommitFgColor:

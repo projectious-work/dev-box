@@ -125,7 +125,7 @@ pub(crate) fn build_substitution_map(config: &AiboxConfig) -> HashMap<&'static s
     m.insert("ADDONS", addon_names.join(", "));
 
     // 10. AI_PROVIDERS — sorted, comma-separated [ai].providers.
-    let mut providers: Vec<String> = config.ai.providers.iter().map(|p| p.to_string()).collect();
+    let mut providers: Vec<String> = config.ai.harnesses.iter().map(|p| p.to_string()).collect();
     providers.sort();
     m.insert("AI_PROVIDERS", providers.join(", "));
 
@@ -271,22 +271,11 @@ pub fn scaffold_context(config: &AiboxConfig) -> Result<()> {
 /// the project root in the same init pass.
 fn scaffold_provider_pointers(config: &AiboxConfig) -> Result<()> {
     let vars = build_substitution_map(config);
-    for provider in &config.ai.providers {
-        match provider {
-            AiProvider::Claude => {
-                let body = render(CLAUDE_POINTER_TEMPLATE, &vars);
-                write_if_missing(Path::new("CLAUDE.md"), &body)?;
-                output::ok("Created CLAUDE.md (pointer to AGENTS.md)");
-            }
-            // Other providers don't use a top-level markdown pointer file.
-            // Cursor is a host-side IDE with its own config mechanism.
-            AiProvider::Aider
-            | AiProvider::Gemini
-            | AiProvider::Mistral
-            | AiProvider::Cursor
-            | AiProvider::OpenAI
-            | AiProvider::Continue
-            | AiProvider::Copilot => {}
+    for harness in &config.ai.harnesses {
+        if *harness == AiProvider::Claude {
+            let body = render(CLAUDE_POINTER_TEMPLATE, &vars);
+            write_if_missing(Path::new("CLAUDE.md"), &body)?;
+            output::ok("Created CLAUDE.md (pointer to AGENTS.md)");
         }
     }
     Ok(())
@@ -859,7 +848,7 @@ mod tests {
         in_temp_dir(|| {
             fs::create_dir_all(crate::config::DEVCONTAINER_DIR).unwrap();
             let mut config = crate::config::test_config();
-            config.ai.providers = vec![AiProvider::Aider];
+            config.ai.harnesses = vec![AiProvider::Aider];
             scaffold_context(&config).unwrap();
             assert!(
                 !Path::new("CLAUDE.md").exists(),

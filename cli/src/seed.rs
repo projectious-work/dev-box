@@ -136,21 +136,6 @@ pane_frames true
 keybinds clear-defaults=true {
     normal {
         bind "Ctrl g" { SwitchToMode "Tmux"; }
-        // Direct pane navigation — no leader needed; always visible in status bar.
-        // Alt+Arrow keys are intentionally NOT bound here: terminal apps (bash
-        // readline, vim, Claude Code) rely on Alt+Left/Right for word navigation.
-        bind "Alt h" { MoveFocus "Left"; }
-        bind "Alt j" { MoveFocus "Down"; }
-        bind "Alt k" { MoveFocus "Up"; }
-        bind "Alt l" { MoveFocus "Right"; }
-        bind "Alt p" { ToggleFloatingPanes; }
-        bind "Alt [" { GoToPreviousTab; }
-        bind "Alt ]" { GoToNextTab; }
-        bind "Alt 1" { GoToTab 1; }
-        bind "Alt 2" { GoToTab 2; }
-        bind "Alt 3" { GoToTab 3; }
-        bind "Alt 4" { GoToTab 4; }
-        bind "Alt 5" { GoToTab 5; }
     }
     tmux {
         bind "Ctrl g" { SwitchToMode "Normal"; }
@@ -169,6 +154,7 @@ keybinds clear-defaults=true {
         bind "p"     { ToggleFloatingPanes; SwitchToMode "Normal"; }
         bind "=" { Resize "Increase"; }
         bind "-" { Resize "Decrease"; }
+        bind "R" { SwitchToMode "Resize"; }
         bind "t"     { NewTab; SwitchToMode "Normal"; }
         bind "w"     { CloseTab; SwitchToMode "Normal"; }
         bind "["     { GoToPreviousTab; SwitchToMode "Normal"; }
@@ -225,6 +211,35 @@ keybinds clear-defaults=true {
     entersearch {
         bind "Ctrl c" "Esc" { SwitchToMode "Normal"; }
         bind "Enter" { SwitchToMode "Search"; }
+    }
+    resize {
+        bind "Ctrl g" { SwitchToMode "Normal"; }
+        bind "Ctrl c" "Esc" { SwitchToMode "Normal"; }
+        bind "h" "Left"  { Resize "Increase Left"; }
+        bind "j" "Down"  { Resize "Increase Down"; }
+        bind "k" "Up"    { Resize "Increase Up"; }
+        bind "l" "Right" { Resize "Increase Right"; }
+        bind "H"         { Resize "Decrease Left"; }
+        bind "J"         { Resize "Decrease Down"; }
+        bind "K"         { Resize "Decrease Up"; }
+        bind "L"         { Resize "Decrease Right"; }
+        bind "=" "+"     { Resize "Increase"; }
+        bind "-"         { Resize "Decrease"; }
+    }
+    // Alt key bindings available in all modes (except locked).
+    shared_except "locked" {
+        bind "Alt h" { MoveFocus "Left"; }
+        bind "Alt j" { MoveFocus "Down"; }
+        bind "Alt k" { MoveFocus "Up"; }
+        bind "Alt l" { MoveFocus "Right"; }
+        bind "Alt p" { ToggleFloatingPanes; }
+        bind "Alt [" { GoToPreviousTab; }
+        bind "Alt ]" { GoToNextTab; }
+        bind "Alt 1" { GoToTab 1; }
+        bind "Alt 2" { GoToTab 2; }
+        bind "Alt 3" { GoToTab 3; }
+        bind "Alt 4" { GoToTab 4; }
+        bind "Alt 5" { GoToTab 5; }
     }
 }
 "#;
@@ -1027,24 +1042,26 @@ prepend_keymap = [
 
 /// Quick reference cheatsheet.
 const DEFAULT_CHEATSHEET: &str = r#"  aibox Quick Reference
-  ───────────────────────────────────────────────
+  -----------------------------------------------
   ZELLIJ (leader: Ctrl+g)    YAZI (file manager)
   Alt+h/j/k/l     Move pane  h/j/k/l  Navigate
-  Ctrl+g h/j/k/l  Move pane  Enter    Open in vim
-  Ctrl+g [/]      Prev/next  g s      Git summary
-  Ctrl+g 1-5      Jump tab   g c      Git changes
-  Ctrl+g f        Fullscreen g r      Refresh git
-  Ctrl+g x        Close pane Space    Select
-  Ctrl+g n/d/r    New pane
-  Ctrl+g t/w      Tab +/-
-  Ctrl+g p        Scratch pad (vim)
-  Ctrl+g s        Strider
-  Ctrl+g u        Scroll
-  Ctrl+g /        Search
-  Ctrl+q          QUIT (or Ctrl+g q)
+  Alt+p            Float pane Enter    Open in vim
+  Alt+[/]          Prev/next  g s      Git summary
+  Alt+1-5          Jump tab   g c      Git changes
+  Ctrl+g h/j/k/l  Move pane  g r      Refresh git
+  Ctrl+g f         Fullscreen Space    Select
+  Ctrl+g x         Close pane
+  Ctrl+g n/d/r     New pane
+  Ctrl+g t/w       Tab +/-
+  Ctrl+g p         Float pane (scratch vim)
+  Ctrl+g R         Resize mode (h/j/k/l)
+  Ctrl+g s         Strider
+  Ctrl+g u         Scroll
+  Ctrl+g /         Search
+  Ctrl+g q         QUIT
 
   LAYOUTS: aibox start --layout dev|focus|cowork|cowork-swap|browse|ai
-  TABS: Ctrl+g 1 dev  2 git  3 shell
+  TABS: Alt+1 dev  Alt+2 git  Alt+3 shell
 "#;
 
 /// Default .asoundrc for PulseAudio over TCP.
@@ -1092,16 +1109,9 @@ pub fn ensure_runtime_dirs(config: &AiboxConfig) -> Result<()> {
         root.join(".config").join("lazygit"),
     ];
 
-    for provider in &config.ai.providers {
-        match provider {
-            crate::config::AiProvider::Claude => dirs.push(root.join(".claude")),
-            crate::config::AiProvider::Aider => dirs.push(root.join(".aider")),
-            crate::config::AiProvider::Gemini => dirs.push(root.join(".gemini")),
-            crate::config::AiProvider::Mistral => dirs.push(root.join(".mistral")),
-            crate::config::AiProvider::OpenAI => dirs.push(root.join(".codex")),
-            crate::config::AiProvider::Continue => dirs.push(root.join(".continue")),
-            crate::config::AiProvider::Copilot => dirs.push(root.join(".copilot")),
-            crate::config::AiProvider::Cursor => {}
+    for harness in &config.ai.harnesses {
+        if let Some(dir) = harness.config_dir() {
+            dirs.push(root.join(dir));
         }
     }
 
@@ -1116,7 +1126,7 @@ pub fn ensure_runtime_dirs(config: &AiboxConfig) -> Result<()> {
 /// Return the managed runtime files that aibox generates inside `.aibox-home/`.
 pub fn managed_runtime_files(config: &AiboxConfig) -> Vec<(std::path::PathBuf, String)> {
     let theme = &config.customization.theme;
-    let providers = &config.ai.providers;
+    let providers = &config.ai.harnesses;
     let mut files = vec![
         (
             std::path::PathBuf::from(".vim/vimrc"),
@@ -1316,7 +1326,7 @@ pub fn migrate_yazi_section(path: &Path) -> Result<bool> {
 pub fn sync_theme_files(config: &AiboxConfig) -> Result<Vec<String>> {
     let root = config.host_root_dir();
     let theme = &config.customization.theme;
-    let providers = &config.ai.providers;
+    let providers = &config.ai.harnesses;
     let mut updated = Vec::new();
 
     // vimrc — colorscheme and background
@@ -1518,7 +1528,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let root = dir.path().join("root");
         let mut config = make_config(false, root.clone());
-        config.ai.providers = vec![AiProvider::OpenAI];
+        config.ai.harnesses = vec![AiProvider::Codex];
         seed_root_dir(&config).unwrap();
 
         assert!(root.join(".codex").is_dir());
@@ -2191,7 +2201,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let root = dir.path().join("root");
         let mut config = make_config(false, root.clone());
-        config.ai.providers = vec![AiProvider::Aider];
+        config.ai.harnesses = vec![AiProvider::Aider];
         seed_root_dir(&config).unwrap();
 
         assert!(
@@ -2211,7 +2221,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let root = dir.path().join("root");
         let mut config = make_config(false, root.clone());
-        config.ai.providers = vec![AiProvider::Gemini];
+        config.ai.harnesses = vec![AiProvider::Gemini];
         seed_root_dir(&config).unwrap();
 
         assert!(

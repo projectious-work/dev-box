@@ -103,7 +103,7 @@ Config overrides in `context/skills/id-management/config/settings.toml`:
 ## How this project is organized: processkit content
 
 This project uses **[processkit](https://github.com/projectious-work/processkit.git)**, pinned at
-`v0.8.0`, package tier(s) `product`, to manage
+`v0.13.0`, package tier(s) `product`, to manage
 process content (skills, primitives, processes, schemas). All
 processkit-installed material lives under `context/`:
 
@@ -182,7 +182,7 @@ dependencies on first launch.
 
 ## AI agents on this project
 
-Configured providers: **claude**. Other agents may be working
+Configured providers: **claude**, **openai**. Other agents may be working
 on this project — coordinate through the entity layer
 (`workitem-management`, `event-log`, `discussion-management`) rather than
 assuming you are alone.
@@ -348,4 +348,4 @@ When an AI agent is working inside a project that uses aibox:
 
 ---
 
-<sub>Scaffolded by processkit `v0.8.0` on `2026-04-10`. Re-rendered on each installer sync.</sub>
+<sub>Scaffolded by processkit `v0.13.0` on `2026-04-12`. Re-rendered on each installer sync.</sub>

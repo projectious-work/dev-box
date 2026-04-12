@@ -156,7 +156,7 @@ fn ai_aider_provider_volume_mount() {
         dir.path(),
         "ai",
         r#"
-providers = ["aider"]
+harnesses = ["aider"]
 "#,
     );
     sync_project(dir.path());
@@ -175,7 +175,7 @@ fn ai_multiple_providers_volume_mounts() {
         dir.path(),
         "ai",
         r#"
-providers = ["claude", "aider", "gemini"]
+harnesses = ["claude", "aider", "gemini"]
 "#,
     );
     sync_project(dir.path());

@@ -10,8 +10,8 @@ skills:
 tools:
   - name: rustc
     default_enabled: true
-    default_version: "1.87"
-    supported_versions: ["1.85", "1.87"]
+    default_version: "1.94"
+    supported_versions: ["1.90", "1.91", "1.92", "1.93", "1.94"]
   - name: clippy
     default_enabled: true
     default_version: ""

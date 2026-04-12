@@ -5,7 +5,7 @@
 # =============================================================================
 
 [aibox]
-version = "latest"             # Target aibox CLI version. Update this when intentionally upgrading aibox.
+version = "latest"            # Target aibox CLI version. Update this when intentionally upgrading aibox.
                                # Use "latest" to always track the newest release without pinning.
 base    = "debian"             # Base image flavor. Options: debian
 
@@ -62,36 +62,77 @@ packages = ["product"]
 # To add an addon after init, edit this file and re-run `aibox sync`,
 # or use `aibox addon add <name>` (which also pulls in transitive `requires`).
 
+# Claude Code CLI (Anthropic)
+# claude: pin with claude = { version = "x.y.z" }
 [addons.ai-claude.tools]
+claude = {}
 
+
+# Docusaurus static docs site (React/MDX)
+# docusaurus: 3.8 (default)
+[addons.docs-docusaurus.tools]
+docusaurus = { version = "3.8" }
+
+# Node.js runtime with pnpm, yarn, or bun
+# node: 20 | 22 (default)
+# pnpm: 9 | 10 (default)
+# yarn: 4 (default)
+# yarn — disabled by default; add to enable
+# bun: 1.2 (default)
+# bun — disabled by default; add to enable
 [addons.node.tools]
 node = { version = "22" }
 pnpm = { version = "10" }
 
-[addons.ai-openai.tools]
-
-
-[addons.docs-docusaurus.tools]
-docusaurus = { version = "3" }
-
+# Python runtime with uv, poetry, or pdm
+# python: 3.12 | 3.13 (default) | 3.14
+# uv: 0.6 | 0.7 (default)
+# poetry: 1.8 | 2.0 (default)
+# poetry — disabled by default; add to enable
+# pdm: 2.22 (default)
+# pdm — disabled by default; add to enable
 [addons.python.tools]
 python = { version = "3.13" }
 uv = { version = "0.7" }
 
+# Rust toolchain via rustup
+# rustc: 1.90 | 1.91 | 1.92 | 1.93 | 1.94 (default)
+# clippy: pin with clippy = { version = "x.y.z" }
+# rustfmt: pin with rustfmt = { version = "x.y.z" }
+# cargo-audit: pin with cargo-audit = { version = "x.y.z" }
 [addons.rust.tools]
 cargo-audit = {}
 clippy = {}
-rustc = { version = "1.89" }
+rustc = { version = "1.94" }
 rustfmt = {}
+
+[addons.ai-openai.tools]
+
 
 # =============================================================================
 # [ai] — AI coding assistant providers
 # =============================================================================
-# Each provider listed here is automatically installed as an addon.
-# Options: claude, aider, gemini, mistral, openai, copilot, continue
-# (cursor is MCP-registration only — host-side IDE, no container CLI)
+# Harnesses: CLI tools installed in the container.
+# Harness (CLI tool)          Config value   Provider (API key)
+# Claude Code                 claude         Anthropic
+# OpenAI Codex                codex          OpenAI
+# Gemini CLI                  gemini         Google
+# Aider                       aider          any (multi-provider)
+# Continue                    continue       any (multi-provider)
+# Cursor                      cursor         any (host-side IDE)
+# GitHub Copilot              copilot        (uses GITHUB_TOKEN)
+# OpenCode                    opencode       any (multi-provider)
+# Hermes                      hermes         any (multi-provider)
+#
+# Model providers (optional): declare which API keys are available.
+# Provider     Config value   Env var
+# Anthropic    anthropic      ANTHROPIC_API_KEY
+# OpenAI       openai         OPENAI_API_KEY
+# Google       google         GEMINI_API_KEY
+# Mistral      mistral        MISTRAL_API_KEY
 [ai]
-providers = ["claude", "openai"]
+harnesses = ["codex", "claude"]
+# model_providers = ["anthropic", "openai"]  # optional
 
 # =============================================================================
 # [processkit] — content layer source (skills, primitives, processes)
@@ -141,7 +182,7 @@ provider_mode = "pointer"
 theme  = "nord"
 # Starship prompt preset.
 # Options: default | plain | minimal | nerd-font | pastel | bracketed | arrow
-prompt = "arrow"
+prompt = "pastel"
 # Default zellij layout. Options: dev | focus | cowork | cowork-swap | browse | ai
 layout = "ai"
 

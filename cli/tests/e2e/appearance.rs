@@ -196,20 +196,23 @@ fn theme_change_writes_runtime_migration_without_overwriting_live_files() {
 
     change_appearance(dir.path(), "dracula", "default");
 
+    // ChangedUpstreamOnly files are now auto-applied (the user hasn't
+    // touched them, only the config changed), so the live files should
+    // already reflect the new theme.
     let zellij_after = fs::read_to_string(aibox_home.join(".config/zellij/config.kdl")).unwrap();
-    assert_eq!(
-        zellij_after, zellij_before,
-        "zellij config should remain unchanged until the runtime migration is applied"
+    assert!(
+        zellij_after.contains("dracula"),
+        "zellij config should be auto-updated to the new theme"
     );
     let vimrc_after = fs::read_to_string(aibox_home.join(".vim/vimrc")).unwrap();
-    assert_eq!(
-        vimrc_after, vimrc_before,
-        "vimrc should remain unchanged until the runtime migration is applied"
+    assert!(
+        vimrc_after.contains("dracula"),
+        "vimrc should be auto-updated to the new colorscheme"
     );
     let yazi_after = fs::read_to_string(aibox_home.join(".config/yazi/theme.toml")).unwrap();
-    assert_eq!(
+    assert_ne!(
         yazi_after, yazi_before,
-        "yazi theme should remain unchanged until the runtime migration is applied"
+        "yazi theme should be auto-updated to the new theme"
     );
 
     let pending_dir = dir.path().join("context/migrations/pending");

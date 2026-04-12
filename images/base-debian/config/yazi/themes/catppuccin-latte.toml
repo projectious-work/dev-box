@@ -15,17 +15,17 @@ marker_cut = { fg = "#D20F39", bg = "#D20F39" }
 
 [tabs]
 active = { fg = "#EFF1F5", bg = "#4C4F69", bold = true }
-inactive = { fg = "#9CA0B0", bg = "#CCD0DA" }
+inactive = { fg = "#5C5F77", bg = "#CCD0DA" }
 sep_inner = { open = "", close = "" }
 sep_outer = { open = "", close = "" }
 
 [mode]
 normal_main = { fg = "#EFF1F5", bg = "#40A02B", bold = true }
-normal_alt = { fg = "#40A02B", bg = "#CCD0DA", bold = true }
+normal_alt = { fg = "#1E1E2E", bg = "#CCD0DA", bold = true }
 select_main = { fg = "#EFF1F5", bg = "#1E66F5", bold = true }
-select_alt = { fg = "#1E66F5", bg = "#CCD0DA", bold = true }
+select_alt = { fg = "#1E1E2E", bg = "#CCD0DA", bold = true }
 unset_main = { fg = "#EFF1F5", bg = "#EA76CB", bold = true }
-unset_alt = { fg = "#EA76CB", bg = "#CCD0DA", bold = true }
+unset_alt = { fg = "#8839EF", bg = "#CCD0DA", bold = true }
 
 [status]
 overall = { fg = "#4C4F69", bg = "#CCD0DA" }

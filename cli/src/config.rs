@@ -192,74 +192,255 @@ pub struct LegacyProcessSection {
 ///   exist but are not yet stable.
 ///
 /// Note: `Cursor` is a host-side IDE extension only — it has no container
-/// CLI binary and no in-container persistence directory. All other providers
+/// An AI agent harness — the CLI tool installed in the container.
+///
+/// Cursor is a host-side IDE extension with MCP registration but no container
+/// CLI binary and no in-container persistence directory. All other harnesses
 /// have a corresponding `ai-<name>` addon that installs their CLI in the image.
+///
+/// For backward compatibility, this enum also deserializes legacy names:
+/// `"openai"` maps to `Codex`, `"mistral"` is accepted but treated as a
+/// no-op harness (Mistral is now a model provider only).
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash, clap::ValueEnum)]
 #[serde(rename_all = "kebab-case")]
 #[clap(rename_all = "kebab-case")]
-pub enum AiProvider {
+pub enum AiHarness {
     Claude,
     Aider,
     Gemini,
-    Mistral,
     Cursor,
+    Continue,
+    Copilot,
+    /// OpenAI Codex CLI. Serializes as `"codex"`.
+    /// Legacy `"openai"` is accepted via serde alias for backward compat.
+    #[serde(rename = "codex", alias = "openai")]
+    #[clap(name = "codex", alias = "openai")]
+    Codex,
+    /// Open-source multi-provider harness (Go-based).
+    #[serde(rename = "opencode")]
+    #[clap(name = "opencode")]
+    OpenCode,
+    /// Nous Research autonomous agent.
+    Hermes,
+    /// Legacy: Mistral was previously listed as a "provider" but has no CLI
+    /// harness. Kept for serde backward compat; ignored in addon generation.
+    #[serde(rename = "mistral")]
+    #[clap(skip)]
+    Mistral,
+}
+
+impl std::fmt::Display for AiHarness {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AiHarness::Claude => write!(f, "claude"),
+            AiHarness::Codex => write!(f, "codex"),
+            AiHarness::Gemini => write!(f, "gemini"),
+            AiHarness::Aider => write!(f, "aider"),
+            AiHarness::Continue => write!(f, "continue"),
+            AiHarness::Cursor => write!(f, "cursor"),
+            AiHarness::Copilot => write!(f, "copilot"),
+            AiHarness::OpenCode => write!(f, "opencode"),
+            AiHarness::Hermes => write!(f, "hermes"),
+            AiHarness::Mistral => write!(f, "mistral"),
+        }
+    }
+}
+
+impl AiHarness {
+    /// Returns the actual CLI binary name for this harness.
+    pub fn binary_name(&self) -> &'static str {
+        match self {
+            AiHarness::Claude => "claude",
+            AiHarness::Codex => "codex",
+            AiHarness::Gemini => "gemini",
+            AiHarness::Aider => "aider",
+            AiHarness::Continue => "cn",
+            AiHarness::Cursor => "cursor",
+            AiHarness::Copilot => "copilot",
+            AiHarness::OpenCode => "opencode",
+            AiHarness::Hermes => "hermes",
+            AiHarness::Mistral => "mistral",
+        }
+    }
+
+    /// Human-friendly display name, e.g. "Claude Code (claude)".
+    pub fn display_name(&self) -> &'static str {
+        match self {
+            AiHarness::Claude => "Claude Code (claude)",
+            AiHarness::Codex => "OpenAI Codex (codex)",
+            AiHarness::Gemini => "Gemini CLI (gemini)",
+            AiHarness::Aider => "Aider (aider)",
+            AiHarness::Continue => "Continue (continue)",
+            AiHarness::Cursor => "Cursor (cursor)",
+            AiHarness::Copilot => "GitHub Copilot (copilot)",
+            AiHarness::OpenCode => "OpenCode (opencode)",
+            AiHarness::Hermes => "Hermes (hermes)",
+            AiHarness::Mistral => "Mistral (mistral, legacy)",
+        }
+    }
+
+    /// Addon name for this harness (e.g. "ai-claude").
+    pub fn addon_name(&self) -> String {
+        match self {
+            AiHarness::Mistral => String::new(), // no addon for legacy mistral
+            _ => format!("ai-{}", self),
+        }
+    }
+
+    /// Config directory mounted into the container (e.g. ".claude").
+    pub fn config_dir(&self) -> Option<&'static str> {
+        match self {
+            AiHarness::Claude => Some(".claude"),
+            AiHarness::Codex => Some(".codex"),
+            AiHarness::Gemini => Some(".gemini"),
+            AiHarness::Aider => Some(".aider"),
+            AiHarness::Continue => Some(".continue"),
+            AiHarness::Cursor => Some(".cursor"),
+            AiHarness::Copilot => Some(".copilot"),
+            AiHarness::OpenCode => Some(".opencode"),
+            AiHarness::Hermes => Some(".hermes"),
+            AiHarness::Mistral => None,
+        }
+    }
+
+    /// Whether this is a real harness (vs legacy placeholder).
+    pub fn is_active(&self) -> bool {
+        !matches!(self, AiHarness::Mistral)
+    }
+
+    /// Returns all active harness variants (excluding legacy).
+    pub fn all() -> &'static [AiHarness] {
+        &[
+            AiHarness::Claude,
+            AiHarness::Codex,
+            AiHarness::Gemini,
+            AiHarness::Aider,
+            AiHarness::Continue,
+            AiHarness::Cursor,
+            AiHarness::Copilot,
+            AiHarness::OpenCode,
+            AiHarness::Hermes,
+        ]
+    }
+}
+
+/// Backward-compatible alias — all existing code that references `AiProvider`
+/// continues to compile. The `OpenAI` variant maps to `AiHarness::Codex` via
+/// serde alias. New code should use `AiHarness` directly.
+pub type AiProvider = AiHarness;
+
+/// An AI model provider — the organization whose API key may be needed.
+/// Declaring a provider is optional; it hints which API keys are available.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash, clap::ValueEnum)]
+#[serde(rename_all = "kebab-case")]
+#[clap(rename_all = "kebab-case")]
+pub enum AiModelProvider {
+    Anthropic,
     #[serde(rename = "openai")]
     #[clap(name = "openai")]
     OpenAI,
-    Continue,
-    Copilot,
+    Google,
+    Mistral,
 }
 
-impl std::fmt::Display for AiProvider {
+impl std::fmt::Display for AiModelProvider {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            AiProvider::Claude => write!(f, "claude"),
-            AiProvider::Aider => write!(f, "aider"),
-            AiProvider::Gemini => write!(f, "gemini"),
-            AiProvider::Mistral => write!(f, "mistral"),
-            AiProvider::Cursor => write!(f, "cursor"),
-            AiProvider::OpenAI => write!(f, "openai"),
-            AiProvider::Continue => write!(f, "continue"),
-            AiProvider::Copilot => write!(f, "copilot"),
+            AiModelProvider::Anthropic => write!(f, "anthropic"),
+            AiModelProvider::OpenAI => write!(f, "openai"),
+            AiModelProvider::Google => write!(f, "google"),
+            AiModelProvider::Mistral => write!(f, "mistral"),
         }
     }
 }
 
-impl AiProvider {
-    /// Returns the actual CLI binary name for this provider.
-    ///
-    /// This differs from `Display` for providers where the display name and
-    /// binary name diverge (e.g. `Continue` displays as `"continue"` but the
-    /// binary is `cn`). Use this wherever a shell command is needed.
-    pub fn binary_name(&self) -> &'static str {
+#[allow(dead_code)]
+impl AiModelProvider {
+    /// The environment variable name for this provider's API key.
+    pub fn api_key_env(&self) -> &'static str {
         match self {
-            AiProvider::Claude => "claude",
-            AiProvider::Aider => "aider",
-            AiProvider::Gemini => "gemini",
-            AiProvider::Mistral => "mistral",
-            AiProvider::Cursor => "cursor",
-            AiProvider::OpenAI => "codex",
-            AiProvider::Continue => "cn",
-            AiProvider::Copilot => "copilot",
+            AiModelProvider::Anthropic => "ANTHROPIC_API_KEY",
+            AiModelProvider::OpenAI => "OPENAI_API_KEY",
+            AiModelProvider::Google => "GEMINI_API_KEY",
+            AiModelProvider::Mistral => "MISTRAL_API_KEY",
         }
+    }
+
+    /// Human-friendly display name.
+    pub fn display_name(&self) -> &'static str {
+        match self {
+            AiModelProvider::Anthropic => "Anthropic (anthropic)",
+            AiModelProvider::OpenAI => "OpenAI (openai)",
+            AiModelProvider::Google => "Google (google)",
+            AiModelProvider::Mistral => "Mistral (mistral)",
+        }
+    }
+
+    /// Returns all model provider variants.
+    pub fn all() -> &'static [AiModelProvider] {
+        &[
+            AiModelProvider::Anthropic,
+            AiModelProvider::OpenAI,
+            AiModelProvider::Google,
+            AiModelProvider::Mistral,
+        ]
     }
 }
 
-fn default_ai_tools() -> Vec<AiProvider> {
-    vec![AiProvider::Claude]
+fn default_ai_harnesses() -> Vec<AiHarness> {
+    vec![AiHarness::Claude]
 }
 
-/// [ai] section — AI tool provider configuration.
+/// [ai] section — AI harness and model provider configuration.
+///
+/// `harnesses` controls which CLI tools are installed in the container.
+/// `model_providers` is optional — declares which API keys are available.
+/// Legacy `providers` field is accepted for backward compatibility.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AiSection {
-    #[serde(default = "default_ai_tools")]
-    pub providers: Vec<AiProvider>,
+    /// Which AI coding tools to install (determines addons, volumes, MCP config).
+    /// Serde default is empty; `migrate_legacy()` applies the real default
+    /// ([Claude]) when neither harnesses nor providers was explicitly set.
+    #[serde(default)]
+    pub harnesses: Vec<AiHarness>,
+
+    /// Which model provider API keys are available (optional hint).
+    #[serde(default)]
+    pub model_providers: Vec<AiModelProvider>,
+
+    /// Legacy field — accepted for backward compatibility during migration.
+    /// When present and `harnesses` is empty, auto-migrated to `harnesses`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub providers: Vec<AiHarness>,
+}
+
+impl AiSection {
+    /// Migrate legacy `providers` → `harnesses` if needed.
+    /// Call after deserialization and before any code reads `harnesses`.
+    pub fn migrate_legacy(&mut self) {
+        if self.harnesses.is_empty() && !self.providers.is_empty() {
+            // Legacy format: move providers → harnesses
+            self.harnesses = self.providers.drain(..).collect();
+        }
+    }
+
+    /// The effective harness list (after migration).
+    #[allow(dead_code)]
+    pub fn effective_harnesses(&self) -> &[AiHarness] {
+        if self.harnesses.is_empty() && !self.providers.is_empty() {
+            &self.providers
+        } else {
+            &self.harnesses
+        }
+    }
 }
 
 impl Default for AiSection {
     fn default() -> Self {
         Self {
-            providers: default_ai_tools(),
+            harnesses: default_ai_harnesses(),
+            model_providers: Vec::new(),
+            providers: Vec::new(),
         }
     }
 }
@@ -1126,8 +1307,16 @@ impl AiboxConfig {
     /// Idempotent — won't overwrite if the user already configured the addon
     /// explicitly in `[addons]`.
     pub fn resolve_ai_provider_addons(&mut self) {
-        for provider in &self.ai.providers {
-            let addon_name = format!("ai-{}", provider);
+        // Migrate legacy providers → harnesses if needed.
+        self.ai.migrate_legacy();
+        for harness in &self.ai.harnesses {
+            if !harness.is_active() {
+                continue;
+            }
+            let addon_name = harness.addon_name();
+            if addon_name.is_empty() {
+                continue;
+            }
             self.addons
                 .addons
                 .entry(addon_name)
@@ -1236,7 +1425,7 @@ post_create_command = "npm install"
 schema_version = "2.0.0"
 
 [ai]
-providers = ["claude", "aider", "mistral"]
+harnesses = ["claude", "aider", "mistral"]
 
 [process]
 packages = ["managed", "code", "documentation"]
@@ -1326,10 +1515,10 @@ name = "my-project"
         assert_eq!(config.context.schema_version, "2.0.0");
 
         // [ai]
-        assert_eq!(config.ai.providers.len(), 3);
-        assert_eq!(config.ai.providers[0], AiProvider::Claude);
-        assert_eq!(config.ai.providers[1], AiProvider::Aider);
-        assert_eq!(config.ai.providers[2], AiProvider::Mistral);
+        assert_eq!(config.ai.harnesses.len(), 3);
+        assert_eq!(config.ai.harnesses[0], AiProvider::Claude);
+        assert_eq!(config.ai.harnesses[1], AiProvider::Aider);
+        assert_eq!(config.ai.harnesses[2], AiProvider::Mistral);
 
         // [context].packages (migrated from legacy [process])
         assert_eq!(
@@ -1381,7 +1570,7 @@ name = "my-project"
         assert_eq!(config.container.name, "my-project");
         assert_eq!(config.container.hostname, "aibox");
         assert_eq!(config.context.schema_version, "1.0.0");
-        assert_eq!(config.ai.providers, vec![AiProvider::Claude]);
+        assert_eq!(config.ai.harnesses, vec![AiProvider::Claude]);
         assert_eq!(config.context.packages, vec!["managed"]);
         assert!(config.addons.addons.is_empty());
         assert!(config.skills.include.is_empty());
@@ -1558,7 +1747,7 @@ tool = {}
         assert_eq!(format!("{}", AiProvider::Aider), "aider");
         assert_eq!(format!("{}", AiProvider::Gemini), "gemini");
         assert_eq!(format!("{}", AiProvider::Mistral), "mistral");
-        assert_eq!(format!("{}", AiProvider::OpenAI), "openai");
+        assert_eq!(format!("{}", AiProvider::Codex), "codex");
         assert_eq!(format!("{}", AiProvider::Continue), "continue");
         assert_eq!(format!("{}", AiProvider::Copilot), "copilot");
     }
@@ -1571,8 +1760,8 @@ tool = {}
         assert_eq!(AiProvider::Copilot.binary_name(), "copilot");
         // Continue is the exception: display = "continue", binary = "cn".
         assert_eq!(AiProvider::Continue.binary_name(), "cn");
-        // OpenAI is the exception: display = "openai", binary = "codex".
-        assert_eq!(AiProvider::OpenAI.binary_name(), "codex");
+        // Codex: both display and binary are "codex".
+        assert_eq!(AiProvider::Codex.binary_name(), "codex");
     }
 
     #[test]
@@ -1585,11 +1774,11 @@ version = "0.9.0"
 name = "test"
 
 [ai]
-providers = ["claude", "aider", "gemini", "mistral"]
+harnesses = ["claude", "aider", "gemini", "mistral"]
 "#;
         let config = parse_toml(toml).unwrap();
-        assert_eq!(config.ai.providers.len(), 4);
-        assert_eq!(config.ai.providers[3], AiProvider::Mistral);
+        assert_eq!(config.ai.harnesses.len(), 4);
+        assert_eq!(config.ai.harnesses[3], AiProvider::Mistral);
     }
 
     #[test]
@@ -1605,11 +1794,11 @@ name = "test"
 providers = ["openai", "copilot", "continue"]
 "#;
         let config = AiboxConfig::from_str(toml).unwrap();
-        assert_eq!(config.ai.providers.len(), 3);
-        assert_eq!(config.ai.providers[0], AiProvider::OpenAI);
-        assert_eq!(config.ai.providers[1], AiProvider::Copilot);
-        assert_eq!(config.ai.providers[2], AiProvider::Continue);
-        assert!(config.addons.has_addon("ai-openai"));
+        assert_eq!(config.ai.harnesses.len(), 3);
+        assert_eq!(config.ai.harnesses[0], AiProvider::Codex);
+        assert_eq!(config.ai.harnesses[1], AiProvider::Copilot);
+        assert_eq!(config.ai.harnesses[2], AiProvider::Continue);
+        assert!(config.addons.has_addon("ai-codex"));
         assert!(config.addons.has_addon("ai-copilot"));
         assert!(config.addons.has_addon("ai-continue"));
     }
@@ -1624,16 +1813,16 @@ version = "0.9.0"
 name = "test"
 
 [ai]
-providers = []
+harnesses = []
 "#;
         let config = parse_toml(toml).unwrap();
-        assert!(config.ai.providers.is_empty());
+        assert!(config.ai.harnesses.is_empty());
     }
 
     #[test]
     fn default_ai_providers_is_claude() {
         let config = parse_toml(minimal_toml()).unwrap();
-        assert_eq!(config.ai.providers, vec![AiProvider::Claude]);
+        assert_eq!(config.ai.harnesses, vec![AiProvider::Claude]);
     }
 
     // -- Base image ---------------------------------------------------------
@@ -1881,10 +2070,10 @@ theme = "{input}"
 
     #[test]
     fn resolve_ai_providers_creates_addon_entries() {
-        let config = test_config(); // default: providers = [Claude]
+        let config = test_config(); // default: harnesses = [Claude]
         assert!(
             config.addons.has_addon("ai-claude"),
-            "ai-claude addon should be auto-resolved from [ai].providers"
+            "ai-claude addon should be auto-resolved from [ai].harnesses"
         );
     }
 
@@ -1896,13 +2085,12 @@ theme = "{input}"
             [container]
             name = "test"
             [ai]
-            providers = ["claude", "aider", "gemini", "mistral"]
+            harnesses = ["claude", "aider", "gemini"]
         "#;
         let config = AiboxConfig::from_str(toml).unwrap();
         assert!(config.addons.has_addon("ai-claude"));
         assert!(config.addons.has_addon("ai-aider"));
         assert!(config.addons.has_addon("ai-gemini"));
-        assert!(config.addons.has_addon("ai-mistral"));
     }
 
     #[test]
@@ -1913,7 +2101,7 @@ theme = "{input}"
             [container]
             name = "test"
             [ai]
-            providers = []
+            harnesses = []
         "#;
         let config = AiboxConfig::from_str(toml).unwrap();
         assert!(!config.addons.has_addon("ai-claude"));
@@ -2121,7 +2309,7 @@ branch = ""
             [container]
             name = "test"
             [ai]
-            providers = ["aider"]
+            harnesses = ["aider"]
             [addons.ai-aider.tools]
             aider = { version = "custom" }
         "#;

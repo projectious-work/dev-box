@@ -1,7 +1,7 @@
 use anyhow::{Result, bail};
 use std::path::PathBuf;
 
-use crate::config::{AiProvider, AiboxConfig, BaseImage, StarshipPreset, Theme};
+use crate::config::{AiHarness, AiProvider, AiboxConfig, BaseImage, StarshipPreset, Theme};
 use crate::context;
 use crate::generate;
 use crate::output;
@@ -309,29 +309,33 @@ fn populate_addon_tools(
         // real choice and the user hasn't pinned via the CLI).
         let picked_version =
             if override_version.is_none() && interactive && tool.supported_versions.len() > 1 {
+                // Build version list: "latest" first, then supported versions
+                // with the default marked.
                 let default_idx = tool
                     .supported_versions
                     .iter()
                     .position(|v| v == &tool.default_version)
                     .unwrap_or(0);
-                let items: Vec<String> = tool
-                    .supported_versions
-                    .iter()
-                    .enumerate()
-                    .map(|(i, v)| {
-                        if i == default_idx {
-                            format!("{} (default)", v)
-                        } else {
-                            v.clone()
-                        }
-                    })
-                    .collect();
+                let mut items: Vec<String> = vec!["latest (always track newest)".to_string()];
+                items.extend(tool.supported_versions.iter().enumerate().map(|(i, v)| {
+                    if i == default_idx {
+                        format!("{} (default)", v)
+                    } else {
+                        v.clone()
+                    }
+                }));
+                // Default selection: the pinned default version (offset by 1
+                // because "latest" is prepended).
                 let idx = dialoguer::Select::new()
                     .with_prompt(format!("{}.{} version", addon_name, tool.name))
                     .items(&items)
-                    .default(default_idx)
+                    .default(default_idx + 1)
                     .interact()?;
-                Some(tool.supported_versions[idx].clone())
+                if idx == 0 {
+                    Some("latest".to_string())
+                } else {
+                    Some(tool.supported_versions[idx - 1].clone())
+                }
             } else {
                 None
             };
@@ -830,22 +834,51 @@ fn serialize_config_with_comments(config: &AiboxConfig) -> String {
     // [ai] section
     out.push('\n');
     out.push_str(sep);
-    out.push_str("# [ai] — AI coding assistant providers\n");
+    out.push_str("# [ai] — AI agent harnesses and model providers\n");
     out.push_str(sep);
-    out.push_str("# Each provider listed here is automatically installed as an addon.\n");
-    out.push_str("# Options: claude, aider, gemini, mistral, openai, copilot, continue\n");
-    out.push_str("# (cursor is MCP-registration only — host-side IDE, no container CLI)\n");
+    out.push_str("# Harnesses: CLI tools installed in the container.\n");
+    out.push_str("# Harness (CLI tool)          Config value   Provider (API key)\n");
+    out.push_str("# Claude Code                 claude         Anthropic\n");
+    out.push_str("# OpenAI Codex                codex          OpenAI\n");
+    out.push_str("# Gemini CLI                  gemini         Google\n");
+    out.push_str("# Aider                       aider          any (multi-provider)\n");
+    out.push_str("# Continue                    continue       any (multi-provider)\n");
+    out.push_str("# Cursor                      cursor         any (host-side IDE)\n");
+    out.push_str("# GitHub Copilot              copilot        (uses GITHUB_TOKEN)\n");
+    out.push_str("# OpenCode                    opencode       any (multi-provider)\n");
+    out.push_str("# Hermes                      hermes         any (multi-provider)\n");
+    out.push_str("#\n");
+    out.push_str("# Model providers (optional): declare which API keys are available.\n");
+    out.push_str("# Provider     Config value   Env var\n");
+    out.push_str("# Anthropic    anthropic      ANTHROPIC_API_KEY\n");
+    out.push_str("# OpenAI       openai         OPENAI_API_KEY\n");
+    out.push_str("# Google       google         GEMINI_API_KEY\n");
+    out.push_str("# Mistral      mistral        MISTRAL_API_KEY\n");
     out.push_str("[ai]\n");
     out.push_str(&format!(
-        "providers = [{}]\n",
+        "harnesses = [{}]\n",
         config
             .ai
-            .providers
+            .harnesses
             .iter()
-            .map(|p| format!("\"{}\"", p))
+            .map(|h| format!("\"{}\"", h))
             .collect::<Vec<_>>()
             .join(", ")
     ));
+    if !config.ai.model_providers.is_empty() {
+        out.push_str(&format!(
+            "model_providers = [{}]\n",
+            config
+                .ai
+                .model_providers
+                .iter()
+                .map(|p| format!("\"{}\"", p))
+                .collect::<Vec<_>>()
+                .join(", ")
+        ));
+    } else {
+        out.push_str("# model_providers = [\"anthropic\", \"openai\"]  # optional: which API keys you have\n");
+    }
 
     // [processkit] section
     out.push('\n');
@@ -976,12 +1009,46 @@ pub fn cmd_init(config_path: &Option<String>, params: InitParams) -> Result<()> 
     )?;
 
     let container_user = params.user.unwrap_or_else(|| "aibox".to_string());
-    let ai_providers = params.ai.unwrap_or_else(|| vec![AiProvider::Claude]);
+    let ai_providers = match params.ai {
+        Some(providers) => providers,
+        None if interactive => {
+            let all_harnesses = AiHarness::all();
+            let items: Vec<String> = all_harnesses
+                .iter()
+                .map(|h| h.display_name().to_string())
+                .collect();
+            // Claude Code is the first item and pre-selected by default.
+            let defaults: Vec<bool> = all_harnesses
+                .iter()
+                .enumerate()
+                .map(|(i, _)| i == 0)
+                .collect();
+            let selections = dialoguer::MultiSelect::new()
+                .with_prompt("AI harnesses (space to select, enter to confirm)")
+                .items(&items)
+                .defaults(&defaults)
+                .interact()?;
+            if selections.is_empty() {
+                vec![AiHarness::Claude]
+            } else {
+                selections
+                    .into_iter()
+                    .map(|i| all_harnesses[i].clone())
+                    .collect()
+            }
+        }
+        None => vec![AiHarness::Claude],
+    };
 
-    // Collect AI provider addon names before they're moved into the config
+    // Collect AI harness addon names before they're moved into the config
     // struct so we can include them in the dependency expansion and tool
     // population below.
-    let ai_addon_names: Vec<String> = ai_providers.iter().map(|p| format!("ai-{}", p)).collect();
+    let ai_addon_names: Vec<String> = ai_providers
+        .iter()
+        .filter(|h| h.is_active())
+        .map(|h| h.addon_name())
+        .filter(|n| !n.is_empty())
+        .collect();
 
     let mut config = AiboxConfig {
         aibox: AiboxSection {
@@ -1002,7 +1069,9 @@ pub fn cmd_init(config_path: &Option<String>, params: InitParams) -> Result<()> 
             ..ContextSection::default()
         },
         ai: AiSection {
-            providers: ai_providers,
+            harnesses: ai_providers,
+            model_providers: Vec::new(),
+            providers: Vec::new(),
         },
         process: None,
         addons: {
@@ -1059,6 +1128,44 @@ pub fn cmd_init(config_path: &Option<String>, params: InitParams) -> Result<()> 
     config.resolve_ai_provider_addons();
 
     config.validate()?;
+
+    // --- summary page ---
+    if interactive {
+        println!();
+        output::info("Configuration summary:");
+        println!("  Project:     {}", config.container.name);
+        println!("  Base:        {}", config.aibox.base);
+        println!("  Process:     {}", config.context.packages.join(", "));
+        let addon_list: Vec<String> = config
+            .addons
+            .addons
+            .keys()
+            .filter(|k| !k.starts_with("ai-"))
+            .cloned()
+            .collect();
+        if addon_list.is_empty() {
+            println!("  Addons:      (none)");
+        } else {
+            println!("  Addons:      {}", addon_list.join(", "));
+        }
+        let harness_list: Vec<&str> = config
+            .ai
+            .harnesses
+            .iter()
+            .map(|h| h.display_name())
+            .collect();
+        println!("  Harnesses:   {}", harness_list.join(", "));
+        println!("  Theme:       {}", config.customization.theme);
+        println!("  processkit:  {}", config.processkit.version);
+        println!();
+        let proceed = dialoguer::Confirm::new()
+            .with_prompt("Generate project with these settings?")
+            .default(true)
+            .interact()?;
+        if !proceed {
+            bail!("Init cancelled by user.");
+        }
+    }
 
     let toml_str = serialize_config_with_comments(&config);
 
@@ -1300,6 +1407,50 @@ pub fn cmd_sync(config_path: &Option<String>, no_cache: bool, no_build: bool) ->
              Consider updating [processkit].version in aibox.toml.",
             config.processkit.version, compat.processkit_version, current_aibox, compat.note,
         ));
+    }
+
+    // Resolve "latest" addon tool versions to concrete versions.
+    // The resolved versions are used in Dockerfile generation and recorded
+    // in aibox.lock so builds are reproducible.
+    let mut resolved_tools = std::collections::BTreeMap::new();
+    for (addon_name, addon_tools) in &mut config.addons.addons {
+        for (tool_name, tool_entry) in &mut addon_tools.tools {
+            if tool_entry.version.as_deref() == Some("latest") {
+                // Try upstream resolution for key tools
+                if let Some(resolved) = crate::version_resolve::resolve_latest(tool_name) {
+                    tool_entry.version = Some(resolved.clone());
+                    resolved_tools.insert(tool_name.clone(), resolved);
+                } else if let Some(addon) = crate::addon_loader::get_addon(addon_name)
+                    && let Some(tool_def) = addon.tools.iter().find(|t| &t.name == tool_name)
+                    && !tool_def.default_version.is_empty()
+                {
+                    // Fall back to addon's default_version
+                    let ver = tool_def.default_version.clone();
+                    tool_entry.version = Some(ver.clone());
+                    resolved_tools.insert(tool_name.clone(), ver);
+                }
+            }
+        }
+    }
+    if !resolved_tools.is_empty() {
+        output::info(&format!(
+            "Resolved {} 'latest' tool version(s) to concrete values",
+            resolved_tools.len()
+        ));
+        // Write resolved versions to aibox.lock
+        let project_root = std::env::current_dir().unwrap_or_default();
+        if let Ok(Some(mut lock)) = crate::lock::read_lock(&project_root) {
+            lock.addons = Some(crate::lock::AddonsLockSection {
+                resolved_at: chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string(),
+                tools: resolved_tools,
+            });
+            if let Err(e) = crate::lock::write_lock(&project_root, &lock) {
+                output::warn(&format!(
+                    "Failed to update aibox.lock with resolved tool versions: {}",
+                    e
+                ));
+            }
+        }
     }
 
     output::info("Scaffolding missing runtime directories...");

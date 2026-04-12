@@ -124,12 +124,39 @@ impl Runtime {
         Ok(path.to_string_lossy().to_string())
     }
 
-    /// Run compose build.
-    pub fn compose_build(&self, compose_file: &str, no_cache: bool) -> Result<()> {
+    /// Build the `-f` arguments for Docker Compose, automatically including
+    /// `docker-compose.override.yml` if it exists alongside the main file.
+    /// This ensures user-defined services (e.g. the e2e companion container)
+    /// are always included in build/up/stop operations.
+    fn compose_file_args(compose_file: &str) -> Result<Vec<String>> {
         let abs = Self::resolve_compose_path(compose_file)?;
-        let mut args: Vec<&str> = vec!["-f", &abs, "build"];
+        let mut args = vec!["-f".to_string(), abs.clone()];
+
+        // Check for override file alongside the main compose file
+        let main_path = std::path::Path::new(&abs);
+        if let Some(parent) = main_path.parent() {
+            let override_path = parent.join("docker-compose.override.yml");
+            if override_path.is_file() {
+                args.push("-f".to_string());
+                args.push(override_path.to_string_lossy().to_string());
+            }
+        }
+
+        Ok(args)
+    }
+
+    /// Run compose build.
+    ///
+    /// When `no_cache` is true, passes both `--no-cache` (rebuild all
+    /// layers from scratch) and `--pull` (force fresh base image pulls)
+    /// to ensure a fully clean rebuild.
+    pub fn compose_build(&self, compose_file: &str, no_cache: bool) -> Result<()> {
+        let file_args = Self::compose_file_args(compose_file)?;
+        let mut args: Vec<&str> = file_args.iter().map(|s| s.as_str()).collect();
+        args.push("build");
         if no_cache {
             args.push("--no-cache");
+            args.push("--pull");
         }
 
         let status = self.run_compose(&args)?;
@@ -141,8 +168,9 @@ impl Runtime {
 
     /// Run compose up -d for a service.
     pub fn compose_up(&self, compose_file: &str, service: &str) -> Result<()> {
-        let abs = Self::resolve_compose_path(compose_file)?;
-        let args = vec!["-f", &abs, "up", "-d", service];
+        let file_args = Self::compose_file_args(compose_file)?;
+        let mut args: Vec<&str> = file_args.iter().map(|s| s.as_str()).collect();
+        args.extend(["up", "-d", service]);
         let status = self.run_compose(&args)?;
         if !status.success() {
             bail!("Compose up failed");
@@ -152,8 +180,9 @@ impl Runtime {
 
     /// Run compose stop for a service.
     pub fn compose_stop(&self, compose_file: &str, service: &str) -> Result<()> {
-        let abs = Self::resolve_compose_path(compose_file)?;
-        let args = vec!["-f", &abs, "stop", service];
+        let file_args = Self::compose_file_args(compose_file)?;
+        let mut args: Vec<&str> = file_args.iter().map(|s| s.as_str()).collect();
+        args.extend(["stop", service]);
         let status = self.run_compose(&args)?;
         if !status.success() {
             bail!("Compose stop failed");
@@ -163,8 +192,9 @@ impl Runtime {
 
     /// Run compose down for a service (stop + remove container and network).
     pub fn compose_down(&self, compose_file: &str) -> Result<()> {
-        let abs = Self::resolve_compose_path(compose_file)?;
-        let args = vec!["-f", &abs, "down"];
+        let file_args = Self::compose_file_args(compose_file)?;
+        let mut args: Vec<&str> = file_args.iter().map(|s| s.as_str()).collect();
+        args.push("down");
         let status = self.run_compose(&args)?;
         if !status.success() {
             bail!("Compose down failed");

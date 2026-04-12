@@ -68,6 +68,18 @@ pub struct AiboxLock {
     pub aibox: AiboxLockSection,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub processkit: Option<ProcessKitLockSection>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub addons: Option<AddonsLockSection>,
+}
+
+/// `[addons]` section of `aibox.lock`. Records resolved tool versions
+/// when `version = "latest"` is used in aibox.toml.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct AddonsLockSection {
+    /// ISO 8601 UTC timestamp of the last resolution.
+    pub resolved_at: String,
+    /// Resolved tool versions: tool_name → concrete version string.
+    pub tools: std::collections::BTreeMap<String, String>,
 }
 
 /// `[aibox]` section of `aibox.lock`. Tracks the CLI version that last
@@ -200,6 +212,7 @@ pub fn read_lock(project_root: &Path) -> Result<Option<AiboxLock>> {
             release_asset_sha256: legacy.release_asset_sha256,
             installed_at: legacy.installed_at,
         }),
+        addons: None,
     }))
 }
 
@@ -444,6 +457,7 @@ mod tests {
                 synced_at: "2026-04-06T12:00:00Z".to_string(),
             },
             processkit: Some(sample_pk()),
+            addons: None,
         }
     }
 
@@ -460,6 +474,7 @@ mod tests {
                 synced_at: "2026-04-06T12:00:00Z".to_string(),
             },
             processkit: Some(pk),
+            addons: None,
         };
         write_lock(tmp.path(), &lock).unwrap();
         let back = read_lock(tmp.path()).unwrap().unwrap();

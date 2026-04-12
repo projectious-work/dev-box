@@ -179,16 +179,9 @@ fn check_mount_sources(root: &Path, root_label: &str, config: &AiboxConfig, diag
     // AI providers — check the .aibox-home/<provider>/ persistence dir
     // for the in-container CLI tools that have one. Cursor is the only
     // provider with no container CLI binary (host-side IDE extension only).
-    for provider in &config.ai.providers {
-        let dir_name = match provider {
-            crate::config::AiProvider::Claude => ".claude",
-            crate::config::AiProvider::Aider => ".aider",
-            crate::config::AiProvider::Gemini => ".gemini",
-            crate::config::AiProvider::Mistral => ".mistral",
-            crate::config::AiProvider::OpenAI => ".codex",
-            crate::config::AiProvider::Continue => ".continue",
-            crate::config::AiProvider::Copilot => ".copilot",
-            crate::config::AiProvider::Cursor => continue,
+    for provider in &config.ai.harnesses {
+        let Some(dir_name) = provider.config_dir() else {
+            continue;
         };
         let path = root.join(dir_name);
         if path.exists() {

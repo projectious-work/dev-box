@@ -346,6 +346,11 @@ pub fn install_content_source(project_root: &Path, config: &AiboxConfig) -> Resu
     //    install (DEC-037 — absorbs the legacy .aibox-version). The
     //    [processkit] section captures the install state of processkit.
     let now = Utc::now().to_rfc3339();
+    // Preserve existing addons lock section (resolved tool versions).
+    let existing_addons = lock::read_lock(project_root)
+        .ok()
+        .flatten()
+        .and_then(|l| l.addons);
     let aibox_lock = AiboxLock {
         aibox: lock::AiboxLockSection {
             cli_version: env!("CARGO_PKG_VERSION").to_string(),
@@ -360,6 +365,7 @@ pub fn install_content_source(project_root: &Path, config: &AiboxConfig) -> Resu
             release_asset_sha256: fetched.release_asset_sha256.clone(),
             installed_at: now,
         }),
+        addons: existing_addons,
     };
     lock::write_lock(project_root, &aibox_lock).context("failed to write aibox.lock")?;
 
@@ -1102,9 +1108,7 @@ mod tests {
                 extra_volumes: vec![],
             },
             context: ContextSection::default(),
-            ai: AiSection {
-                providers: vec![crate::config::AiProvider::Claude],
-            },
+            ai: AiSection::default(),
             process: None,
             addons: AddonsSection::default(),
             skills: SkillsSection::default(),

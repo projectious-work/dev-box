@@ -1,7 +1,0 @@
-# id-management configuration for this project
-# See context/skills/id-management/SKILL.md for all options.
-
-format          = "word"    # "word" | "uuid"
-word_style      = "camel"   # "kebab" | "camel"
-datetime_prefix = true      # prepend YYYYMMDD_HHMM before the word pair
-slug            = true      # append title-derived slug
