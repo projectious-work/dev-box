@@ -19,10 +19,8 @@ runtime: |
   # npm package: @openai/codex | Binary: codex | Config: ~/.codex/
   # Auth: OPENAI_API_KEY (or ChatGPT Plus/Pro/Team/Enterprise account)
   # To pin a version: set [addons.ai-openai.tools.codex] version in aibox.toml
-  USER aibox
   {% if tools.codex.version %}
   RUN npm install -g @openai/codex@{{ tools.codex.version }}
   {% else %}
   RUN npm install -g @openai/codex
   {% endif %}
-  USER root
