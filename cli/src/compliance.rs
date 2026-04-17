@@ -54,10 +54,12 @@ pub fn check_compliance_contract_drift(project_root: &Path) -> Result<()> {
         return Ok(());
     }
 
-    let canonical =
-        fs::read_to_string(&canonical_path).with_context(|| {
-            format!("reading canonical compliance contract: {}", canonical_path.display())
-        })?;
+    let canonical = fs::read_to_string(&canonical_path).with_context(|| {
+        format!(
+            "reading canonical compliance contract: {}",
+            canonical_path.display()
+        )
+    })?;
 
     let agents_content = fs::read_to_string(&agents_path)
         .with_context(|| format!("reading AGENTS.md: {}", agents_path.display()))?;
@@ -74,9 +76,7 @@ pub fn check_compliance_contract_drift(project_root: &Path) -> Result<()> {
                     "Compliance contract in AGENTS.md differs from the canonical source at \
                      context/skills/processkit/skill-gate/assets/compliance-contract.md.",
                 );
-                output::warn(
-                    "Run `aibox sync --fix-compliance-contract` to update AGENTS.md.",
-                );
+                output::warn("Run `aibox sync --fix-compliance-contract` to update AGENTS.md.");
             }
         }
     }
@@ -117,17 +117,12 @@ pub fn write_cursor_compliance_rules(config: &AiboxConfig, project_root: &Path) 
     })?;
 
     let rules_dir = project_root.join(".cursor").join("rules");
-    fs::create_dir_all(&rules_dir)
-        .with_context(|| format!("creating {}", rules_dir.display()))?;
+    fs::create_dir_all(&rules_dir).with_context(|| format!("creating {}", rules_dir.display()))?;
 
     let dest = rules_dir.join("processkit-compliance.md");
-    fs::write(&dest, &content)
-        .with_context(|| format!("writing {}", dest.display()))?;
+    fs::write(&dest, &content).with_context(|| format!("writing {}", dest.display()))?;
 
-    output::ok(&format!(
-        "Wrote compliance contract to {}",
-        dest.display()
-    ));
+    output::ok(&format!("Wrote compliance contract to {}", dest.display()));
 
     Ok(())
 }
@@ -160,10 +155,7 @@ pub fn write_aider_compliance_conf(config: &AiboxConfig, project_root: &Path) ->
         doc = serde_yaml::Value::Mapping(Default::default());
     }
 
-    let required: &[&str] = &[
-        "AGENTS.md",
-        COMPLIANCE_CONTRACT_REL,
-    ];
+    let required: &[&str] = &["AGENTS.md", COMPLIANCE_CONTRACT_REL];
 
     let mapping = doc.as_mapping_mut().expect("root is a mapping");
     let read_key = serde_yaml::Value::String("read".to_string());
@@ -182,11 +174,9 @@ pub fn write_aider_compliance_conf(config: &AiboxConfig, project_root: &Path) ->
         }
     }
 
-    let yaml_str = serde_yaml::to_string(&doc)
-        .with_context(|| "serialising .aider.conf.yml")?;
+    let yaml_str = serde_yaml::to_string(&doc).with_context(|| "serialising .aider.conf.yml")?;
 
-    fs::write(&conf_path, &yaml_str)
-        .with_context(|| format!("writing {}", conf_path.display()))?;
+    fs::write(&conf_path, &yaml_str).with_context(|| format!("writing {}", conf_path.display()))?;
 
     output::ok(&format!(
         "Updated .aider.conf.yml with compliance contract read: entries"
@@ -234,8 +224,7 @@ mod tests {
                 .collect::<Vec<_>>()
                 .join(", ")
         );
-        let mut config: AiboxConfig =
-            toml::from_str(&toml_str).expect("parse test config");
+        let mut config: AiboxConfig = toml::from_str(&toml_str).expect("parse test config");
         config.ai.migrate_legacy();
         config
     }
@@ -315,8 +304,14 @@ mod tests {
         let config = config_with_harnesses(vec![AiHarness::Cursor]);
         write_cursor_compliance_rules(&config, root).expect("should succeed");
 
-        let dest = root.join(".cursor").join("rules").join("processkit-compliance.md");
-        assert!(dest.is_file(), ".cursor/rules/processkit-compliance.md should exist");
+        let dest = root
+            .join(".cursor")
+            .join("rules")
+            .join("processkit-compliance.md");
+        assert!(
+            dest.is_file(),
+            ".cursor/rules/processkit-compliance.md should exist"
+        );
         assert_eq!(
             fs::read_to_string(&dest).unwrap().trim(),
             "canonical content"
@@ -333,8 +328,14 @@ mod tests {
         let config = config_with_harnesses(vec![AiHarness::Claude]);
         write_cursor_compliance_rules(&config, root).expect("should succeed");
 
-        let dest = root.join(".cursor").join("rules").join("processkit-compliance.md");
-        assert!(!dest.exists(), "file should not be written for non-cursor harness");
+        let dest = root
+            .join(".cursor")
+            .join("rules")
+            .join("processkit-compliance.md");
+        assert!(
+            !dest.exists(),
+            "file should not be written for non-cursor harness"
+        );
     }
 
     // -----------------------------------------------------------------------
@@ -373,9 +374,15 @@ mod tests {
         write_aider_compliance_conf(&config, root).expect("should succeed");
 
         let raw = fs::read_to_string(root.join(".aider.conf.yml")).unwrap();
-        assert!(raw.contains("some-custom-file.md"), "custom entry should be preserved");
+        assert!(
+            raw.contains("some-custom-file.md"),
+            "custom entry should be preserved"
+        );
         assert!(raw.contains("AGENTS.md"), "AGENTS.md should be added");
-        assert!(raw.contains(COMPLIANCE_CONTRACT_REL), "compliance path should be added");
+        assert!(
+            raw.contains(COMPLIANCE_CONTRACT_REL),
+            "compliance path should be added"
+        );
     }
 
     #[test]

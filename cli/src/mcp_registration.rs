@@ -1321,12 +1321,7 @@ args = ["server.js"]
         );
 
         // Corrupt skill triggers the fallback path.
-        write_synth_skill_mcp(
-            tmp.path(),
-            version,
-            "event-log",
-            r#"{ CORRUPT "#,
-        );
+        write_synth_skill_mcp(tmp.path(), version, "event-log", r#"{ CORRUPT "#);
 
         let result = collect_processkit_mcp_specs(tmp.path(), version, None, &[]);
         assert!(result.is_ok(), "must not error on corrupt config");

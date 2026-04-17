@@ -26,10 +26,10 @@ mod context;
 mod doctor;
 mod env;
 mod generate;
+mod hook_registration;
 #[allow(dead_code)]
 mod lock;
 mod log;
-mod hook_registration;
 mod mcp_registration;
 mod migration;
 mod output;

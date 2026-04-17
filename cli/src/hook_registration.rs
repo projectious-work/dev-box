@@ -172,9 +172,8 @@ fn write_claude_settings_hooks(path: &Path) -> Result<()> {
         if body.trim().is_empty() {
             serde_json::Map::new()
         } else {
-            serde_json::from_str(&body).with_context(|| {
-                format!("failed to parse existing JSON at {}", path.display())
-            })?
+            serde_json::from_str(&body)
+                .with_context(|| format!("failed to parse existing JSON at {}", path.display()))?
         }
     } else {
         serde_json::Map::new()
@@ -269,9 +268,8 @@ fn write_codex_hooks_json(path: &Path) -> Result<()> {
         if body.trim().is_empty() {
             serde_json::Map::new()
         } else {
-            serde_json::from_str(&body).with_context(|| {
-                format!("failed to parse existing JSON at {}", path.display())
-            })?
+            serde_json::from_str(&body)
+                .with_context(|| format!("failed to parse existing JSON at {}", path.display()))?
         }
     } else {
         serde_json::Map::new()
@@ -299,8 +297,7 @@ fn write_codex_hooks_json(path: &Path) -> Result<()> {
             .with_context(|| format!("failed to create directory {}", parent.display()))?;
     }
 
-    let formatted =
-        serde_json::to_string_pretty(&top).context("failed to serialize hooks JSON")?;
+    let formatted = serde_json::to_string_pretty(&top).context("failed to serialize hooks JSON")?;
     fs::write(path, formatted).with_context(|| format!("failed to write {}", path.display()))?;
 
     Ok(())
@@ -355,9 +352,8 @@ fn write_cursor_hooks_json(path: &Path) -> Result<()> {
         if body.trim().is_empty() {
             serde_json::Map::new()
         } else {
-            serde_json::from_str(&body).with_context(|| {
-                format!("failed to parse existing JSON at {}", path.display())
-            })?
+            serde_json::from_str(&body)
+                .with_context(|| format!("failed to parse existing JSON at {}", path.display()))?
         }
     } else {
         serde_json::Map::new()
@@ -471,10 +467,14 @@ version = "unset"
         let body = fs::read_to_string(&path).unwrap();
         let parsed: serde_json::Value = serde_json::from_str(&body).unwrap();
 
-        let hooks = parsed["hooks"].as_object().expect("hooks must be an object");
+        let hooks = parsed["hooks"]
+            .as_object()
+            .expect("hooks must be an object");
 
         // SessionStart entry present and contains emit_compliance_contract.py
-        let ss = hooks["SessionStart"].as_array().expect("SessionStart is array");
+        let ss = hooks["SessionStart"]
+            .as_array()
+            .expect("SessionStart is array");
         assert!(!ss.is_empty(), "SessionStart must have at least one entry");
         let ss_cmd = ss[0]["hooks"][0]["command"]
             .as_str()
@@ -550,19 +550,18 @@ version = "unset"
         let ptu = parsed["hooks"]["PreToolUse"]
             .as_array()
             .expect("PreToolUse is array");
-        let user_entry = ptu.iter().find(|e| {
-            e["matcher"].as_str() == Some("Bash")
-                && e.get(MANAGED_MARKER).is_none()
-        });
+        let user_entry = ptu
+            .iter()
+            .find(|e| e["matcher"].as_str() == Some("Bash") && e.get(MANAGED_MARKER).is_none());
         assert!(
             user_entry.is_some(),
             "user-added PreToolUse Bash entry must be preserved"
         );
 
         // processkit-managed entry must also be present.
-        let managed_entry = ptu.iter().find(|e| {
-            e[MANAGED_MARKER].as_bool() == Some(true)
-        });
+        let managed_entry = ptu
+            .iter()
+            .find(|e| e[MANAGED_MARKER].as_bool() == Some(true));
         assert!(
             managed_entry.is_some(),
             "processkit-managed PreToolUse entry must be present after merge"
@@ -605,10 +604,16 @@ version = "unset"
         regenerate_hook_configs(&config, dir.path()).expect("should succeed");
 
         let claude_path = dir.path().join(".claude/settings.json");
-        assert!(claude_path.is_file(), ".claude/settings.json must be written");
+        assert!(
+            claude_path.is_file(),
+            ".claude/settings.json must be written"
+        );
         // Codex file must NOT be written.
         let codex_path = dir.path().join(".codex/hooks.json");
-        assert!(!codex_path.is_file(), ".codex/hooks.json must not be written when codex is not a harness");
+        assert!(
+            !codex_path.is_file(),
+            ".codex/hooks.json must not be written when codex is not a harness"
+        );
     }
 
     // -----------------------------------------------------------------------
@@ -678,7 +683,11 @@ version = "unset"
         let before_mcp = hooks["beforeMCPExecution"]
             .as_array()
             .expect("beforeMCPExecution is array");
-        assert_eq!(before_mcp.len(), 1, "one beforeMCPExecution entry on fresh write");
+        assert_eq!(
+            before_mcp.len(),
+            1,
+            "one beforeMCPExecution entry on fresh write"
+        );
         assert_eq!(
             before_mcp[0]["command"].as_str().unwrap(),
             ROUTE_GUARD_SCRIPT
@@ -797,7 +806,11 @@ version = "unset"
         let pre_tool = parsed["hooks"]["preToolUse"].as_array().unwrap();
 
         // Stale entry removed; fresh entry written. No duplication.
-        assert_eq!(pre_tool.len(), 1, "stale managed entry replaced, not accumulated");
+        assert_eq!(
+            pre_tool.len(),
+            1,
+            "stale managed entry replaced, not accumulated"
+        );
         assert_eq!(
             pre_tool[0]["description"].as_str().unwrap(),
             "processkit: block context/ writes without route_task",
@@ -832,7 +845,10 @@ version = "unset"
 
         regenerate_hook_configs(&config, dir.path()).expect("should succeed");
 
-        assert!(path.exists(), ".cursor/hooks.json must be written when cursor is in harnesses");
+        assert!(
+            path.exists(),
+            ".cursor/hooks.json must be written when cursor is in harnesses"
+        );
         let body = fs::read_to_string(&path).unwrap();
         let parsed: serde_json::Value = serde_json::from_str(&body).unwrap();
         assert!(parsed["hooks"]["preToolUse"].is_array());
@@ -846,6 +862,9 @@ version = "unset"
 
         assert!(!dir.path().join(".cursor").exists());
         write_cursor_hooks_json(&path).unwrap();
-        assert!(path.exists(), ".cursor/hooks.json created even if .cursor/ was absent");
+        assert!(
+            path.exists(),
+            ".cursor/hooks.json created even if .cursor/ was absent"
+        );
     }
 }

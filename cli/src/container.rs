@@ -1219,8 +1219,7 @@ pub fn cmd_init(config_path: &Option<String>, params: InitParams) -> Result<()> 
             }
             // Surface the processkit compliance contract to each harness.
             // Best-effort.
-            if let Err(e) =
-                crate::compliance::regenerate_compliance_configs(&config, &project_root)
+            if let Err(e) = crate::compliance::regenerate_compliance_configs(&config, &project_root)
             {
                 output::warn(&format!("Compliance config generation failed: {}", e));
             }
