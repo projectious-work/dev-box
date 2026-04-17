@@ -25,7 +25,7 @@ FROM_VERSION="${FROM_VERSION:-v0.17.10}"
 FROM_PK_VERSION="${FROM_PK_VERSION:-v0.13.0}"
 RETENTION_MINUTES="${RETENTION_MINUTES:-60}"
 
-log()  { printf '[%(%Y-%m-%d %H:%M:%S)T] %s\n' -1 "$*"; }
+log()  { printf '[%s] %s\n' "$(date +'%Y-%m-%d %H:%M:%S')" "$*"; }
 step() { printf '\n=== %s ===\n' "$*"; }
 
 usage() {
@@ -178,8 +178,8 @@ do_status() {
   local count
   count=$(find "$TMP_BASE" -maxdepth 1 -type d -name 'run-*' | wc -l | tr -d ' ')
   echo "runs at $TMP_BASE: $count"
-  find "$TMP_BASE" -maxdepth 1 -type d -name 'run-*' -printf '%T+  %p\n' 2>/dev/null \
-    | sort -r | head -20 || ls -1tr "$TMP_BASE"
+  find "$TMP_BASE" -maxdepth 1 -type d -name 'run-*' 2>/dev/null \
+    | sort -r | head -20
 }
 
 case "${1:-}" in
