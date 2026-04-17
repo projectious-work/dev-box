@@ -11,6 +11,13 @@ prepend_keymap = [
     { on = "e",       run = "shell 'open-in-editor \"$1\"' --confirm", desc = "Open in vim pane" },
     # O: interactive opener selection
     { on = "O",       run = "open --interactive", desc = "Open interactively" },
+    # z h/z l: hide or restore the parent/preview columns
+    { on = [ "z", "h" ], run = "plugin toggle-pane min-parent", desc = "Toggle parent pane" },
+    { on = [ "z", "l" ], run = "plugin toggle-pane min-preview", desc = "Toggle preview pane" },
+    # z m/z c/z 0: maximize preview/current or reset the default ratio
+    { on = [ "z", "m" ], run = "plugin toggle-pane max-preview", desc = "Maximize preview pane" },
+    { on = [ "z", "c" ], run = "plugin toggle-pane max-current", desc = "Maximize current pane" },
+    { on = [ "z", "0" ], run = "plugin toggle-pane", desc = "Reset pane layout" },
     # g s: repo-level git summary (branch + totals)
     { on = [ "g", "s" ], run = "shell 'git -c color.status=always status --short --branch --ignored=matching --untracked-files=all | ${PAGER:-less} -R' --block", desc = "Git summary" },
     # g c: detailed changed-files view for the current repository

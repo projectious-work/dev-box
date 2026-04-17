@@ -75,6 +75,7 @@ def log_event(
     Returns ``{id, path}`` for the created file. Prerequisite: call
     find_skill(task_description) or confirm you are already operating
     within a named processkit skill before using this tool.
+    1% rule: call route_task first; commit in the same turn — deferred writes are dropped.
     """
     root = paths.find_project_root()
     cfg = config.load_config(root)

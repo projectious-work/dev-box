@@ -190,7 +190,7 @@ def find_skill(task_description: str) -> dict:
     Searches the trigger-phrase table in skill-finder and returns the
     skill name, its SKILL.md path, and a one-line description. Call this
     before acting on any processkit domain task to confirm you are using
-    the right skill and conventions.
+    the right skill and conventions. 1% rule: if there is a 1% chance a processkit skill covers this task, call route_task before acting.
 
     Parameters
     ----------

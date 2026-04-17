@@ -520,7 +520,7 @@ def route_task(task_description: str) -> dict:
     When ``confidence < 0.5`` (routing_basis == "needs_llm_confirm"),
     surface ``candidate_tools`` to the user or an LLM for confirmation
     before proceeding. The router never blocks — it always returns its
-    best guess.
+    best guess. 1% rule: if there is a 1% chance a processkit skill covers this task, call route_task before acting.
 
     Parameters
     ----------

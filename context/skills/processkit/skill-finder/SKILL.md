@@ -150,7 +150,7 @@ directory name as the `category:` value when authoring or filtering:
 
 | Directory | Contents |
 |---|---|
-| `processkit/` | 32 skills for operating the processkit system |
+| `processkit/` | 33 skills for operating the processkit system |
 | `engineering/` | 46 skills: software design, architecture, backend, languages |
 | `devops/` | 15 skills: infrastructure, CI/CD, ops, monitoring |
 | `data-ai/` | 11 skills: data science, ML, AI/LLM, embeddings |

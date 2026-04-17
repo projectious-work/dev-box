@@ -105,6 +105,7 @@ def create_workitem(
     workitem state machine. Returns ``{id, path, state}``. Prerequisite:
     call find_skill(task_description) or confirm you are already
     operating within a named processkit skill before using this tool.
+    1% rule: call route_task first; commit in the same turn — deferred writes are dropped.
     """
     if type not in _VALID_TYPES:
         return {"error": f"invalid type {type!r}; must be one of {sorted(_VALID_TYPES)}"}
@@ -187,6 +188,7 @@ def transition_workitem(id: str, to_state: str, note: str | None = None) -> dict
     ``spec.completed_at`` on entering a terminal state. Prerequisite:
     call find_skill(task_description) or confirm you are already
     operating within a named processkit skill before using this tool.
+    1% rule: call route_task first; commit in the same turn — deferred writes are dropped.
     """
     root = paths.find_project_root()
     ent = _load_workitem(root, id)

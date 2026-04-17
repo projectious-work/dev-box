@@ -1,0 +1,6 @@
+{
+  "hook_event_name": "SessionStart",
+  "session_id": "test-session-fixture-001",
+  "transcript_path": "/tmp/claude-code-transcript-test-session-fixture-001.jsonl",
+  "cwd": "/workspace"
+}

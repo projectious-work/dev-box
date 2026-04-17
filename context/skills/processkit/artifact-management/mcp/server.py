@@ -110,6 +110,7 @@ def create_artifact(
     Returns ``{id, path}``. Prerequisite: call
     find_skill(task_description) or confirm you are already operating
     within a named processkit skill before using this tool.
+    1% rule: call route_task first; commit in the same turn — deferred writes are dropped.
     """
     if kind not in _VALID_KINDS:
         return {

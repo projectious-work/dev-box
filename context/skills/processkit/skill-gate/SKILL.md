@@ -25,7 +25,7 @@ metadata:
           acting, not after.
     provides:
       primitives: []
-      mcp_tools: []
+      mcp_tools: [acknowledge_contract, check_contract_acknowledged]
       assets: []
 ---
 
@@ -166,3 +166,51 @@ skill-gate is a processkit-specific skill. It is only meaningful in
 projects that have processkit installed (i.e. that have a `context/`
 directory with processkit entities). In projects without processkit,
 skill-gate should not be loaded.
+
+## How the gate is enforced
+
+skill-gate uses three complementary enforcement mechanisms. They are
+layered, not alternatives — use whichever the harness supports.
+
+### (a) Prose fallback — the 1% rule
+
+The primary enforcement mechanism is this SKILL.md itself. Every AI
+harness that loads SKILL.md receives the 1% rule in natural-language
+form: if there is even a 1% chance a processkit skill applies, check
+`skill-finder` first. Prose enforcement is provider-neutral — it works
+on Claude Code, Codex CLI, Cursor, and any harness that reads SKILL.md
+files. It requires no MCP support. The cost is that it is advisory:
+a harness that never loaded this file (or ignored it) has no hard
+barrier.
+
+### (b) Tool-call acknowledgement via `acknowledge_contract()`
+
+When the harness speaks MCP, a stronger enforcement layer is available
+via the `processkit-skill-gate` MCP server (`mcp/server.py`). Call
+`acknowledge_contract("v1")` once per session before any write-side
+processkit tool. On success the server writes a session marker file at:
+
+```
+context/.state/skill-gate/session-<SESSION_ID>.ack
+```
+
+The marker contains `contract_hash` and `acknowledged_at` (see
+`mcp/SERVER.md` for the full schema). CI and harness hooks
+(`SteadyHand`'s `check_route_task_called.py`) read this directory to
+confirm that a compliance acknowledgement was recorded for the session.
+The companion tool `check_contract_acknowledged()` can be called by
+any write-side tool implementation to gate on acknowledgement before
+proceeding.
+
+Session ID is resolved from env var `PROCESSKIT_SESSION_ID` or
+`os.getpid()` — one MCP stdio server process equals one session.
+
+### (c) Optional tool-side preconditions on write tools (future)
+
+A planned follow-up (separate WorkItem) will wire `check_contract_acknowledged()`
+as a precondition check inside each write-side MCP tool
+(`create_workitem`, `record_decision`, `log_event`, etc.) so that
+calling a write tool without a prior `acknowledge_contract()` in the
+same session returns an error rather than proceeding silently. This is
+intentionally out of scope for the current implementation to allow the
+acknowledgement pattern to soak before hard-blocking write tools.
