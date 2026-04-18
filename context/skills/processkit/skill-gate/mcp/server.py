@@ -15,6 +15,9 @@ Tools:
     check_contract_acknowledged()
         -> {acknowledged, session_id, age_seconds, contract_hash}
 
+    skip_decision_record(reason: str, session_id: str | None = None)
+        -> {ok, marker_path, contract_hash, acknowledged_at, expires_at}
+
 These tools implement Rail 3 of the processkit enforcement hybrid (see
 ART-20260414_1430-SteadyBeacon): a provider-neutral MCP-based compliance
 acknowledgement that works on any harness speaking MCP, without requiring
@@ -77,10 +80,11 @@ server = FastMCP("processkit-skill-gate")
 # Constants
 # ---------------------------------------------------------------------------
 
-_COMPLIANCE_VERSION = "v1"
+_COMPLIANCE_VERSION = "v2"
 _CONTRACT_MARKER = f"<!-- pk-compliance {_COMPLIANCE_VERSION} -->"
 _SESSION_ACK_SUBDIR = Path("context") / ".state" / "skill-gate"
 _ACK_LIFETIME_HOURS = 12
+_SKIP_LIFETIME_HOURS = 24
 
 
 # ---------------------------------------------------------------------------
@@ -291,6 +295,113 @@ def check_contract_acknowledged() -> dict:
         "session_id": session_id,
         "age_seconds": age_seconds,
         "contract_hash": stored_hash,
+    }
+
+
+@server.tool(
+    annotations=ToolAnnotations(
+        readOnlyHint=False,
+        destructiveHint=False,
+        idempotentHint=False,
+        openWorldHint=False,
+    )
+)
+def skip_decision_record(reason: str, session_id: str | None = None) -> dict:
+    """Acknowledge that no decision record is needed for the current window.
+
+    Call when the last five user messages contain explicit decision language
+    (approved / decided / ship it / let's go / ok / yes / confirmed) but no
+    ``record_decision`` / ``open_discussion`` / ``transition_workitem`` has been
+    made **and** you have concluded no decision actually needs recording —
+    e.g. the user rejected a proposal, withdrew the request, or the
+    decision-language phrase was incidental (a routine "ok" acknowledgement
+    rather than a consequential approval).
+
+    A marker file is written alongside the session acknowledgement file so
+    that ``check_decision_captured.py`` treats the current decision-language
+    window as explicitly acknowledged-without-record for the next 24 hours.
+
+    Parameters
+    ----------
+    reason :
+        A non-empty human-readable explanation of why no record is needed
+        (e.g. "User said 'ok' to dismiss a suggestion, not to approve it").
+        Rejected with ok=False if blank.
+    session_id :
+        Optional override for the session identifier. When omitted, the
+        server's default session ID is used (env PROCESSKIT_SESSION_ID or
+        PID). Useful for tests that inject a synthetic session ID.
+
+    Returns
+    -------
+    ok              — True when the marker was written successfully
+    marker_path     — absolute path of the written marker file (on success)
+    contract_hash   — sha256 of the current compliance contract
+    acknowledged_at — ISO-8601 UTC timestamp of this call
+    expires_at      — ISO-8601 UTC timestamp 24 h from now (TTL)
+    error           — present only when ok=False; explains what went wrong
+    """
+    reason = reason.strip() if reason else ""
+    if not reason:
+        return {
+            "ok": False,
+            "error": (
+                "reason must be a non-empty string explaining why no "
+                "decision record is needed."
+            ),
+        }
+
+    # Resolve contract hash.
+    try:
+        contract_text = _contract_path().read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return {
+            "ok": False,
+            "error": (
+                f"compliance-contract.md not found at {_contract_path()}; "
+                "processkit installation may be incomplete."
+            ),
+        }
+
+    contract_hash = _hash_contract(contract_text)
+    now = datetime.now(timezone.utc)
+    expires_at = now + timedelta(hours=_SKIP_LIFETIME_HOURS)
+
+    # Resolve session ID (allow caller override for testability).
+    sid = str(session_id).strip() if session_id else _session_id()
+
+    # Build marker path parallel to the .ack file.
+    project_root = paths.find_project_root()
+    marker_dir = project_root / _SESSION_ACK_SUBDIR
+    marker_path = marker_dir / f"session-{sid}.decision-skip"
+
+    try:
+        marker_dir.mkdir(parents=True, exist_ok=True)
+        marker_path.write_text(
+            json.dumps(
+                {
+                    "reason": reason,
+                    "contract_hash": contract_hash,
+                    "acknowledged_at": now.isoformat(),
+                    "expires_at": expires_at.isoformat(),
+                },
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+    except OSError as exc:
+        return {
+            "ok": False,
+            "error": f"could not write skip marker: {exc}",
+        }
+
+    return {
+        "ok": True,
+        "marker_path": str(marker_path),
+        "contract_hash": contract_hash,
+        "acknowledged_at": now.isoformat(),
+        "expires_at": expires_at.isoformat(),
     }
 
 

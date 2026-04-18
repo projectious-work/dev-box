@@ -3,5 +3,5 @@ argument-hint: ""
 allowed-tools: []
 ---
 
-Use the standup-context skill to generate a status update: current
-progress, blockers, and recommended next steps.
+Generate today's standup: what was done, what is in progress, what comes
+next, and any blockers. Quick, structured, for the team record.

@@ -1,4 +1,4 @@
-<!-- pk-compliance v1 -->
+<!-- pk-compliance v2 -->
 
 ## processkit Compliance Contract
 
@@ -24,6 +24,11 @@ produce automatically.
 
 After a cross-cutting recommendation is accepted, call `record_decision`
 in the same turn.
+
+When the last five user messages contain explicit decision language
+(approved / decided / ship it / let's go / ok / yes / confirmed),
+either call `record_decision` in the same turn or call
+`skip_decision_record(reason=...)` to acknowledge the skip.
 
 Do not edit any file under `context/templates/` — it is a read-only
 upstream mirror used as a diff baseline.

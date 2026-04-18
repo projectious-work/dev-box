@@ -223,3 +223,15 @@ query_events(event_type="session.handover", limit=1, order="desc")
 
 Check `details.session_date` to assess staleness before weighting the
 content.
+
+**Before starting any new workstream** identified in the handover,
+query the skill index for a relevant skill:
+
+```
+search_entities(kind=skill, text=<workstream-keyword>)
+```
+
+or call `find_skill(<workstream-keyword>)`. Do this before acting on
+any item in `open_threads` or `next_recommended_action` — a matching
+skill may exist with processkit-specific conventions that general
+knowledge does not carry.

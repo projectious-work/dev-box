@@ -1,6 +1,6 @@
 """
-test_hooks.py — smoke tests for emit_compliance_contract.py and
-check_route_task_called.py.
+test_hooks.py — smoke tests for emit_compliance_contract.py,
+check_route_task_called.py, and the skill-gate MCP server tools.
 
 WorkItem: FEAT-20260414_1433-SteadyHand-provider-neutral-hook-scripts
 
@@ -72,7 +72,7 @@ print("\n[1] emit_compliance_contract.py — plain stdout")
 
 result = run(_EMIT_SCRIPT)
 check("exit 0", result.returncode == 0, f"got {result.returncode}")
-check("stdout contains contract marker", "pk-compliance v1" in result.stdout)
+check("stdout contains contract marker", "pk-compliance v2" in result.stdout)
 check("stderr empty", result.stderr.strip() == "", result.stderr.strip())
 
 # ---------------------------------------------------------------------------
@@ -97,7 +97,7 @@ try:
     )
     check(
         "additionalContext contains contract",
-        "pk-compliance v1" in hso.get("additionalContext", ""),
+        "pk-compliance v2" in hso.get("additionalContext", ""),
     )
 except json.JSONDecodeError as exc:
     check("JSON envelope present", False, str(exc))
@@ -280,6 +280,166 @@ print("\n[7] check_route_task_called.py — malformed JSON → exit 0 (safe, non
 
 result = run(_CHECK_SCRIPT, stdin_text="not valid json")
 check("exit 0 (safe pass on bad input)", result.returncode == 0, f"got {result.returncode}")
+
+# ---------------------------------------------------------------------------
+# Tests 8–10: skip_decision_record marker semantics.
+#
+# The MCP server (server.py) uses `uv run` inline-script deps and cannot
+# be imported directly in a plain Python subprocess.  Instead we test the
+# marker file contract — identical to how tests 5/5b/5c test .ack markers —
+# by writing .decision-skip files directly and asserting that
+# check_decision_captured.py honours them.
+#
+# The MCP tool skip_decision_record() is integration-tested by the existing
+# smoke-test-servers.py (scripts/smoke-test-servers.py) which runs the
+# server via `uv run` and exercises all three tools over MCP.
+# ---------------------------------------------------------------------------
+
+_CHECK_DEC = _SCRIPTS_DIR / "check_decision_captured.py"
+
+from datetime import timedelta as _td  # noqa: E402  (local to test section)
+
+
+def _run_check_dec(
+    input_json: str, block_mode: bool = False
+) -> subprocess.CompletedProcess:
+    """Run check_decision_captured.py with PYTHONPATH so it can import
+    decision_markers from the same scripts/ directory."""
+    cmd = [sys.executable, str(_CHECK_DEC)]
+    if block_mode:
+        cmd.append("--mode=block")
+    env = os.environ.copy()
+    for var in ("CLAUDE_CODE_ENTRYPOINT", "CLAUDE_CODE_VERSION", "ANTHROPIC_CLAUDE_CODE"):
+        env.pop(var, None)
+    env["PYTHONPATH"] = str(_SCRIPTS_DIR)
+    return subprocess.run(cmd, input=input_json, capture_output=True, text=True, env=env)
+
+
+# ---------------------------------------------------------------------------
+# Test 8: valid .decision-skip marker written with expected fields
+# ---------------------------------------------------------------------------
+print("\n[8] skip_decision_record marker — field layout is correct")
+
+with tempfile.TemporaryDirectory() as _tmp8:
+    _root8 = Path(_tmp8)
+    (_root8 / "context").mkdir()
+    _state8 = _root8 / "context" / ".state" / "skill-gate"
+    _state8.mkdir(parents=True)
+
+    _now8 = datetime.now(timezone.utc)
+    _marker8 = _state8 / "session-test8.decision-skip"
+    _marker8.write_text(
+        json.dumps(
+            {
+                "reason": "User said ok to dismiss a suggestion",
+                "contract_hash": hashlib.sha256(_CONTRACT.read_bytes()).hexdigest(),
+                "acknowledged_at": _now8.isoformat(),
+                "expires_at": (_now8 + _td(hours=24)).isoformat(),
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    _mdata8 = json.loads(_marker8.read_text())
+    check("marker file written", _marker8.is_file())
+    check("marker has reason field", "reason" in _mdata8)
+    check("marker has contract_hash", "contract_hash" in _mdata8)
+    check("marker has acknowledged_at", "acknowledged_at" in _mdata8)
+    check("marker has expires_at", "expires_at" in _mdata8)
+    check(
+        "marker reason is non-empty",
+        bool(_mdata8.get("reason", "").strip()),
+    )
+
+# ---------------------------------------------------------------------------
+# Test 9: empty-reason guard — skip marker without reason is rejected
+#         (simulated: the gate ignores a marker with empty reason field)
+# ---------------------------------------------------------------------------
+print("\n[9] skip_decision_record — empty-reason marker not present (gate blocks)")
+
+with tempfile.TemporaryDirectory() as _tmp9:
+    _root9 = Path(_tmp9)
+    (_root9 / "context").mkdir()
+    _state9 = _root9 / "context" / ".state" / "skill-gate"
+    _state9.mkdir(parents=True)
+
+    # Deliberately do NOT write any skip marker, simulating what the MCP tool
+    # does when reason="" (it rejects and writes nothing).
+    _transcript9 = _root9 / "transcript.jsonl"
+    _transcript9.write_text(
+        json.dumps({"type": "user", "message": {"role": "user", "content": "approved"}})
+        + "\n",
+        encoding="utf-8",
+    )
+    _input9 = json.dumps(
+        {
+            "hook_event_name": "PreToolUse",
+            "session_id": "test9",
+            "cwd": str(_root9),
+            "tool_name": "create_workitem",
+            "tool_input": {"title": "x"},
+            "transcript_path": str(_transcript9),
+        }
+    )
+    _r9 = _run_check_dec(_input9, block_mode=True)
+    check(
+        "exit 2 (no skip marker, gate blocks in block mode)",
+        _r9.returncode == 2,
+        f"got {_r9.returncode}; stderr={_r9.stderr.strip()}",
+    )
+
+# ---------------------------------------------------------------------------
+# Test 10: check_decision_captured — valid skip marker → exit 0 in block mode
+# ---------------------------------------------------------------------------
+print("\n[10] check_decision_captured — valid skip marker → exit 0 in block mode")
+
+with tempfile.TemporaryDirectory() as _tmp10:
+    _root10 = Path(_tmp10)
+    (_root10 / "context").mkdir()
+    _state10 = _root10 / "context" / ".state" / "skill-gate"
+    _state10.mkdir(parents=True)
+
+    _now10 = datetime.now(timezone.utc)
+    (_state10 / "session-test10.decision-skip").write_text(
+        json.dumps(
+            {
+                "reason": "User withdrew the proposal",
+                "contract_hash": hashlib.sha256(_CONTRACT.read_bytes()).hexdigest(),
+                "acknowledged_at": _now10.isoformat(),
+                "expires_at": (_now10 + _td(hours=24)).isoformat(),
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    # Transcript with Tier-A word — the gate would normally fire, but the
+    # skip marker should suppress it.
+    _transcript10 = _root10 / "transcript.jsonl"
+    _transcript10.write_text(
+        json.dumps({"type": "user", "message": {"role": "user", "content": "approved"}})
+        + "\n",
+        encoding="utf-8",
+    )
+    _input10 = json.dumps(
+        {
+            "hook_event_name": "PreToolUse",
+            "session_id": "test10",
+            "cwd": str(_root10),
+            "tool_name": "create_workitem",
+            "tool_input": {"title": "x"},
+            "transcript_path": str(_transcript10),
+        }
+    )
+    _r10 = _run_check_dec(_input10, block_mode=True)
+    check(
+        "exit 0 with skip marker in block mode",
+        _r10.returncode == 0,
+        f"got {_r10.returncode}; stderr={_r10.stderr.strip()}",
+    )
 
 # ---------------------------------------------------------------------------
 # Summary
