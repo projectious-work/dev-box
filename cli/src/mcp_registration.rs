@@ -1808,8 +1808,7 @@ args = ["server.js"]
             "processkit-broken",
             vec!["run", "context/skills/broken/mcp/server.py"],
         )];
-        let err = validate_script_paths(&specs, tmp.path())
-            .expect_err("missing path; should fail");
+        let err = validate_script_paths(&specs, tmp.path()).expect_err("missing path; should fail");
         let msg = format!("{err}");
         assert!(
             msg.contains("processkit-broken"),
