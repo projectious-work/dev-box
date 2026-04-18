@@ -541,7 +541,7 @@ cmd_release() {
   # Run the aarch64 binary under qemu if available, else the native-host
   # cargo target. We just need to ensure `aibox --version` matches ${version}
   # — this catches the Cargo.toml-not-bumped class of release bug (v0.18.4).
-  info "Verifying `aibox --version` matches ${version}..."
+  info "Verifying 'aibox --version' matches ${version}..."
   local host_binary="${CLI_DIR}/target/release/aibox"
   (cd "${CLI_DIR}" && cargo build --release --quiet) \
     || die "native cargo build failed (needed for --version smoke test)"
