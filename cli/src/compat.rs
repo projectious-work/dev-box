@@ -165,6 +165,11 @@ pub static COMPAT_TABLE: &[CompatEntry] = &[
         processkit_version: "v0.18.1",
         note: "catch-up release: completes the 0.18.4 work (multi-version upgrade gaps closed); bumps default processkit to v0.18.1 (hookEventName hotfix + src↔context parity); hook commands now use $CLAUDE_PROJECT_DIR so they work regardless of Claude Code's launch cwd; maintain.sh release now writes Cargo.toml + refreshes Cargo.lock before tagging.",
     },
+    CompatEntry {
+        aibox_version: "0.18.6",
+        processkit_version: "v0.18.1",
+        note: "MCP-merge release: fixes the flat one-level walker bug in mcp_registration.rs and claude_commands.rs that prevented .mcp.json and .claude/commands/ from being populated against the category-nested skills tree (aibox#53); promotes skill-gate to MANDATORY_MCP_SKILLS so acknowledge_contract() is reachable on every harness session and the PreToolUse compliance gate is satisfiable out of the box; adds collision guard for duplicate skill basenames across categories; repairs cmd_docs_deploy (gh-pages worktree git identity + tmpdir unbound trap).",
+    },
 ];
 
 /// Find the minimum compatible processkit version for the given aibox version.
