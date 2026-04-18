@@ -1,0 +1,21 @@
+# index-management configuration
+# Edited by the agent during first-time setup (see AGENTS.md).
+# Changes take effect immediately — no MCP server restart required.
+
+# Directory name overrides under context/ — uncomment to change defaults.
+# [directories]
+# WorkItem       = "workitems"
+# LogEntry       = "logs"
+# DecisionRecord = "decisions"
+# Discussion     = "discussions"
+# Actor          = "actors"
+# Role           = "roles"
+# Scope          = "scopes"
+# Gate           = "gates"
+# Binding        = "bindings"
+# Migration      = "migrations"
+
+# Log sharding — date-based subdirectories for high-volume log entries.
+[sharding.LogEntry]
+scheme  = "date"
+pattern = "context/logs/{year}/{month}/"

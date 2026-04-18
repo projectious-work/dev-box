@@ -1,0 +1,87 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: Schema
+metadata:
+  id: SCHEMA-role
+  target_kind: Role
+  version: "1.0.0"
+  created: 2026-04-07T00:00:00Z
+spec:
+  description: >
+    A named set of responsibilities an Actor can fill. Roles describe
+    what, not who — "developer", "reviewer", "tech-lead". Actor-to-Role
+    assignments live in Binding entities so they can be scoped and
+    time-bounded. Roles in processkit have no enforcement semantics
+    (DEC-017): they are descriptive, not restrictive.
+  id_prefix: ROLE
+  state_machine: null
+  default_directory: context/roles
+  spec_schema:
+    $schema: https://json-schema.org/draft/2020-12/schema
+    type: object
+    required: [name, description]
+    additionalProperties: true
+    properties:
+      name:
+        type: string
+        minLength: 1
+        maxLength: 100
+        description: "Kebab-case identifier. Matches the suffix of metadata.id."
+      description:
+        type: string
+        minLength: 1
+        description: "One-sentence purpose statement. Shown in role listings."
+      responsibilities:
+        type: array
+        items:
+          type: string
+        description: "Imperative bullet points. Concrete, not vague."
+      skills_required:
+        type: array
+        items:
+          type: string
+        description: >
+          Skill IDs or names. Advisory — not enforced. Used by
+          assignment-suggestion logic.
+      default_scope:
+        type: string
+        enum: [project, sprint, permanent]
+        description: >
+          Default scope assumption when an Actor is bound to this role
+          without an explicit scope.
+      supersedes:
+        type: string
+        pattern: "^ROLE-[a-zA-Z0-9_-]+$"
+        description: "Role ID this one replaces (for role renames or reorganizations)."
+      model_profiles:
+        type: array
+        description: >
+          Ranked list of equivalent model-profile options this role can be
+          fulfilled by. The PM picks the top-ranked option available to the
+          project (filtered by Layer B owner preferences in model-recommender
+          config). Order by `rank` ascending (1 = primary). Added 2026-04-17.
+        items:
+          type: object
+          additionalProperties: false
+          required: [rank, provider, family]
+          properties:
+            rank:
+              type: integer
+              minimum: 1
+              description: "1 = primary, 2 = first alternate, etc."
+            provider:
+              type: string
+              description: "Vendor: anthropic, openai, google, xai, deepseek, ..."
+            family:
+              type: string
+              description: "Model family, e.g. claude-opus, gpt-5, gemini-pro."
+            default_version:
+              type: string
+              description: "Version string, e.g. \"4.7\", \"5.4\"."
+            default_effort:
+              type: string
+              enum: [minimal, low, medium, high, xhigh, none]
+              description: "Effort tier. Use \"none\" for models without tiers (e.g. Haiku)."
+            rationale:
+              type: string
+              description: "One-line reason this option is in the set at this rank."

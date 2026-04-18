@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "processkit-gate-management": {
+      "command": "uv",
+      "args": [
+        "run",
+        "context/skills/processkit/gate-management/mcp/server.py"
+      ],
+      "env": {}
+    }
+  }
+}

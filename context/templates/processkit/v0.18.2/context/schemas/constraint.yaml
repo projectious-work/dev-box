@@ -1,0 +1,70 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: Schema
+metadata:
+  id: SCHEMA-constraint
+  target_kind: Constraint
+  version: "1.0.0"
+  created: 2026-04-07T00:00:00Z
+spec:
+  description: >
+    An explicit rule or limit the project must respect — budget ceilings,
+    latency SLOs, team capacity, regulatory requirements, dependency
+    restrictions. Capturing constraints as first-class entities makes
+    them referenceable from decisions and visible to trade-off analysis.
+    Constraint violations are LogEntries (constraint.violated), not edits
+    to the Constraint file.
+  id_prefix: CONST
+  state_machine: null
+  default_directory: context/constraints
+  spec_schema:
+    $schema: https://json-schema.org/draft/2020-12/schema
+    type: object
+    required: [name, description, kind, severity]
+    additionalProperties: true
+    properties:
+      name:
+        type: string
+        minLength: 1
+        description: "Kebab-case identifier."
+      description:
+        type: string
+        description: "One-sentence statement of the constraint."
+      kind:
+        type: string
+        enum:
+          - budget
+          - slo
+          - regulatory
+          - capacity
+          - dependency
+          - policy
+          - other
+        description: "Subtype of constraint."
+      severity:
+        type: string
+        enum: [hard, soft, advisory]
+        description: >
+          hard = cannot be violated; soft = flagged but overridable;
+          advisory = informational.
+      measurement:
+        type: string
+        description: "How to determine whether the constraint is met."
+      target:
+        type: string
+        description: "The threshold or boundary value."
+      source:
+        type: string
+        description: >
+          Where the constraint comes from (contract, regulation, owner
+          decision, etc.).
+      active:
+        type: boolean
+        default: true
+        description: "False = no longer in effect."
+      related_decisions:
+        type: array
+        items:
+          type: string
+          pattern: "^DEC-[a-zA-Z0-9_-]+$"
+        description: "Decisions that established or relaxed this constraint."

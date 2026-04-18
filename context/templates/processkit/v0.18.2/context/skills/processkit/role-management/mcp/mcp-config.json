@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "processkit-role-management": {
+      "command": "uv",
+      "args": [
+        "run",
+        "context/skills/processkit/role-management/mcp/server.py"
+      ],
+      "env": {}
+    }
+  }
+}

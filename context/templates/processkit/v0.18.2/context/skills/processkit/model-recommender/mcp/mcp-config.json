@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "processkit-model-recommender": {
+      "command": "uv",
+      "args": [
+        "run",
+        "context/skills/processkit/model-recommender/mcp/server.py"
+      ],
+      "env": {}
+    }
+  }
+}

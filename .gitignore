@@ -76,3 +76,7 @@ context/**/private/
 .codex/
 context/.state/
 cli/context
+
+# Python bytecode caches (appear under processkit MCP helper libs)
+__pycache__/
+*.pyc

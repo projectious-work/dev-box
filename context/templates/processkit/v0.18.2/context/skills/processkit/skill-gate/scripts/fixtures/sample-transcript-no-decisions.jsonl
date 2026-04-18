@@ -1,0 +1,10 @@
+{"type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "Here is the current state of the WorkItem backlog. There are 12 items in backlog, 3 in progress."}]}, "timestamp": "2026-04-15T11:00:00Z"}
+{"type": "user", "message": {"role": "user", "content": [{"type": "text", "text": "What's the status of FEAT-001?"}]}, "timestamp": "2026-04-15T11:00:30Z"}
+{"type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "FEAT-001 is in-progress. The assignee last updated it on April 12."}]}, "timestamp": "2026-04-15T11:01:00Z"}
+{"type": "user", "message": {"role": "user", "content": [{"type": "text", "text": "When was it created?"}]}, "timestamp": "2026-04-15T11:01:30Z"}
+{"type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "It was created on March 28, 2026 by the project manager."}]}, "timestamp": "2026-04-15T11:02:00Z"}
+{"type": "user", "message": {"role": "user", "content": [{"type": "text", "text": "Can you show me the description?"}]}, "timestamp": "2026-04-15T11:02:30Z"}
+{"type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "The description reads: Implement authentication module with OAuth2 support."}]}, "timestamp": "2026-04-15T11:03:00Z"}
+{"type": "user", "message": {"role": "user", "content": [{"type": "text", "text": "How many subtasks does it have?"}]}, "timestamp": "2026-04-15T11:03:30Z"}
+{"type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "It has 4 subtasks: design, implementation, testing, and documentation."}]}, "timestamp": "2026-04-15T11:04:00Z"}
+{"type": "user", "message": {"role": "user", "content": [{"type": "text", "text": "Which subtask is next?"}]}, "timestamp": "2026-04-15T11:04:30Z"}
