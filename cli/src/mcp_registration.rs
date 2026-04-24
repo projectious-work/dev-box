@@ -1264,6 +1264,118 @@ pub fn regenerate_mcp_configs(config: &AiboxConfig, project_root: &Path) -> Resu
         ));
     }
 
+    // Phase 3: Generate MCP permissions for all supported harnesses.
+    // This controls which MCP tools are allow-listed per harness based on [mcp]
+    // configuration in aibox.toml. Errors are logged but don't fail the sync.
+    if let Err(e) = generate_all_harness_permissions(project_root, config, &specs) {
+        output::warn(&format!(
+            "Failed to generate MCP permissions configuration: {}",
+            e
+        ));
+    }
+
+    Ok(())
+}
+
+/// Generate MCP permission configurations for all supported harnesses.
+/// Reads [mcp] section from aibox.toml and generates harness-specific allow/deny
+/// lists. Each generator respects the harness's native permission format.
+///
+/// # Arguments
+/// * `project_root` - Project root directory
+/// * `config` - Parsed AiboxConfig with [mcp] section
+/// * `specs` - List of available MCP servers (for pattern matching)
+///
+/// # Returns
+/// Result; errors are logged but don't fail the sync
+#[allow(dead_code)]
+fn generate_all_harness_permissions(
+    project_root: &Path,
+    config: &AiboxConfig,
+    specs: &[McpServerSpec],
+) -> Result<()> {
+    // Extract [mcp] configuration from aibox.toml.
+    // Defaults to empty config (allow all patterns by default).
+    let mcp_config = &config.mcp.permissions;
+
+    // Build list of tool names available for pattern matching
+    let tool_names: Vec<String> = specs.iter().map(|s| s.name.clone()).collect();
+
+    // Generate permissions for all supported harnesses.
+    // Best-effort: log individual errors but continue.
+
+    if config.ai.harnesses.contains(&AiProvider::Claude)
+        && let Err(e) = generate_claude_code_permissions(project_root, mcp_config, &tool_names)
+    {
+        output::warn(&format!(
+            "Failed to generate Claude Code MCP permissions: {}",
+            e
+        ));
+    }
+
+    if config.ai.harnesses.contains(&AiProvider::OpenCode)
+        && let Err(e) = generate_opencode_permissions(project_root, mcp_config, &tool_names)
+    {
+        output::warn(&format!(
+            "Failed to generate OpenCode MCP permissions: {}",
+            e
+        ));
+    }
+
+    if config.ai.harnesses.contains(&AiProvider::Continue)
+        && let Err(e) = generate_continue_permissions(project_root, mcp_config, &tool_names)
+    {
+        output::warn(&format!(
+            "Failed to generate Continue MCP permissions: {}",
+            e
+        ));
+    }
+
+    if config.ai.harnesses.contains(&AiProvider::Cursor)
+        && let Err(e) = generate_cursor_permissions(project_root, mcp_config, &tool_names)
+    {
+        output::warn(&format!(
+            "Failed to generate Cursor MCP permissions: {}",
+            e
+        ));
+    }
+
+    if config.ai.harnesses.contains(&AiProvider::Aider)
+        && let Err(e) = generate_aider_permissions(project_root, mcp_config, &tool_names)
+    {
+        output::warn(&format!(
+            "Failed to generate Aider MCP permissions: {}",
+            e
+        ));
+    }
+
+    if config.ai.harnesses.contains(&AiProvider::Gemini)
+        && let Err(e) = generate_gemini_permissions(project_root, mcp_config, &tool_names)
+    {
+        output::warn(&format!(
+            "Failed to generate Gemini MCP permissions: {}",
+            e
+        ));
+    }
+
+    if config.ai.harnesses.contains(&AiProvider::Copilot)
+        && let Err(e) = generate_github_copilot_permissions(project_root, mcp_config, &tool_names)
+    {
+        output::warn(&format!(
+            "Failed to generate GitHub Copilot MCP permissions: {}",
+            e
+        ));
+    }
+
+    if config.ai.harnesses.contains(&AiProvider::Codex)
+        && let Err(e) = generate_codex_permissions(project_root, mcp_config, &tool_names)
+    {
+        output::warn(&format!(
+            "Failed to generate Codex MCP permissions: {}",
+            e
+        ));
+    }
+
     Ok(())
 }
 

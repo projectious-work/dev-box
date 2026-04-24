@@ -816,6 +816,11 @@ pub struct McpSection {
     /// Extra MCP servers to register alongside processkit-managed ones.
     #[serde(default)]
     pub servers: Vec<ExtraMcpServer>,
+
+    /// MCP permissions configuration: global allow/deny patterns and per-harness overrides.
+    /// Controls which MCP tools are available to each harness via allow/deny lists.
+    #[serde(default)]
+    pub permissions: crate::mcp_registration::McpConfig,
 }
 
 impl Default for ProcessKitSection {
