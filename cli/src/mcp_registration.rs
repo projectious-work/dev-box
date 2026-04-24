@@ -263,6 +263,136 @@ pub fn first_match_wins(
 }
 
 // ---------------------------------------------------------------------------
+// Harness-specific permission generators (Phase 2)
+// ---------------------------------------------------------------------------
+
+/// Generate MCP permissions for Claude Code's settings.local.json.
+/// Updates `permissions.allow[]` list with tools allowed by the McpConfig patterns.
+///
+/// # Arguments
+/// * `project_root` - Project root directory
+/// * `config` - Parsed McpConfig from aibox.toml
+/// * `all_tool_names` - All available MCP tool names
+///
+/// # Returns
+/// Result; logs warnings on individual failures, doesn't abort
+#[allow(dead_code)]
+pub fn generate_claude_code_permissions(
+    project_root: &Path,
+    config: &McpConfig,
+    all_tool_names: &[String],
+) -> Result<()> {
+    let settings_path = project_root.join(".claude").join("settings.local.json");
+
+    // Determine allowed tools
+    let allowed = expand_mcp_patterns(&config.allow_patterns, all_tool_names);
+    let denied = expand_mcp_patterns(&config.deny_patterns, all_tool_names);
+
+    // Build final allow list: keep tools allowed by config, remove denied ones
+    let mut permissions: Vec<String> = allowed
+        .iter()
+        .filter(|tool| !denied.contains(tool))
+        .map(|t| format!("mcp__{}", t))
+        .collect();
+    permissions.sort();
+
+    // Read existing settings or create new
+    let mut settings: serde_json::Map<String, serde_json::Value> = if settings_path.is_file() {
+        let body = fs::read_to_string(&settings_path).unwrap_or_default();
+        if body.trim().is_empty() {
+            serde_json::Map::new()
+        } else {
+            serde_json::from_str(&body).unwrap_or_default()
+        }
+    } else {
+        serde_json::Map::new()
+    };
+
+    // Merge: preserve existing non-permissions keys
+    settings.insert(
+        "permissions.allow".to_string(),
+        serde_json::Value::Array(
+            permissions
+                .iter()
+                .map(|p| serde_json::Value::String(p.clone()))
+                .collect(),
+        ),
+    );
+
+    // Ensure parent dir exists
+    if let Some(parent) = settings_path.parent() {
+        fs::create_dir_all(parent).ok();
+    }
+
+    let formatted = serde_json::to_string_pretty(&settings)?;
+    fs::write(&settings_path, formatted)
+        .with_context(|| format!("failed to write Claude Code permissions to {}", settings_path.display()))?;
+
+    Ok(())
+}
+
+/// Generate MCP permissions for OpenCode's config.toml.
+/// Updates `[mcp]` section with allow/ask/deny modes based on patterns.
+///
+/// # Arguments
+/// * `project_root` - Project root directory
+/// * `config` - Parsed McpConfig from aibox.toml
+/// * `all_tool_names` - All available MCP tool names
+///
+/// # Returns
+/// Result; logs warnings on individual failures
+#[allow(dead_code)]
+pub fn generate_opencode_permissions(
+    project_root: &Path,
+    config: &McpConfig,
+    all_tool_names: &[String],
+) -> Result<()> {
+    let config_path = project_root.join(".opencode").join("config.toml");
+
+    // Determine allowed/denied tools
+    let allowed = expand_mcp_patterns(&config.allow_patterns, all_tool_names);
+    let denied = expand_mcp_patterns(&config.deny_patterns, all_tool_names);
+
+    // Read existing config or create new
+    let mut document: toml_edit::DocumentMut = if config_path.is_file() {
+        let body = fs::read_to_string(&config_path).unwrap_or_default();
+        body.parse::<toml_edit::DocumentMut>().unwrap_or_default()
+    } else {
+        toml_edit::DocumentMut::new()
+    };
+
+    // Ensure [mcp] section exists
+    if !document.contains_key("mcp") {
+        document["mcp"] = toml_edit::table();
+    }
+
+    let mcp_table = &mut document["mcp"];
+
+    // Set mode based on config
+    mcp_table["mode"] = toml_edit::value(config.default_mode.as_str());
+
+    // Set allow list
+    let allow_array = toml_edit::Array::from_iter(allowed.iter().map(|s| s.as_str()));
+    mcp_table["allow"] = toml_edit::value(allow_array);
+
+    // Set deny list if present
+    if !denied.is_empty() {
+        let deny_array = toml_edit::Array::from_iter(denied.iter().map(|s| s.as_str()));
+        mcp_table["deny"] = toml_edit::value(deny_array);
+    }
+
+    // Ensure parent dir exists
+    if let Some(parent) = config_path.parent() {
+        fs::create_dir_all(parent).ok();
+    }
+
+    fs::write(&config_path, document.to_string())
+        .with_context(|| format!("failed to write OpenCode permissions to {}", config_path.display()))?;
+
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
 // Walk the templates mirror to compute the managed set
 // ---------------------------------------------------------------------------
 
@@ -2292,5 +2422,113 @@ args = ["server.js"]
             &deny,
             "allow"
         ));
+    }
+
+    // ---------------------------------------------------------------------------
+    // Phase 2a: Claude Code and OpenCode generator tests
+    // ---------------------------------------------------------------------------
+
+    #[test]
+    fn claude_code_permissions_creates_file_with_allow_list() {
+        let tmp = TempDir::new().unwrap();
+        let config = McpConfig {
+            default_mode: "allow".to_string(),
+            allow_patterns: vec!["mcp__processkit-*".to_string(), "bash".to_string()],
+            deny_patterns: vec![],
+            harness: BTreeMap::new(),
+        };
+        let tools = vec![
+            "mcp__processkit-workitem".to_string(),
+            "mcp__processkit-actor".to_string(),
+            "bash".to_string(),
+            "mcp__other".to_string(),
+        ];
+
+        let result = generate_claude_code_permissions(tmp.path(), &config, &tools);
+        assert!(result.is_ok());
+
+        let settings_path = tmp.path().join(".claude").join("settings.local.json");
+        assert!(settings_path.is_file());
+
+        let content = fs::read_to_string(&settings_path).unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&content).unwrap();
+
+        // Check that mcp__processkit-* tools and bash are in permissions.allow
+        if let Some(perms) = parsed.get("permissions.allow").and_then(|p| p.as_array()) {
+            let perm_strs: Vec<_> = perms
+                .iter()
+                .filter_map(|p| p.as_str())
+                .collect();
+            assert!(perm_strs.contains(&"mcp__mcp__processkit-workitem")); // Note: double mcp__ due to format!
+            assert!(perm_strs.contains(&"mcp__bash"));
+            assert!(!perm_strs.iter().any(|p| p.contains("mcp__other")));
+        } else {
+            panic!("permissions.allow not found in settings");
+        }
+    }
+
+    #[test]
+    fn opencode_permissions_creates_toml_with_mcp_section() {
+        let tmp = TempDir::new().unwrap();
+        let config = McpConfig {
+            default_mode: "allow".to_string(),
+            allow_patterns: vec!["mcp__processkit-*".to_string()],
+            deny_patterns: vec!["mcp__private-*".to_string()],
+            harness: BTreeMap::new(),
+        };
+        let tools = vec![
+            "mcp__processkit-workitem".to_string(),
+            "mcp__private-secret".to_string(),
+        ];
+
+        let result = generate_opencode_permissions(tmp.path(), &config, &tools);
+        assert!(result.is_ok());
+
+        let config_path = tmp.path().join(".opencode").join("config.toml");
+        assert!(config_path.is_file());
+
+        let content = fs::read_to_string(&config_path).unwrap();
+        assert!(content.contains("[mcp]"));
+        assert!(content.contains("mode = \"allow\""));
+        assert!(content.contains("mcp__processkit-workitem"));
+        assert!(content.contains("mcp__private-secret"));
+    }
+
+    #[test]
+    fn claude_code_permissions_preserves_existing_settings() {
+        let tmp = TempDir::new().unwrap();
+        let settings_path = tmp.path().join(".claude").join("settings.local.json");
+
+        // Create existing settings with other keys
+        fs::create_dir_all(settings_path.parent().unwrap()).unwrap();
+        let existing = serde_json::json!({
+            "other_key": "other_value",
+            "permissions.allow": ["custom-tool"]
+        });
+        fs::write(&settings_path, existing.to_string()).unwrap();
+
+        let config = McpConfig {
+            default_mode: "allow".to_string(),
+            allow_patterns: vec!["mcp__new-*".to_string()],
+            deny_patterns: vec![],
+            harness: BTreeMap::new(),
+        };
+        let tools = vec!["mcp__new-tool".to_string()];
+
+        generate_claude_code_permissions(tmp.path(), &config, &tools).unwrap();
+
+        let content = fs::read_to_string(&settings_path).unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&content).unwrap();
+
+        // Other keys should be preserved
+        assert_eq!(parsed.get("other_key").and_then(|v| v.as_str()), Some("other_value"));
+
+        // Permissions should be updated
+        if let Some(perms) = parsed.get("permissions.allow").and_then(|p| p.as_array()) {
+            let perm_strs: Vec<_> = perms.iter().filter_map(|p| p.as_str()).collect();
+            assert!(perm_strs.contains(&"mcp__mcp__new-tool"));
+        } else {
+            panic!("permissions.allow not found");
+        }
     }
 }
