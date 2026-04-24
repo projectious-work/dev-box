@@ -53,6 +53,12 @@ Since v0.16.0 it has a strict two-part scope:
    and installs its skills, primitives, processes, and the canonical `AGENTS.md`
    template into the consuming project under `context/`.
 
+**MCP Permissions** — Since v0.18.7, `aibox sync` auto-generates harness-specific
+permission files for all MCP servers. Configure `[mcp.permissions]` in `aibox.toml`
+to eliminate repetitive permission prompts. Glob patterns expand into concrete
+server names; deny patterns take precedence over allow for security. See
+[Configuration / MCP Permissions](./docs-site/docs/reference/configuration.md#permission-configuration-mcppermissions).
+
 Target users: solo developers, small teams, and consultants who want
 reproducible AI-ready dev environments without manual Docker/devcontainer setup.
 Success looks like: `aibox init` → working themed Zellij session with processkit
@@ -302,6 +308,37 @@ All project state must be stored in `./context/` — never in provider-specific 
 (e.g. `.claude/memory/`, `.aider/`). This ensures any AI agent (Claude, Aider, Gemini,
 etc.) can pick up where another left off, and session handovers are committed to git.
 Do not write to `.claude/`, `.gemini/`, or any other provider directory from aibox code.
+
+### MCP Permissions Troubleshooting
+
+If you're still seeing permission prompts for aibox-shipped MCP servers:
+
+1. **Verify `[mcp.permissions]` is configured** in `aibox.toml`:
+   ```toml
+   [mcp.permissions]
+   default_mode = "allow"
+   allow_patterns = ["mcp__processkit-*"]
+   ```
+   
+2. **Run `aibox sync`** to regenerate harness permission files. Permission configuration is applied during sync, not during runtime.
+
+3. **Check harness-specific behavior:**
+   - **Claude Code**: Checks `.claude/settings.local.json` → run `aibox sync` to populate `permissions.allow[]`
+   - **OpenCode**: Reads `.opencode/config.toml [mcp]` section → verify `mode = "allow"` and `allow[]` array
+   - **Continue IDE**: Per-tool `mode` in `continue/config.json` → defaults to "Ask" for safety; override with `[mcp.permissions.harness.continue] mode = "allow"`
+   - **Cursor IDE**: Checks `.cursor/settings.json allowedMcpServers[]` → verify entries match expanded server names
+   - **Gemini CLI**: Dual `includeTools`/`excludeTools` in `.gemini/settings.json` → intersection semantics (both must match)
+   - **GitHub Copilot**: Reads environment variables `COPILOT_MCP_ALLOW_TOOLS`, `COPILOT_MCP_DENY_TOOLS` → created as `.copilot-env`
+   - **Aider**: Checks `.aider/mcp-permissions.json allowed_tools` → fallback for harnesses without native MCP permission support
+   - **Codex**: Uses project-level `trust_level = "trusted"` in `.codex/config.toml` → applies to all tools
+
+4. **Verify pattern matching:**
+   - `"mcp__processkit-*"` matches all processkit MCP servers (e.g., `mcp__processkit-workitem-management__create_workitem`)
+   - `"bash"` matches the Bash tool fallback
+   - First-match-wins: if a tool matches both allow and deny patterns, deny takes precedence
+   - Check `/workspace/.aibox/aibox.log` for pattern expansion details
+
+5. **Check for typos in `allow_patterns`** — misspelled patterns expand to zero tools. `aibox sync` logs warnings for patterns that match no servers.
 
 ### Operational gotchas
 

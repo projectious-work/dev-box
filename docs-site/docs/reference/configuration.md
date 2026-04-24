@@ -262,13 +262,15 @@ release_asset_url_template = "https://gitea.acme.com/{org}/{name}/releases/downl
 
 ### [mcp]
 
-Team-shared MCP server definitions. `aibox sync` merges servers from three sources and regenerates all MCP client config files:
+MCP server definitions and permission configuration. `aibox sync` merges servers from three sources and regenerates all MCP client config files:
 
 1. **Built-in processkit servers** — always included (the processkit MCP server and any extras it ships)
 2. **`aibox.toml [mcp]`** — team-shared servers committed to version control
 3. **`.aibox-local.toml [mcp]`** — personal servers, gitignored
 
 Generated files (`.mcp.json`, `.cursor/mcp.json`, `.gemini/settings.json`, `.codex/config.toml`, `.continue/mcpServers/`) are **gitignored**. They are always reproducible from the config sources above and must not be committed — doing so would embed personal server definitions or credentials from `.aibox-local.toml`.
+
+#### Server Definitions: [[mcp.servers]]
 
 Each `[[mcp.servers]]` entry has these fields:
 
@@ -288,6 +290,49 @@ command = "npx"
 args    = ["-y", "@modelcontextprotocol/server-github"]
 [mcp.servers.env]
 GITHUB_TOKEN = "ghp_..."
+```
+
+#### Permission Configuration: [mcp.permissions]
+
+Controls which MCP servers harnesses are permitted to use, eliminating repetitive permission prompts. `aibox sync` expands glob patterns into concrete server names and regenerates harness-specific permission files for Claude Code, OpenCode, Continue, Cursor, Gemini CLI, GitHub Copilot, Aider, and Codex.
+
+**Global defaults:**
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `default_mode` | String | No | `"allow"` | Default permission: `"allow"`, `"ask"`, or `"deny"`. Recommend `"allow"` for aibox-shipped processkit tools (trusted content). |
+| `allow_patterns` | Array of strings | No | `["mcp__processkit-*"]` | Glob patterns to auto-allow. Supports wildcards: `prefix-*`, `*-suffix`, `*-middle*`, exact matches. First-match-wins semantics. |
+| `deny_patterns` | Array of strings | No | `[]` | Glob patterns to auto-deny (takes precedence over allow). Use for restricting specific tool families. |
+
+**Per-harness overrides** (optional):
+
+```toml
+[mcp.permissions.harness.claude-code]
+mode = "allow"              # Override global default if needed
+extra_patterns = []         # Add harness-specific patterns
+
+[mcp.permissions.harness.opencode]
+mode = "allow"
+deny_patterns = []          # Restrict specific tools per harness
+
+[mcp.permissions.harness.codex]
+trust_level = "trusted"     # Codex uses project-level trust instead of per-tool lists
+```
+
+**Example:**
+
+```toml
+[mcp.permissions]
+default_mode    = "allow"
+allow_patterns  = ["mcp__processkit-*", "bash"]
+deny_patterns   = ["mcp__processkit-dangerous-admin"]  # Deny a specific pattern if needed
+
+[mcp.permissions.harness.claude-code]
+# Use default settings; Claude Code will auto-allow all processkit tools
+
+[mcp.permissions.harness.continue]
+# Continue defaults to "ask" for safety; override to "allow" to auto-approve
+mode = "allow"
 ```
 
 :::tip Personal MCP servers
