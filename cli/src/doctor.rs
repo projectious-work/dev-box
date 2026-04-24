@@ -155,6 +155,10 @@ pub fn cmd_doctor(config_path: &Option<String>) -> Result<()> {
         }
     }
 
+    // 6c. Check command file registrations (BACK-20260423_2050-EagerStone)
+    output::info("Checking command file registrations...");
+    check_command_registrations(&mut diag);
+
     // 7. Security audit tools
     crate::audit::doctor_check_audit_tools();
 
@@ -172,6 +176,71 @@ pub fn cmd_doctor(config_path: &Option<String>) -> Result<()> {
 
     print_summary(&diag);
     Ok(())
+}
+
+/// Check that installed skills have their command files registered in .claude/commands/.
+///
+/// Validates that for every `context/skills/*/commands/*.md` (source),
+/// there is a corresponding `.claude/commands/<name>.md` (registered). Helps
+/// detect incomplete skill distributions like processkit v0.19.1 pk-doctor.
+fn check_command_registrations(diag: &mut DiagResult) {
+    let skills_dir = std::path::Path::new("context/skills");
+    if !skills_dir.is_dir() {
+        output::ok("No context/skills/ found (expected in new projects)");
+        return;
+    }
+
+    let claude_commands_dir = std::path::Path::new(".claude/commands");
+    let mut missing_count = 0;
+
+    // Walk the two-level <category>/<skill>/commands/ layout
+    if let Ok(categories) = std::fs::read_dir(skills_dir) {
+        for category in categories.flatten() {
+            if !category.path().is_dir() {
+                continue;
+            }
+            if let Ok(skills) = std::fs::read_dir(category.path()) {
+                for skill in skills.flatten() {
+                    let skill_path = skill.path();
+                    if !skill_path.is_dir() {
+                        continue;
+                    }
+                    let commands_src = skill_path.join("commands");
+                    if !commands_src.is_dir() {
+                        continue;
+                    }
+                    if let Ok(cmds) = std::fs::read_dir(&commands_src) {
+                        for cmd in cmds.flatten() {
+                            let cmd_path = cmd.path();
+                            if let Some(filename) = cmd_path.file_name()
+                                .and_then(|f| f.to_str())
+                                .filter(|s| s.ends_with(".md"))
+                            {
+                                let registered = claude_commands_dir.join(filename);
+                                if !registered.exists() {
+                                    output::warn(&format!(
+                                        "Command file missing: {}/{} exists but {} is not registered",
+                                        commands_src.display(), filename, registered.display()
+                                    ));
+                                    diag.warnings += 1;
+                                    missing_count += 1;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if missing_count == 0 {
+        output::ok("All installed skill commands are registered in .claude/commands/");
+    } else {
+        output::warn(&format!(
+            "{} command file(s) missing from .claude/commands/ — run 'aibox sync' to register them",
+            missing_count
+        ));
+    }
 }
 
 /// Check that mount source directories exist for configured features.
