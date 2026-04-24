@@ -708,6 +708,61 @@ pub fn generate_github_copilot_permissions(
     Ok(())
 }
 
+/// Generate MCP permissions for Codex CLI's config.toml.
+/// Codex uses simple trust_level setting (not per-tool granular).
+/// Also writes a fallback permissions.allow list for tools that may be added manually.
+///
+/// # Arguments
+/// * `project_root` - Project root directory
+/// * `config` - Parsed McpConfig from aibox.toml
+/// * `all_tool_names` - All available MCP tool names
+///
+/// # Returns
+/// Result; logs warnings on individual failures
+#[allow(dead_code)]
+pub fn generate_codex_permissions(
+    project_root: &Path,
+    config: &McpConfig,
+    all_tool_names: &[String],
+) -> Result<()> {
+    let config_path = project_root.join(".codex").join("config.toml");
+
+    // Determine allowed tools
+    let allowed = expand_mcp_patterns(&config.allow_patterns, all_tool_names);
+
+    // Read existing config or create new
+    let mut document: toml_edit::DocumentMut = if config_path.is_file() {
+        let body = fs::read_to_string(&config_path).unwrap_or_default();
+        body.parse::<toml_edit::DocumentMut>().unwrap_or_default()
+    } else {
+        toml_edit::DocumentMut::new()
+    };
+
+    // Set project-level trust_level (Codex's primary MCP control)
+    if !document.contains_key("project") {
+        document["project"] = toml_edit::table();
+    }
+    document["project"]["trust_level"] = toml_edit::value("trusted");
+
+    // Also set mcp section with allowed tools for reference/fallback
+    if !document.contains_key("mcp") {
+        document["mcp"] = toml_edit::table();
+    }
+    let mcp_table = &mut document["mcp"];
+    let allow_array = toml_edit::Array::from_iter(allowed.iter().map(|s| s.as_str()));
+    mcp_table["allowed_tools"] = toml_edit::value(allow_array);
+
+    // Ensure parent dir exists
+    if let Some(parent) = config_path.parent() {
+        fs::create_dir_all(parent).ok();
+    }
+
+    fs::write(&config_path, document.to_string())
+        .with_context(|| format!("failed to write Codex permissions to {}", config_path.display()))?;
+
+    Ok(())
+}
+
 // ---------------------------------------------------------------------------
 // Walk the templates mirror to compute the managed set
 // ---------------------------------------------------------------------------
@@ -3106,5 +3161,69 @@ args = ["server.js"]
 
         // Should be comma-separated
         assert!(content.contains("mcp__tool1,mcp__tool2") || content.contains("mcp__tool2,mcp__tool1"));
+    }
+
+    // ---------------------------------------------------------------------------
+    // Phase 2d: Codex generator tests
+    // ---------------------------------------------------------------------------
+
+    #[test]
+    fn codex_permissions_creates_config_toml() {
+        let tmp = TempDir::new().unwrap();
+        let config = McpConfig {
+            default_mode: "allow".to_string(),
+            allow_patterns: vec!["mcp__processkit-*".to_string()],
+            deny_patterns: vec![],
+            harness: BTreeMap::new(),
+        };
+        let tools = vec![
+            "mcp__processkit-workitem".to_string(),
+            "mcp__other".to_string(),
+        ];
+
+        let result = generate_codex_permissions(tmp.path(), &config, &tools);
+        assert!(result.is_ok());
+
+        let config_path = tmp.path().join(".codex").join("config.toml");
+        assert!(config_path.is_file());
+
+        let content = fs::read_to_string(&config_path).unwrap();
+        assert!(content.contains("[project]"));
+        assert!(content.contains("trust_level = \"trusted\""));
+        assert!(content.contains("[mcp]"));
+        assert!(content.contains("allowed_tools"));
+        assert!(content.contains("mcp__processkit-workitem"));
+    }
+
+    #[test]
+    fn codex_permissions_preserves_existing_config() {
+        let tmp = TempDir::new().unwrap();
+        let config_path = tmp.path().join(".codex").join("config.toml");
+
+        // Create existing config
+        fs::create_dir_all(config_path.parent().unwrap()).unwrap();
+        let existing = "[other]\nkey = \"value\"\n";
+        fs::write(&config_path, existing).unwrap();
+
+        let config = McpConfig {
+            default_mode: "allow".to_string(),
+            allow_patterns: vec!["mcp__new-*".to_string()],
+            deny_patterns: vec![],
+            harness: BTreeMap::new(),
+        };
+        let tools = vec!["mcp__new-tool".to_string()];
+
+        generate_codex_permissions(tmp.path(), &config, &tools).unwrap();
+
+        let content = fs::read_to_string(&config_path).unwrap();
+
+        // Existing section should be preserved
+        assert!(content.contains("[other]"));
+        assert!(content.contains("key = \"value\""));
+
+        // New sections should be added
+        assert!(content.contains("[project]"));
+        assert!(content.contains("trust_level = \"trusted\""));
+        assert!(content.contains("[mcp]"));
     }
 }
