@@ -1,7 +1,7 @@
 # AGENTS.md
 
-<!-- pk-compliance-contract v1 BEGIN -->
-<!-- pk-compliance v1 -->
+<!-- pk-compliance-contract v2 BEGIN -->
+<!-- pk-compliance v2 -->
 
 ## processkit Compliance Contract
 
@@ -28,22 +28,19 @@ produce automatically.
 After a cross-cutting recommendation is accepted, call `record_decision`
 in the same turn.
 
+When the last five user messages contain explicit decision language
+(approved / decided / ship it / let's go / ok / yes / confirmed),
+either call `record_decision` in the same turn or call
+`skip_decision_record(reason=...)` to acknowledge the skip.
+
 Do not edit any file under `context/templates/` — it is a read-only
 upstream mirror used as a diff baseline.
 
 Do not hand-edit the generated harness MCP config — edit the per-skill
 `mcp-config.json` and let the installer re-merge.
-<!-- pk-compliance-contract v1 END -->
+<!-- pk-compliance-contract v2 END -->
 
-This file is the canonical, provider-neutral entry point for any AI coding
-agent (or human collaborator) working on **aibox**. It follows
-the [agents.md](https://agents.md) open standard.
-
-If your harness auto-loads a provider-specific file (`CLAUDE.md`,
-`CODEX.md`, `.cursor/rules`, …), that file should be a thin pointer to
-this one. Edit **this** file, not the pointers.
-
-## About this project
+## About & session start
 
 **aibox** is a Rust CLI that manages reproducible, AI-ready dev containers.
 Since v0.16.0 it has a strict two-part scope:
@@ -61,11 +58,8 @@ reproducible AI-ready dev environments without manual Docker/devcontainer setup.
 Success looks like: `aibox init` → working themed Zellij session with processkit
 content in place in under 5 minutes.
 
-**Why it exists.** Developers working with AI agents need reproducible,
-themed, AI-ready dev containers with structured work-process content
-pre-installed — without having to stitch together Docker, processkit,
-and AI provider configuration themselves. aibox is the "uv for AI work
-environments": one binary, one config file, consistent result everywhere.
+Run `pk-resume` before acting. Provider-specific files (`CLAUDE.md`,
+`CODEX.md`, `.cursor/rules`, …) are thin pointers — edit **this** file.
 
 ## Setup
 
@@ -93,7 +87,19 @@ cd cli && cargo test --features e2e
 See `context/work-instructions/DEVELOPMENT.md` (or `CONTRIBUTING.md`) for
 the full development workflow, E2E test architecture, and cross-compile steps.
 
-## Code style and conventions
+<!-- pk-commands BEGIN -->
+<!--
+build: "cd cli && cargo build"
+test: "cd cli && cargo test"
+lint: "cd cli && cargo clippy --all-targets -- -D warnings"
+fmt: "cd cli && cargo fmt"
+typecheck: ""
+-->
+<!-- pk-commands END -->
+
+## Code style & PRs
+
+### Code style and conventions
 
 - **Zero clippy warnings** — always run with `-D warnings`; CI rejects any warning.
 - **All tests must pass** before committing; run `cargo test` and
@@ -109,7 +115,7 @@ the full development workflow, E2E test architecture, and cross-compile steps.
   `cli/src/processkit_vocab.rs` instead.
 - **No trailing summaries** in agent responses — the user can read the diff.
 
-## Pull requests
+### Pull requests
 
 - **Direct commits to `main`** — no PR ceremony on this repo.
 - **"Ship it" means the full release ritual** end-to-end: build, test, commit, tag,
@@ -133,106 +139,12 @@ Config overrides in `context/skills/id-management/config/settings.toml`:
 - **Directory names:** all processkit defaults (`workitems/`, `decisions/`, etc.).
 - **Log sharding:** processkit default (no date-based subdirectories).
 
----
-
-## How this project is organized: processkit content
-
-This project uses **[processkit](https://github.com/projectious-work/processkit.git)**, pinned at
-`v0.17.0`, package tier(s) `product`, to manage
-process content (skills, primitives, processes, schemas). All
-processkit-installed material lives under `context/`:
-
-```
-context/
-├── skills/         ← skill packages (SKILL.md, mcp/, references/, templates/)
-├── schemas/        ← JSON schemas for the core primitives
-├── state-machines/ ← state-machine definitions
-├── processes/      ← process definitions (bug-fix, code-review, release, …)
-└── templates/      ← immutable upstream mirror used as a diff baseline
-```
-
-`context/templates/processkit/<version>/` is the verbatim upstream
-snapshot. **Do not edit it.** Edit the live files at
-`context/skills/<name>/SKILL.md`, `context/processes/<name>.md`, etc.,
-directly. Local edits are detected at the next sync via three-way diff
-against the templates mirror.
-
-Every `context/` subdirectory has an `INDEX.md`. **Read those first** —
-do not slurp `context/skills/` or any large directory at session start.
-Load specific files only when the task demands it. This is the
-three-level principle: start at Level 1 (intro), drop to Level 2
-(workflows) when the task narrows, drop to Level 3 (full reference) for
-edge cases.
-
-## Working with entities
-
-processkit models project state as **entities** — work items, decision
-records, discussions, log entries, scopes, gates, bindings, and so on.
-Each entity is a YAML file under `context/<kind>s/`, created lazily on
-first use.
-
-For each entity kind, processkit ships:
-
-- **A schema** at `context/schemas/<kind>.yaml`
-- **A state machine** at `context/state-machines/<kind>.yaml`
-- **An MCP server** at `context/skills/<kind>-management/mcp/server.py`
-
-### Read entities through the index
-
-`context/skills/index-management/` exposes a SQLite-backed index over
-every entity in `context/`. Call its tools — `query_entities(kind=…,
-state=…)`, `get_entity(id)`, `search_entities(text)` — instead of `ls` /
-`grep` / filesystem walks. The index is faster, context-cheaper, and
-reflects the canonical state.
-
-### Write entities through the per-kind MCP servers
-
-Use the relevant MCP tool to create or transition entities —
-`create_workitem` and `transition_workitem` from `workitem-management`,
-`record_decision` from `decision-record`, and so on. Hand-editing entity
-files works but bypasses index updates and state-machine validation, so
-the index can drift and invalid transitions can slip through. Reserve
-hand edits for cases the MCP tools genuinely don't cover.
-
-### Wiring the MCP servers into your harness
-
-Each MCP-bearing skill ships its own `mcp/mcp-config.json` declaring how
-to launch the server (typically `uv run …/server.py`). Agent harnesses
-(Claude Code, Codex CLI, Cursor, …) discover MCP servers by reading a
-single config file at startup, so the per-skill configs need to be
-**merged** into the one file your harness reads, and that file needs to
-live at the path your harness expects.
-
-If this project was set up by an installer (e.g. an aibox-managed
-devcontainer), the installer is responsible for that wiring — the merged
-config is generated for you and you should not need to touch it. If
-processkit was installed manually, the project owner is responsible for
-merging the per-skill blocks and placing the result at the
-harness-specific path themselves.
-
-Either way, MCP-bearing skills require **`uv`** and **Python ≥ 3.10** on
-PATH inside the environment where the harness runs the servers — each
-`server.py` is a self-contained PEP 723 script and `uv run` resolves its
-dependencies on first launch.
-
 ## AI agents on this project
 
 Configured providers: **claude**, **openai**. Other agents may be working
 on this project — coordinate through the entity layer
 (`workitem-management`, `event-log`, `discussion-management`) rather than
 assuming you are alone.
-
-### Session orientation
-
-At the start of each session:
-
-1. Call `morning_briefing` (or read `context/skills/morning-briefing/`) —
-   it surfaces open work items, pending migrations, and overnight events.
-2. Check `context/migrations/pending/` for any outstanding migrations and
-   address them before starting new work.
-3. Read `context/INDEX.md` (Level 1) before loading any deeper directory.
-   Do not slurp `context/skills/` or other large directories at session
-   start — load specific files only when the task demands it.
 
 ### Team
 
@@ -280,7 +192,6 @@ Only `model_tier`, `model`, and `role_ref` remain under `spec.x_aibox` as
 aibox-local extensions with no canonical equivalent yet. Do not move these
 manually — they will be lifted when the upstream schema adds them.
 
-
 **Commit to actions immediately.** If you decide to create an entity
 (WorkItem, DecisionRecord, etc.), call the tool in the same turn. Do
 not say "I'll track that" and move on — deferred commitments are
@@ -296,25 +207,6 @@ skill may exist with processkit-specific conventions (entity storage
 paths, workitem linking, output formats) that general knowledge does
 not know. Missing a skill wastes work and produces non-standard
 output.
-
-### Contributing improvements upstream
-
-When you make a behavioral or content improvement to a file in
-`context/` that was installed from processkit (it has a counterpart
-in `context/templates/processkit/<version>/`), ask whether the
-improvement is general enough to benefit all processkit consumers.
-
-If yes:
-1. Open a Discussion entity locally with `open_discussion` —
-   title it "Upstream proposal: <short description>", note the
-   changed file and the improvement in the body.
-   This creates an audit trail so future sessions can see what
-   was proposed and what was decided.
-2. File an issue at the processkit repository so maintainers can
-   consider it for the upstream catalog.
-
-Nothing is mandatory — the project owner decides what to file
-upstream. The Discussion entity records the decision either way.
 
 ## Project-specific notes
 
@@ -442,4 +334,4 @@ When an AI agent is working inside a project that uses aibox:
 
 ---
 
-<sub>Scaffolded by processkit `v0.17.0` on `2026-04-17`. Re-rendered on each installer sync.</sub>
+<sub>Scaffolded by processkit `v0.19.1` on `2026-04-23`. Re-rendered on each installer sync.</sub>
