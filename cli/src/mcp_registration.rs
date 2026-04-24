@@ -392,6 +392,200 @@ pub fn generate_opencode_permissions(
     Ok(())
 }
 
+/// Generate MCP permissions for Continue IDE's config.json.
+/// Sets tool mode to "Ask" (default) or "Automatic" based on patterns.
+///
+/// # Arguments
+/// * `project_root` - Project root directory
+/// * `config` - Parsed McpConfig from aibox.toml
+/// * `all_tool_names` - All available MCP tool names
+///
+/// # Returns
+/// Result; logs warnings on individual failures
+#[allow(dead_code)]
+pub fn generate_continue_permissions(
+    project_root: &Path,
+    config: &McpConfig,
+    all_tool_names: &[String],
+) -> Result<()> {
+    let config_path = project_root.join(".continue").join("config.json");
+
+    // Determine allowed tools
+    let allowed = expand_mcp_patterns(&config.allow_patterns, all_tool_names);
+
+    // Determine mode: "Ask" (default safety) or "Automatic" based on allow_patterns
+    let tool_mode = match config.default_mode.as_str() {
+        "automatic" => "Automatic",
+        _ => "Ask", // Default to Ask for safety
+    };
+
+    // Read existing config or create new
+    let mut settings: serde_json::Map<String, serde_json::Value> = if config_path.is_file() {
+        let body = fs::read_to_string(&config_path).unwrap_or_default();
+        if body.trim().is_empty() {
+            serde_json::Map::new()
+        } else {
+            serde_json::from_str(&body).unwrap_or_default()
+        }
+    } else {
+        serde_json::Map::new()
+    };
+
+    // Ensure tools array exists and is an object
+    let tools_entry = settings
+        .entry("tools".to_string())
+        .or_insert_with(|| serde_json::Value::Object(serde_json::Map::new()));
+
+    let tools_obj = tools_entry.as_object_mut().ok_or_else(|| {
+        anyhow::anyhow!("tools in {} is not a JSON object", config_path.display())
+    })?;
+
+    // Set mode for each allowed tool
+    for tool in &allowed {
+        tools_obj.insert(
+            tool.clone(),
+            serde_json::Value::Object({
+                let mut tool_config = serde_json::Map::new();
+                tool_config.insert("mode".to_string(), serde_json::Value::String(tool_mode.to_string()));
+                tool_config
+            }),
+        );
+    }
+
+    // Ensure parent dir exists
+    if let Some(parent) = config_path.parent() {
+        fs::create_dir_all(parent).ok();
+    }
+
+    let formatted = serde_json::to_string_pretty(&settings)?;
+    fs::write(&config_path, formatted)
+        .with_context(|| format!("failed to write Continue permissions to {}", config_path.display()))?;
+
+    Ok(())
+}
+
+/// Generate MCP permissions for Cursor IDE's settings.json.
+/// Updates `allowedMcpServers[]` array with allowed tools.
+///
+/// # Arguments
+/// * `project_root` - Project root directory
+/// * `config` - Parsed McpConfig from aibox.toml
+/// * `all_tool_names` - All available MCP tool names
+///
+/// # Returns
+/// Result; logs warnings on individual failures
+#[allow(dead_code)]
+pub fn generate_cursor_permissions(
+    project_root: &Path,
+    config: &McpConfig,
+    all_tool_names: &[String],
+) -> Result<()> {
+    let settings_path = project_root.join(".cursor").join("settings.json");
+
+    // Determine allowed tools
+    let allowed = expand_mcp_patterns(&config.allow_patterns, all_tool_names);
+
+    // Read existing settings or create new
+    let mut settings: serde_json::Map<String, serde_json::Value> = if settings_path.is_file() {
+        let body = fs::read_to_string(&settings_path).unwrap_or_default();
+        if body.trim().is_empty() {
+            serde_json::Map::new()
+        } else {
+            serde_json::from_str(&body).unwrap_or_default()
+        }
+    } else {
+        serde_json::Map::new()
+    };
+
+    // Set allowedMcpServers array
+    settings.insert(
+        "allowedMcpServers".to_string(),
+        serde_json::Value::Array(
+            allowed
+                .iter()
+                .map(|t| serde_json::Value::String(t.clone()))
+                .collect(),
+        ),
+    );
+
+    // Ensure parent dir exists
+    if let Some(parent) = settings_path.parent() {
+        fs::create_dir_all(parent).ok();
+    }
+
+    let formatted = serde_json::to_string_pretty(&settings)?;
+    fs::write(&settings_path, formatted)
+        .with_context(|| format!("failed to write Cursor permissions to {}", settings_path.display()))?;
+
+    Ok(())
+}
+
+/// Generate MCP permissions for Aider (fallback configuration).
+/// Since Aider has no native MCP support, writes permissions to a dotfile
+/// that custom Aider integrations can read.
+///
+/// # Arguments
+/// * `project_root` - Project root directory
+/// * `config` - Parsed McpConfig from aibox.toml
+/// * `all_tool_names` - All available MCP tool names
+///
+/// # Returns
+/// Result; logs warnings on individual failures
+#[allow(dead_code)]
+pub fn generate_aider_permissions(
+    project_root: &Path,
+    config: &McpConfig,
+    all_tool_names: &[String],
+) -> Result<()> {
+    let config_path = project_root.join(".aider").join("mcp-permissions.json");
+
+    // Determine allowed/denied tools
+    let allowed = expand_mcp_patterns(&config.allow_patterns, all_tool_names);
+    let denied = expand_mcp_patterns(&config.deny_patterns, all_tool_names);
+
+    // Build permissions object for Aider
+    let mut permissions = serde_json::json!({
+        "mode": config.default_mode,
+        "allowed_tools": allowed,
+        "denied_tools": denied,
+    });
+
+    // Add per-harness overrides if present
+    if let Some(aider_override) = config.harness.get("aider") {
+        if let Some(mode) = &aider_override.mode {
+            permissions["mode"] = serde_json::Value::String(mode.clone());
+        }
+        if !aider_override.extra_patterns.is_empty() {
+            let extra = expand_mcp_patterns(&aider_override.extra_patterns, all_tool_names);
+            let mut current_allowed: Vec<String> =
+                serde_json::from_value(permissions["allowed_tools"].clone()).unwrap_or_default();
+            for tool in extra {
+                if !current_allowed.contains(&tool) {
+                    current_allowed.push(tool);
+                }
+            }
+            current_allowed.sort();
+            permissions["allowed_tools"] = serde_json::Value::Array(
+                current_allowed
+                    .iter()
+                    .map(|t| serde_json::Value::String(t.clone()))
+                    .collect(),
+            );
+        }
+    }
+
+    // Ensure parent dir exists
+    if let Some(parent) = config_path.parent() {
+        fs::create_dir_all(parent).ok();
+    }
+
+    let formatted = serde_json::to_string_pretty(&permissions)?;
+    fs::write(&config_path, formatted)
+        .with_context(|| format!("failed to write Aider permissions to {}", config_path.display()))?;
+
+    Ok(())
+}
+
 // ---------------------------------------------------------------------------
 // Walk the templates mirror to compute the managed set
 // ---------------------------------------------------------------------------
@@ -2529,6 +2723,149 @@ args = ["server.js"]
             assert!(perm_strs.contains(&"mcp__mcp__new-tool"));
         } else {
             panic!("permissions.allow not found");
+        }
+    }
+
+    // ---------------------------------------------------------------------------
+    // Phase 2b: Continue, Cursor, and Aider generator tests
+    // ---------------------------------------------------------------------------
+
+    #[test]
+    fn continue_permissions_creates_config_with_tool_modes() {
+        let tmp = TempDir::new().unwrap();
+        let config = McpConfig {
+            default_mode: "ask".to_string(),
+            allow_patterns: vec!["mcp__processkit-*".to_string()],
+            deny_patterns: vec![],
+            harness: BTreeMap::new(),
+        };
+        let tools = vec![
+            "mcp__processkit-workitem".to_string(),
+            "mcp__other".to_string(),
+        ];
+
+        let result = generate_continue_permissions(tmp.path(), &config, &tools);
+        assert!(result.is_ok());
+
+        let config_path = tmp.path().join(".continue").join("config.json");
+        assert!(config_path.is_file());
+
+        let content = fs::read_to_string(&config_path).unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&content).unwrap();
+
+        // Check tools object structure
+        if let Some(tools_obj) = parsed.get("tools").and_then(|t| t.as_object()) {
+            assert!(tools_obj.contains_key("mcp__processkit-workitem"));
+            assert!(!tools_obj.contains_key("mcp__other"));
+            if let Some(tool_config) = tools_obj.get("mcp__processkit-workitem") {
+                assert_eq!(
+                    tool_config.get("mode").and_then(|m| m.as_str()),
+                    Some("Ask")
+                );
+            }
+        } else {
+            panic!("tools not found or not an object");
+        }
+    }
+
+    #[test]
+    fn cursor_permissions_creates_settings_with_allowedmcpservers() {
+        let tmp = TempDir::new().unwrap();
+        let config = McpConfig {
+            default_mode: "allow".to_string(),
+            allow_patterns: vec!["mcp__processkit-*".to_string(), "bash".to_string()],
+            deny_patterns: vec![],
+            harness: BTreeMap::new(),
+        };
+        let tools = vec![
+            "mcp__processkit-workitem".to_string(),
+            "bash".to_string(),
+            "mcp__other".to_string(),
+        ];
+
+        let result = generate_cursor_permissions(tmp.path(), &config, &tools);
+        assert!(result.is_ok());
+
+        let settings_path = tmp.path().join(".cursor").join("settings.json");
+        assert!(settings_path.is_file());
+
+        let content = fs::read_to_string(&settings_path).unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&content).unwrap();
+
+        if let Some(allowed) = parsed.get("allowedMcpServers").and_then(|a| a.as_array()) {
+            let allowed_strs: Vec<_> = allowed.iter().filter_map(|a| a.as_str()).collect();
+            assert!(allowed_strs.contains(&"mcp__processkit-workitem"));
+            assert!(allowed_strs.contains(&"bash"));
+            assert!(!allowed_strs.contains(&"mcp__other"));
+        } else {
+            panic!("allowedMcpServers not found or not an array");
+        }
+    }
+
+    #[test]
+    fn aider_permissions_creates_mcp_permissions_json() {
+        let tmp = TempDir::new().unwrap();
+        let config = McpConfig {
+            default_mode: "allow".to_string(),
+            allow_patterns: vec!["mcp__processkit-*".to_string()],
+            deny_patterns: vec!["mcp__private-*".to_string()],
+            harness: BTreeMap::new(),
+        };
+        let tools = vec![
+            "mcp__processkit-workitem".to_string(),
+            "mcp__private-secret".to_string(),
+        ];
+
+        let result = generate_aider_permissions(tmp.path(), &config, &tools);
+        assert!(result.is_ok());
+
+        let config_path = tmp.path().join(".aider").join("mcp-permissions.json");
+        assert!(config_path.is_file());
+
+        let content = fs::read_to_string(&config_path).unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&content).unwrap();
+
+        assert_eq!(parsed.get("mode").and_then(|m| m.as_str()), Some("allow"));
+
+        if let Some(allowed) = parsed.get("allowed_tools").and_then(|a| a.as_array()) {
+            let allowed_strs: Vec<_> = allowed.iter().filter_map(|a| a.as_str()).collect();
+            assert!(allowed_strs.contains(&"mcp__processkit-workitem"));
+        } else {
+            panic!("allowed_tools not found");
+        }
+
+        if let Some(denied) = parsed.get("denied_tools").and_then(|d| d.as_array()) {
+            let denied_strs: Vec<_> = denied.iter().filter_map(|d| d.as_str()).collect();
+            assert!(denied_strs.contains(&"mcp__private-secret"));
+        } else {
+            panic!("denied_tools not found");
+        }
+    }
+
+    #[test]
+    fn continue_permissions_automatic_mode() {
+        let tmp = TempDir::new().unwrap();
+        let config = McpConfig {
+            default_mode: "automatic".to_string(),
+            allow_patterns: vec!["mcp__*".to_string()],
+            deny_patterns: vec![],
+            harness: BTreeMap::new(),
+        };
+        let tools = vec!["mcp__tool".to_string()];
+
+        generate_continue_permissions(tmp.path(), &config, &tools).unwrap();
+
+        let config_path = tmp.path().join(".continue").join("config.json");
+        let content = fs::read_to_string(&config_path).unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&content).unwrap();
+
+        if let Some(tools_obj) = parsed.get("tools").and_then(|t| t.as_object())
+            && let Some(tool_config) = tools_obj.get("mcp__tool")
+        {
+            assert_eq!(
+                tool_config.get("mode").and_then(|m| m.as_str()),
+                Some("Automatic")
+            );
         }
     }
 }
