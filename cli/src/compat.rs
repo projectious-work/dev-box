@@ -180,6 +180,11 @@ pub static COMPAT_TABLE: &[CompatEntry] = &[
         processkit_version: "v0.21.0",
         note: "Minor release: integrates processkit v0.21.0 (major upstream update with enhanced content structure); ships global MCP permission configuration across 8 harnesses (Claude Code, OpenCode, Continue, Cursor, Gemini, Copilot, Aider, Codex) via [mcp.permissions] in aibox.toml with glob pattern matching and deny-precedence semantics; completed backlog grooming with 90-day focus established; all tests passing (597 unit + 41 E2E + 16 integration).",
     },
+    CompatEntry {
+        aibox_version: "0.19.1",
+        processkit_version: "v0.21.0",
+        note: "Patch release: applies processkit v0.21.0 migration (564 new files: skills, schemas, roles, bindings, models); updates aibox runtime templates (27 new .aibox-home/* files); all 654 tests passing (unit + integration + E2E).",
+    },
 ];
 
 /// Find the minimum compatible processkit version for the given aibox version.
