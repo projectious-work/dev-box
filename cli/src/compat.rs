@@ -205,6 +205,11 @@ pub static COMPAT_TABLE: &[CompatEntry] = &[
         processkit_version: "v0.23.0",
         note: "Patch release: integrates processkit v0.23.0 (RoyalFern governance fields on 34 model entries, new `release-audit` skill, `pk-doctor` `skill_dag` check, `skill-finder` `catalog()` MCP tool, prefix-based PreToolUse matcher in `skill-gate`, YAML literal-block-scalar serialization in `_lib/processkit/frontmatter.py`, `event-log` actor-field validation, content-only layer bumps on 4 skills); applies the resulting migration (50 mirror updates + 9 new upstream files); bumps PROCESSKIT_DEFAULT_VERSION to v0.23.0; no aibox CLI behavior changes — purely a content integration pass.",
     },
+    CompatEntry {
+        aibox_version: "0.21.2",
+        processkit_version: "v0.23.1",
+        note: "Patch release: integrates processkit v0.23.1 (release-audit cleanup — 106 ERROR → 0 ERROR via three documented validator relaxations: skip aibox CLI migration prose under `context/migrations/`, model the team-member directory layout / `Persona` kind, make `metadata.processkit.layer` optional for non-processkit-category skills; backfills `metadata.processkit.layer` on 7 processkit-category SKILL.md files; authors missing `## Overview` / `## Full reference` sections on team-creator and team-manager; +24 new pytest cases). FORMAT.md unchanged — no vocabulary updates needed; bumps PROCESSKIT_DEFAULT_VERSION to v0.23.1; no aibox CLI behavior changes — purely a content integration pass.",
+    },
 ];
 
 /// Find the minimum compatible processkit version for the given aibox version.
