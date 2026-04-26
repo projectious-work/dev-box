@@ -9,7 +9,6 @@ mod kit;
 mod addons;
 mod audio;
 mod audit;
-mod claude_commands;
 mod cli;
 mod compliance;
 mod config;
@@ -26,6 +25,7 @@ mod context;
 mod doctor;
 mod env;
 mod generate;
+mod harness_commands;
 mod hook_registration;
 mod integrity;
 #[allow(dead_code)]

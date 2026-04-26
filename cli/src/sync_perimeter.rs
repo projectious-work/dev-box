@@ -142,6 +142,14 @@ pub const SYNC_PERIMETER: &[&str] = &[
     // Only the commands/ subdirectory; the rest of .claude/ remains out of
     // perimeter (provider-managed: settings, memory, session history, …).
     ".claude/commands/",
+    // ── Other harness slash-command adapters (v0.20.x) ──────────────────
+    // Same restriction: only the commands subdirectory of each harness
+    // root is in-perimeter; the rest stays provider-managed. Codex's
+    // prompts dir lives under the mounted .aibox-home/.codex tree.
+    ".cursor/commands/",
+    ".gemini/commands/",
+    ".opencode/commands/",
+    ".aibox-home/.codex/prompts/",
 ];
 
 /// Normalize a path to its forward-slash, project-root-relative string
@@ -526,6 +534,18 @@ mod tests {
         // processkit skills are synced to .claude/commands/.
         assert!(within(".claude/commands/session-handover-write.md"));
         assert!(within(".claude/commands/morning-briefing-run.md"));
+    }
+
+    #[test]
+    fn other_harness_command_dirs_are_in_perimeter_v0_20() {
+        // v0.20.x: aibox scaffolds slash-command adapters into per-harness
+        // directories for Codex, Cursor, Gemini, OpenCode (in addition to
+        // Claude). All four target dirs must be in perimeter so that the
+        // sync write isn't tripped by the perimeter guard.
+        assert!(within(".cursor/commands/pk-resume.md"));
+        assert!(within(".gemini/commands/pk-resume.toml"));
+        assert!(within(".opencode/commands/pk-resume.md"));
+        assert!(within(".aibox-home/.codex/prompts/pk-resume.md"));
     }
 
     #[test]

@@ -395,14 +395,16 @@ pub fn cmd_reset(
         }
     }
 
-    // Selectively remove aibox-managed command files from .claude/commands/
-    // BEFORE the delete phase removes context/ (which contains the templates
-    // mirror we need to know which filenames are ours). User-authored commands
-    // in the same directory are left untouched. Best-effort: failure is
-    // warned-and-continued so a missing mirror doesn't abort the whole reset.
+    // Selectively remove aibox-managed command files from each scaffolded
+    // harness target (.claude/commands/, .cursor/commands/, .gemini/commands/,
+    // .opencode/commands/, .aibox-home/.codex/prompts/) BEFORE the delete
+    // phase removes context/ (which contains the templates mirror we need to
+    // know which filenames are ours). User-authored commands in the same
+    // directories are left untouched. Best-effort: failure is warned-and-
+    // continued so a missing mirror doesn't abort the whole reset.
     let cwd = std::env::current_dir().unwrap_or_default();
-    if let Err(e) = crate::claude_commands::remove_managed_commands(&cwd, &config) {
-        output::warn(&format!("Could not clean .claude/commands/: {}", e));
+    if let Err(e) = crate::harness_commands::remove_managed_commands_all(&cwd, &config) {
+        output::warn(&format!("Could not clean harness command dirs: {}", e));
     }
 
     // Preserve auth and cache directories from .aibox-home before deletion.

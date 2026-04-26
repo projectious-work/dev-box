@@ -157,7 +157,7 @@ pub fn cmd_doctor(config_path: &Option<String>) -> Result<()> {
 
     // 6c. Check command file registrations (BACK-20260423_2050-EagerStone)
     output::info("Checking command file registrations...");
-    check_command_registrations(&mut diag);
+    check_command_registrations(&config, &mut diag);
 
     // 7. Security audit tools
     crate::audit::doctor_check_audit_tools();
@@ -178,22 +178,23 @@ pub fn cmd_doctor(config_path: &Option<String>) -> Result<()> {
     Ok(())
 }
 
-/// Check that installed skills have their command files registered in .claude/commands/.
+/// Check that installed skills have their command files registered in
+/// each enabled harness's command directory.
 ///
-/// Validates that for every `context/skills/*/commands/*.md` (source),
-/// there is a corresponding `.claude/commands/<name>.md` (registered). Helps
-/// detect incomplete skill distributions like processkit v0.19.1 pk-doctor.
-fn check_command_registrations(diag: &mut DiagResult) {
+/// For every `context/skills/*/commands/*.md` (source), validates that for
+/// every enabled scaffolded harness the corresponding deployed file exists
+/// under that harness's commands dir (Claude is always-on; others gated on
+/// `[ai].harnesses`). Helps detect incomplete skill distributions and stale
+/// scaffolds that were dropped before `aibox sync` was rerun.
+fn check_command_registrations(config: &AiboxConfig, diag: &mut DiagResult) {
     let skills_dir = std::path::Path::new("context/skills");
     if !skills_dir.is_dir() {
         output::ok("No context/skills/ found (expected in new projects)");
         return;
     }
 
-    let claude_commands_dir = std::path::Path::new(".claude/commands");
-    let mut missing_count = 0;
-
-    // Walk the two-level <category>/<skill>/commands/ layout
+    // Gather every command basename from the live skills tree.
+    let mut source_commands: Vec<(std::path::PathBuf, String)> = Vec::new();
     if let Ok(categories) = std::fs::read_dir(skills_dir) {
         for category in categories.flatten() {
             if !category.path().is_dir() {
@@ -217,17 +218,8 @@ fn check_command_registrations(diag: &mut DiagResult) {
                                 .and_then(|f| f.to_str())
                                 .filter(|s| s.ends_with(".md"))
                             {
-                                let registered = claude_commands_dir.join(filename);
-                                if !registered.exists() {
-                                    output::warn(&format!(
-                                        "Command file missing: {}/{} exists but {} is not registered",
-                                        commands_src.display(),
-                                        filename,
-                                        registered.display()
-                                    ));
-                                    diag.warnings += 1;
-                                    missing_count += 1;
-                                }
+                                source_commands
+                                    .push((commands_src.clone(), filename.to_string()));
                             }
                         }
                     }
@@ -236,13 +228,74 @@ fn check_command_registrations(diag: &mut DiagResult) {
         }
     }
 
-    if missing_count == 0 {
-        output::ok("All installed skill commands are registered in .claude/commands/");
-    } else {
-        output::warn(&format!(
-            "{} command file(s) missing from .claude/commands/ — run 'aibox sync' to register them",
-            missing_count
-        ));
+    // Per-harness target dirs (path, file extension, label). Mirrors the
+    // profiles in `harness_commands::profile_for`. Keep this list in sync
+    // when adding new scaffoldable harnesses.
+    use crate::config::AiHarness;
+    let mut targets: Vec<(&'static str, &'static str, &'static str, bool)> = Vec::new();
+    targets.push((
+        "claude",
+        ".claude/commands",
+        "md",
+        true, // always-on
+    ));
+    targets.push((
+        "codex",
+        ".aibox-home/.codex/prompts",
+        "md",
+        config.ai.harnesses.contains(&AiHarness::Codex),
+    ));
+    targets.push((
+        "cursor",
+        ".cursor/commands",
+        "md",
+        config.ai.harnesses.contains(&AiHarness::Cursor),
+    ));
+    targets.push((
+        "gemini",
+        ".gemini/commands",
+        "toml",
+        config.ai.harnesses.contains(&AiHarness::Gemini),
+    ));
+    targets.push((
+        "opencode",
+        ".opencode/commands",
+        "md",
+        config.ai.harnesses.contains(&AiHarness::OpenCode),
+    ));
+
+    for (harness, target_dir, ext, enabled) in &targets {
+        if !*enabled {
+            continue;
+        }
+        let target = std::path::Path::new(target_dir);
+        let mut missing_count = 0;
+        for (commands_src, filename) in &source_commands {
+            let stem = match filename.strip_suffix(".md") {
+                Some(s) => s,
+                None => continue,
+            };
+            let deployed = target.join(format!("{stem}.{ext}"));
+            if !deployed.exists() {
+                output::warn(&format!(
+                    "{harness}: command file missing: {}/{} exists but {} is not registered",
+                    commands_src.display(),
+                    filename,
+                    deployed.display()
+                ));
+                diag.warnings += 1;
+                missing_count += 1;
+            }
+        }
+        if missing_count == 0 {
+            output::ok(&format!(
+                "[{harness}] all installed skill commands are registered in {target_dir}/"
+            ));
+        } else {
+            output::warn(&format!(
+                "[{harness}] {missing_count} command file(s) missing — run 'aibox sync' to register them"
+            ));
+        }
     }
 }
 

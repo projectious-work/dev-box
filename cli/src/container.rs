@@ -1314,10 +1314,13 @@ pub fn cmd_init(config_path: &Option<String>, params: InitParams) -> Result<()> 
             {
                 output::warn(&format!("Compliance config generation failed: {}", e));
             }
-            // Sync processkit command adapter files to .claude/commands/
-            // so Claude Code can tab-complete them. Best-effort.
-            if let Err(e) = crate::claude_commands::sync_claude_commands(&project_root, &config) {
-                output::warn(&format!("Claude command sync failed: {}", e));
+            // Sync processkit command adapter files to per-harness command
+            // directories (Claude, Codex, Cursor, Gemini, OpenCode) so each
+            // harness can tab-complete them as slash commands. Best-effort.
+            if let Err(e) =
+                crate::harness_commands::sync_harness_commands(&project_root, &config)
+            {
+                output::warn(&format!("Harness command sync failed: {}", e));
             }
         }
         Err(e) => {
@@ -1726,10 +1729,11 @@ pub fn cmd_sync(
         {
             output::warn(&format!("Compliance config generation failed: {}", e));
         }
-        // Sync processkit command adapter files to .claude/commands/
-        // so Claude Code can tab-complete them. Best-effort.
-        if let Err(e) = crate::claude_commands::sync_claude_commands(&cwd, &config) {
-            output::warn(&format!("Claude command sync failed: {}", e));
+        // Sync processkit command adapter files to per-harness command
+        // directories (Claude, Codex, Cursor, Gemini, OpenCode) so each
+        // harness can tab-complete them as slash commands. Best-effort.
+        if let Err(e) = crate::harness_commands::sync_harness_commands(&cwd, &config) {
+            output::warn(&format!("Harness command sync failed: {}", e));
         }
     }
 
