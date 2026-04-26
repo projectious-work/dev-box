@@ -195,6 +195,11 @@ pub static COMPAT_TABLE: &[CompatEntry] = &[
         processkit_version: "v0.22.0",
         note: "Minor release: install integrity check + self-heal (`aibox doctor --integrity`, `context/.processkit-provenance.toml`, `SyncDecision::Reinstall`); preauth merge into committed `.claude/settings.json` (closes aibox#55, consumes processkit v0.22.0 `skill-gate/assets/preauth.json`); `--no-container` scaffold mode + `AIBOX_NO_CONTAINER` env var on init/sync; new Tier 1 E2E harness (`no_container_harness`, `preauth_merge`); slash-command name collisions hard-fail; content-diff classifies upstream-removed-stale skills; `mcp_config_hash` renamed `processkit_install_hash` and broadened to cover skills/schemas/processes/state-machines; permissions JSON shape bug (`permissions.allow` flat-key) fixed with nested merge preserving user entries; `aibox.toml` template ships commented `[mcp.permissions]` advisory; tolerates upstream PROVENANCE.toml stamping bug in v0.22.0 via tracing::warn!; all 709 tests passing.",
     },
+    CompatEntry {
+        aibox_version: "0.21.0",
+        processkit_version: "v0.22.0",
+        note: "Minor release: sync content-diff data-loss fix (closes aibox#57) — RemovedUpstreamStale reclassification now requires live SHA == older-mirror SHA, preserving user-extended files; same-version sync short-circuit (closes aibox#56) — run_content_sync returns empty diff when from_pk.version == config.processkit.version, no migration document written; multi-harness slash-command scaffolding via new `harness_commands` engine — Codex (`.aibox-home/.codex/prompts/`), Cursor (`.cursor/commands/`), Gemini (`.gemini/commands/` with TOML conversion), OpenCode (`.opencode/commands/`), all gated on `config.ai.harnesses`; `claude_commands.rs` removed and merged into the generic engine; doctor command-registration check now per-harness; sync_perimeter extended; all 654 tests passing.",
+    },
 ];
 
 /// Find the minimum compatible processkit version for the given aibox version.

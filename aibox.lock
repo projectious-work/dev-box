@@ -1,5 +1,5 @@
 [aibox]
-cli_version = "0.19.2"
+cli_version = "0.21.0"
 synced_at = "2026-04-25T23:52:47.517162642+00:00"
 
 [processkit]
