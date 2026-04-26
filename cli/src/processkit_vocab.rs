@@ -201,6 +201,10 @@ pub const LIVE_PROCESSES_DIR: &str = "context/processes";
 /// Shared MCP lib directory (under the live skills tree, not the src tree).
 pub const LIVE_LIB_DIR: &str = "context/skills/_lib";
 
+/// Processkit manifest file containing MCP config metadata (e.g., expected hash).
+/// Shipped by processkit at the root of the `context/` directory.
+pub const PROCESSKIT_MCP_MANIFEST: &str = "context/.processkit-mcp-manifest.json";
+
 // ---------------------------------------------------------------------------
 // Templates mirror path helpers
 // ---------------------------------------------------------------------------

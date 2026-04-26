@@ -33,6 +33,15 @@ pub struct InitParams {
     /// Track a moving processkit branch. Wins over `processkit_version`
     /// at fetch time per the existing fetcher contract.
     pub processkit_branch: Option<String>,
+    /// Skip any container-runtime interaction during init.
+    ///
+    /// `cmd_init` is currently container-free in practice, so this field
+    /// is unused at the moment. It is plumbed through for symmetry with
+    /// `cmd_sync` and to future-proof against later additions to init
+    /// that touch the runtime. Mirrors `Commands::Init { no_container }`
+    /// and the `AIBOX_NO_CONTAINER` env var.
+    #[allow(dead_code)]
+    pub no_container: bool,
 }
 
 /// Build processkit-package selection items for the interactive prompt.
@@ -70,6 +79,14 @@ fn process_selection_items() -> (Vec<String>, Vec<String>) {
 /// path that lets users pin a version after `aibox init` and have
 /// `aibox sync` materialize the content (closes the v0.16.0 bug
 /// reported in BACK-110).
+///
+/// As of WS-1 (v0.19.x), `cmd_sync` no longer calls this directly — it
+/// goes through [`crate::integrity::decide_sync`], which combines this
+/// version-comparison logic with the live install-integrity check.
+/// The function is retained for the existing version-comparison unit
+/// tests; gated behind `#[cfg(test)]` so it doesn't trip dead-code
+/// warnings in release builds.
+#[cfg(test)]
 fn sync_should_install_processkit(
     config_version: &str,
     config_source: &str,
@@ -83,6 +100,38 @@ fn sync_should_install_processkit(
     match lock_pair {
         None => true,
         Some((src, ver)) => src != config_source || ver != config_version,
+    }
+}
+
+/// Run `install_content_source` for `cmd_sync` and report the result.
+///
+/// Extracted as a private helper so the `Install` and `Reinstall` arms
+/// of `decide_sync` dispatch through identical code (DRY: WS-1 spec).
+/// Same warn-and-continue policy as before — a fetch failure is
+/// announced but does not abort the rest of sync.
+fn run_install(cwd: &std::path::Path, config: &AiboxConfig) {
+    match crate::content_init::install_content_source(cwd, config) {
+        Ok(report) if report.skipped_due_to_unset => {
+            // Defensive — decide_sync already gates on version != unset.
+        }
+        Ok(report) => {
+            output::ok(&format!(
+                "Installed {} files from processkit {}@{} ({} groups, {} skipped)",
+                report.files_installed,
+                report.fetched_from,
+                report.fetched_version,
+                report.groups_touched,
+                report.files_skipped,
+            ));
+        }
+        Err(e) => {
+            output::warn(&format!(
+                "Processkit install failed: {}. Sync will continue without \
+                 fresh content; fix the [processkit] section and re-run \
+                 `aibox sync` to retry.",
+                e
+            ));
+        }
     }
 }
 
@@ -993,6 +1042,22 @@ fn serialize_config_with_comments(config: &AiboxConfig) -> String {
         out.push_str("# pulse_server = \"tcp:host.docker.internal:4714\"  # PulseAudio TCP endpoint (default port: 4714)\n");
     }
 
+    // [mcp.permissions] section
+    out.push('\n');
+    out.push_str(sep);
+    out.push_str("# [mcp.permissions]\n");
+    out.push_str(sep);
+    out.push_str("# Auto-allow / deny MCP tools by glob pattern. processkit's own MCP tools are\n");
+    out.push_str(
+        "# pre-approved separately via the skill-gate preauth spec — these patterns are\n",
+    );
+    out.push_str("# for user-added MCP servers. See:\n");
+    out.push_str("# https://projectious-work.github.io/aibox/docs/reference/configuration#permission-configuration-mcppermissions\n");
+    out.push_str("# [mcp.permissions]\n");
+    out.push_str("# default_mode   = \"ask\"\n");
+    out.push_str("# allow_patterns = []\n");
+    out.push_str("# deny_patterns  = []\n");
+
     out
 }
 
@@ -1234,6 +1299,14 @@ pub fn cmd_init(config_path: &Option<String>, params: InitParams) -> Result<()> 
             {
                 output::warn(&format!("Hook registration failed: {}", e));
             }
+            // Merge processkit's preauth.json into .claude/settings.json
+            // (pre-approve Bash patterns + MCP servers shipped by
+            // processkit ≥ v0.22.0). Best-effort.
+            if let Err(e) =
+                crate::preauth::merge_processkit_preauth_into_claude_settings(&project_root)
+            {
+                output::warn(&format!("Preauth merge failed: {}", e));
+            }
             // Surface the processkit compliance contract to each harness.
             // Best-effort.
             if let Err(e) =
@@ -1271,7 +1344,9 @@ pub fn cmd_init(config_path: &Option<String>, params: InitParams) -> Result<()> 
             processkit: None,
             addons: None,
         };
-        let _ = crate::lock::write_lock(&project_root, &minimal_lock);
+        if let Err(e) = crate::lock::write_lock(&project_root, &minimal_lock) {
+            output::warn(&format!("Failed to write fallback aibox.lock: {}", e));
+        }
     }
 
     output::ok("Project initialized. Edit aibox.toml to customize, then run: aibox start");
@@ -1292,6 +1367,7 @@ pub fn cmd_sync(
     no_cache: bool,
     no_build: bool,
     fix_compliance_contract: bool,
+    no_container: bool,
 ) -> Result<()> {
     // Snapshot out-of-perimeter sentinels before any sync work runs.
     // The tripwire is verified at the end of cmd_sync.
@@ -1526,44 +1602,39 @@ pub fn cmd_sync(
             .and_then(|cwd| crate::lock::read_lock(&cwd).ok().flatten())
             .and_then(|lock| lock.processkit);
 
+    // Decide install / reinstall / skip based on lock+config drift AND
+    // the live install-integrity check (WS-1). The integrity check is
+    // best-effort — if it errors, fall back to Skip with a warning so a
+    // corrupt live marker can't brick `aibox sync` outright.
     match std::env::current_dir() {
         Ok(cwd) => {
-            let lock_pair = pre_install_processkit_lock
-                .as_ref()
-                .map(|pk| (pk.source.clone(), pk.version.clone()));
-            if sync_should_install_processkit(
-                &config.processkit.version,
-                &config.processkit.source,
-                lock_pair.as_ref().map(|(s, v)| (s.as_str(), v.as_str())),
-            ) {
-                {
-                    output::info(&format!(
-                        "Installing processkit {}@{}...",
-                        config.processkit.source, config.processkit.version
+            let lock = crate::lock::read_lock(&cwd).ok().flatten();
+            let decision =
+                crate::integrity::decide_sync(&config, &cwd, &lock).unwrap_or_else(|e| {
+                    output::warn(&format!(
+                        "integrity check failed: {} — falling back to skip",
+                        e
                     ));
-                    match crate::content_init::install_content_source(&cwd, &config) {
-                        Ok(report) if report.skipped_due_to_unset => {
-                            // Defensive — we already gated on version != unset.
-                        }
-                        Ok(report) => {
-                            output::ok(&format!(
-                                "Installed {} files from processkit {}@{} ({} groups, {} skipped)",
-                                report.files_installed,
-                                report.fetched_from,
-                                report.fetched_version,
-                                report.groups_touched,
-                                report.files_skipped,
-                            ));
-                        }
-                        Err(e) => {
-                            output::warn(&format!(
-                                "Processkit install failed: {}. Sync will continue without \
-                                 fresh content; fix the [processkit] section and re-run \
-                                 `aibox sync` to retry.",
-                                e
-                            ));
-                        }
-                    }
+                    crate::integrity::SyncDecision::Skip
+                });
+            match &decision {
+                crate::integrity::SyncDecision::Skip => {}
+                crate::integrity::SyncDecision::Install { reason } => {
+                    output::info(&format!(
+                        "Installing processkit {}@{} ({})",
+                        config.processkit.source, config.processkit.version, reason
+                    ));
+                    run_install(&cwd, &config);
+                }
+                crate::integrity::SyncDecision::Reinstall {
+                    reason,
+                    prior_state,
+                } => {
+                    output::warn(&format!(
+                        "Reinstalling processkit {}@{}: {} (prior state: {})",
+                        config.processkit.source, config.processkit.version, reason, prior_state
+                    ));
+                    run_install(&cwd, &config);
                 }
             }
         }
@@ -1581,13 +1652,72 @@ pub fn cmd_sync(
     // produces byte-identical output. Best-effort: any failure is
     // warned-and-continued. See DEC-033.
     if let Ok(cwd) = std::env::current_dir() {
+        // ── Processkit-install fingerprint drift check ───────────────────
+        // WS-7: broadened from the narrow `mcp_config_hash` to cover the
+        // full processkit-shipped install payload (skill source,
+        // schemas, processes, state-machines, _lib). Any edit under
+        // those paths between syncs invalidates the hash here.
+        let stored_hash = crate::lock::read_lock(&cwd)
+            .ok()
+            .flatten()
+            .and_then(|l| l.processkit)
+            .and_then(|p| p.processkit_install_hash);
+
+        // If processkit ships a manifest with an expected hash, warn on drift.
+        // The manifest still publishes a narrow `mcp_config_hash` value, so
+        // this is currently a best-effort cross-check rather than a strict
+        // equality. A future processkit release that publishes the broad
+        // hash will tighten this comparison automatically.
+        let manifest_hash = crate::mcp_registration::read_processkit_mcp_manifest_hash(&cwd);
+        #[allow(clippy::collapsible_if)]
+        if let (Some(mh), Some(sh)) = (&manifest_hash, &stored_hash) {
+            if mh != sh {
+                output::warn(
+                    "processkit MCP manifest hash differs from last sync — \
+                     per-skill configs may have changed; regenerating .mcp.json",
+                );
+            }
+        }
+
+        // ── Regenerate (already unconditional) ───────────────────────────
         if let Err(e) = crate::mcp_registration::regenerate_mcp_configs(&config, &cwd) {
             output::warn(&format!("MCP registration failed: {}", e));
         }
+
+        // ── Update fingerprint in lock ───────────────────────────────────
+        let new_hash = crate::mcp_registration::compute_processkit_install_fingerprint(&cwd);
+        #[allow(clippy::collapsible_if)]
+        if new_hash != stored_hash {
+            // Fingerprint changed — update the lock so future runs have a fresh baseline.
+            if let Ok(Some(mut lock)) = crate::lock::read_lock(&cwd) {
+                if let Some(pk) = lock.processkit.as_mut() {
+                    pk.processkit_install_hash = new_hash.clone();
+                    // Clear the deprecated narrow field so old values
+                    // don't linger past the first post-WS-7 sync.
+                    #[allow(deprecated)]
+                    {
+                        pk.mcp_config_hash = None;
+                    }
+                    if let Err(e) = crate::lock::write_lock(&cwd, &lock) {
+                        output::warn(&format!(
+                            "Failed to update processkit_install_hash in lock: {}",
+                            e
+                        ));
+                    }
+                }
+            }
+        }
+
         // Wire processkit enforcement hooks into harness config files.
         // Best-effort: a hook-registration failure must not abort sync.
         if let Err(e) = crate::hook_registration::regenerate_hook_configs(&config, &cwd) {
             output::warn(&format!("Hook registration failed: {}", e));
+        }
+        // Merge processkit's preauth.json into .claude/settings.json
+        // (pre-approve Bash patterns + MCP servers shipped by
+        // processkit ≥ v0.22.0). Best-effort.
+        if let Err(e) = crate::preauth::merge_processkit_preauth_into_claude_settings(&cwd) {
+            output::warn(&format!("Preauth merge failed: {}", e));
         }
         // Surface the processkit compliance contract to each harness
         // (drift check, Cursor rules, Aider conf). Best-effort.
@@ -1675,24 +1805,47 @@ pub fn cmd_sync(
     // build, so a perimeter violation aborts as fast as possible.
     tripwire.verify()?;
 
-    // Build container image (if a container runtime is available)
-    if no_build {
+    // Build container image (if a container runtime is available).
+    //
+    // Three mutually exclusive completion paths so test/log assertions
+    // can disambiguate:
+    //   * --no-container: never touches Runtime::detect() at all.
+    //   * --no-build:     same effect, but the older flag — kept for
+    //                     back-compat. Distinct message so the two
+    //                     paths can be told apart in tests.
+    //   * default:        probe runtime, build image (or warn-skip).
+    if no_container {
+        output::ok("Sync complete (--no-container: skipped runtime probe and image build)");
+    } else if no_build {
         output::ok("Sync complete (build skipped)");
     } else {
-        match Runtime::detect() {
-            Ok(runtime) => {
-                output::info("Building container image...");
-                runtime.compose_build(crate::config::COMPOSE_FILE, no_cache)?;
-                output::ok("Sync complete — image built");
-                warn_if_container_lags_image(&runtime, &config);
-            }
-            Err(_) => {
-                output::warn("No container runtime found — skipping image build");
-                output::ok("Sync complete (config files only)");
-            }
-        }
+        perform_container_build(no_cache, &config)?;
     }
 
+    Ok(())
+}
+
+/// Probe for a container runtime and build the project image.
+///
+/// Extracted from `cmd_sync` so the runtime-touching step can be
+/// short-circuited cleanly by `--no-container` / `AIBOX_NO_CONTAINER`.
+/// Preserves the original semantics exactly: a successful probe builds
+/// the image and warns if a running container lags the freshly-built
+/// image; a failed probe degrades to a warn-and-skip with a "config
+/// files only" success message.
+fn perform_container_build(no_cache: bool, config: &AiboxConfig) -> Result<()> {
+    match Runtime::detect() {
+        Ok(runtime) => {
+            output::info("Building container image...");
+            runtime.compose_build(crate::config::COMPOSE_FILE, no_cache)?;
+            output::ok("Sync complete — image built");
+            warn_if_container_lags_image(&runtime, config);
+        }
+        Err(_) => {
+            output::warn("No container runtime found — skipping image build");
+            output::ok("Sync complete (config files only)");
+        }
+    }
     Ok(())
 }
 

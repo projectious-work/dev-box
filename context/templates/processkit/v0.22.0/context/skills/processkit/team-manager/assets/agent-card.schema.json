@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ProcesskitAgentCard",
+  "type": "object",
+  "required": ["name", "role", "skills"],
+  "additionalProperties": true,
+  "properties": {
+    "schemaVersion": {"const": "a2a/v0.3"},
+    "name": {"type": "string"},
+    "description": {"type": "string"},
+    "role": {"type": "string"},
+    "seniority": {
+      "type": "string",
+      "enum": ["junior", "specialist", "expert", "senior", "principal"]
+    },
+    "skills": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "modalities": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "provider": {"type": "string"},
+    "contact": {"type": "object"},
+    "signature": {
+      "type": "object",
+      "properties": {
+        "alg": {"type": "string"},
+        "value": {"type": "string"}
+      }
+    }
+  }
+}

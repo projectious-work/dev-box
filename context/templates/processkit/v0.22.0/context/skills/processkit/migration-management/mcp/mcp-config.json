@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "processkit-migration-management": {
+      "command": "uv",
+      "args": [
+        "run",
+        "context/skills/processkit/migration-management/mcp/server.py"
+      ],
+      "env": {}
+    }
+  }
+}

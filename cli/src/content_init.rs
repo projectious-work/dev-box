@@ -352,6 +352,7 @@ pub fn install_content_source(project_root: &Path, config: &AiboxConfig) -> Resu
     let existing_lock = lock::read_lock(project_root).ok().flatten();
     let existing_addons = existing_lock.as_ref().and_then(|l| l.addons.clone());
 
+    #[allow(deprecated)]
     let prospective_pk = lock::ProcessKitLockSection {
         source: pk.source.clone(),
         version: pk.version.clone(),
@@ -362,6 +363,14 @@ pub fn install_content_source(project_root: &Path, config: &AiboxConfig) -> Resu
         // Filled in below — either reused from existing lock (no-change case)
         // or set to `now` (change case).
         installed_at: String::new(),
+        // WS-7: write the broadened fingerprint here. The narrow
+        // legacy field is intentionally cleared on every fresh lock
+        // write so old `mcp_config_hash` values don't linger past one
+        // sync.
+        processkit_install_hash: crate::mcp_registration::compute_processkit_install_fingerprint(
+            project_root,
+        ),
+        mcp_config_hash: None,
     };
 
     let cli_version = env!("CARGO_PKG_VERSION").to_string();
@@ -396,15 +405,50 @@ pub fn install_content_source(project_root: &Path, config: &AiboxConfig) -> Resu
 
     let aibox_lock = AiboxLock {
         aibox: lock::AiboxLockSection {
-            cli_version,
-            synced_at,
+            cli_version: cli_version.clone(),
+            synced_at: synced_at.clone(),
         },
         processkit: Some(lock::ProcessKitLockSection {
-            installed_at,
-            ..prospective_pk
+            installed_at: installed_at.clone(),
+            ..prospective_pk.clone()
         }),
-        addons: existing_addons,
+        addons: existing_addons.clone(),
     };
+
+    // 4b. Write the live install marker (DO NOT EDIT). Sibling to
+    //     aibox.lock, but written FIRST so a write failure here aborts
+    //     before the lock bumps — preserving the lock-write-last
+    //     invariant. Schema is content-addressed by the just-installed
+    //     templates mirror.
+    //
+    //     Both the change-case and the unchanged-lock fast path go
+    //     through this write so a `rm context/.processkit-provenance.toml`
+    //     recovers on the next sync without dirtying the lock.
+    let manifest_counts = crate::integrity::count_from_mirror(project_root, &pk.version)
+        .context("failed to count manifest entries from template mirror")?;
+    let live_prov = crate::integrity::LiveProvenance {
+        schema_version: crate::integrity::LIVE_PROVENANCE_SCHEMA_VERSION,
+        install: crate::integrity::LiveProvenanceInstall {
+            processkit_version: pk.version.clone(),
+            processkit_source: pk.source.clone(),
+            installed_at: installed_at.clone(),
+            cli_version: cli_version.clone(),
+        },
+        manifest: crate::integrity::LiveProvenanceManifest {
+            skill_count: manifest_counts.skills,
+            schema_count: manifest_counts.schemas,
+            process_count: manifest_counts.processes,
+            state_machine_count: manifest_counts.state_machines,
+            release_asset_sha256: prospective_pk.release_asset_sha256.clone(),
+            install_hash: crate::mcp_registration::compute_processkit_install_fingerprint(
+                project_root,
+            ),
+        },
+    };
+    crate::integrity::write_live_provenance(project_root, &live_prov)
+        .context("failed to write live provenance marker")?;
+
+    // 5. Write aibox.lock LAST (existing — invariant preserved).
     lock::write_lock(project_root, &aibox_lock).context("failed to write aibox.lock")?;
 
     Ok(InstallReport {

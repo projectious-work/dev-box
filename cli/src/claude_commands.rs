@@ -39,7 +39,7 @@ use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, anyhow};
 
 use crate::config::{AiboxConfig, PROCESSKIT_VERSION_UNSET};
 use crate::output;
@@ -153,8 +153,9 @@ pub fn sync_claude_commands(project_root: &Path, config: &AiboxConfig) -> Result
     let universe = collect_command_filenames(mirror_dir_ref);
 
     // Step 2: build the wanted set from the live installed skills. Source
-    // path is stored so we can copy the content verbatim.
-    let wanted = collect_live_commands(&live_skills_dir);
+    // path is stored so we can copy the content verbatim. Returns Err on
+    // slash-command name collision between two skills.
+    let wanted = collect_live_commands(&live_skills_dir)?;
 
     if universe.is_empty() && wanted.is_empty() {
         return Ok(());
@@ -273,50 +274,81 @@ fn collect_command_filenames(skills_dir: &Path) -> HashSet<String> {
 /// The layout is two levels deep: `skills_dir/<category>/<skill>/commands/`.
 /// Top-level non-directory entries (e.g. `INDEX.md`) are skipped gracefully.
 ///
-/// Emits a warning (last-wins) when the same command filename appears in two
-/// different skill directories across categories.
-fn collect_live_commands(skills_dir: &Path) -> HashMap<String, std::path::PathBuf> {
+/// Returns `Err` when the same command filename would deploy from two
+/// different skill directories. Iteration order is deterministic:
+/// `(category, skill_name)` lexicographic, so collision error messages
+/// are stable across runs.
+fn collect_live_commands(skills_dir: &Path) -> Result<HashMap<String, std::path::PathBuf>> {
     let mut map: HashMap<String, std::path::PathBuf> = HashMap::new();
     // Collision guard: filename → skill path of first occurrence.
     let mut seen_skill: HashMap<String, std::path::PathBuf> = HashMap::new();
-    let Ok(categories) = fs::read_dir(skills_dir) else {
-        return map;
+
+    let Ok(category_entries) = fs::read_dir(skills_dir) else {
+        return Ok(map);
     };
-    for category in categories.flatten() {
-        if !category.path().is_dir() {
-            continue;
-        }
-        let Ok(skills) = fs::read_dir(category.path()) else {
+
+    // Deterministic ordering: sort categories alphabetically.
+    let mut categories: Vec<std::path::PathBuf> = category_entries
+        .flatten()
+        .map(|e| e.path())
+        .filter(|p| p.is_dir())
+        .collect();
+    categories.sort();
+
+    for category in categories {
+        let Ok(skill_entries) = fs::read_dir(&category) else {
             continue;
         };
-        for skill in skills.flatten() {
-            let commands_dir = skill.path().join("commands");
+
+        // Deterministic ordering: sort skills alphabetically within each category.
+        let mut skills: Vec<std::path::PathBuf> = skill_entries
+            .flatten()
+            .map(|e| e.path())
+            .filter(|p| p.is_dir())
+            .collect();
+        skills.sort();
+
+        for skill_path in skills {
+            let commands_dir = skill_path.join("commands");
             let Ok(cmd_entries) = fs::read_dir(&commands_dir) else {
                 continue;
             };
-            for cmd in cmd_entries.flatten() {
-                let name = cmd.file_name();
-                let Some(s) = name.to_str() else { continue };
-                if s.ends_with(".md") {
-                    if let Some(prev) = seen_skill.get(s)
-                        && prev != &skill.path()
-                    {
-                        crate::output::warn(&format!(
-                            "duplicate command filename '{s}' found in \
-                             '{prev}' and '{cur}' — last-wins; \
-                             '{cur}' takes precedence. \
-                             Disambiguate upstream to silence this warning.",
-                            prev = prev.display(),
-                            cur = skill.path().display(),
-                        ));
-                    }
-                    seen_skill.insert(s.to_string(), skill.path());
-                    map.insert(s.to_string(), cmd.path());
+
+            // Deterministic ordering: sort command files alphabetically.
+            let mut cmds: Vec<std::path::PathBuf> =
+                cmd_entries.flatten().map(|e| e.path()).collect();
+            cmds.sort();
+
+            for cmd_path in cmds {
+                let Some(s) = cmd_path.file_name().and_then(|n| n.to_str()) else {
+                    continue;
+                };
+                if !s.ends_with(".md") {
+                    continue;
                 }
+
+                if let Some(prev) = seen_skill.get(s)
+                    && prev != &skill_path
+                {
+                    let prev_cmd = prev.join("commands").join(s);
+                    return Err(anyhow!(
+                        "Slash command name collision: {name} is shipped by both\n  \
+                         - {prev}\n  - {cur}\n\
+                         This blocks .claude/commands/{name} deployment.\n\
+                         Resolution: file an upstream issue with the offending skill, \
+                         or set [skills].exclude in aibox.toml to drop one of the \
+                         conflicting skills.",
+                        name = s,
+                        prev = prev_cmd.display(),
+                        cur = cmd_path.display(),
+                    ));
+                }
+                seen_skill.insert(s.to_string(), skill_path.clone());
+                map.insert(s.to_string(), cmd_path);
             }
         }
     }
-    map
+    Ok(map)
 }
 
 /// Remove only the processkit-managed command files from `.claude/commands/`,
@@ -491,7 +523,7 @@ mod tests {
             "content",
         );
 
-        let map = collect_live_commands(&skills);
+        let map = collect_live_commands(&skills).unwrap();
         assert!(map.contains_key("note-management-capture.md"));
         assert!(map["note-management-capture.md"].ends_with("note-management-capture.md"));
     }
@@ -580,17 +612,11 @@ mod tests {
         assert!(!tmp.path().join(".claude/commands").exists());
     }
 
-    /// Regression test for the two-level skills layout bug.
-    ///
-    /// Before the fix, `collect_command_filenames` and `collect_live_commands`
-    /// only walked one level deep (`skills/<skill>/commands/`), so they found
-    /// nothing in the real two-level layout (`skills/<category>/<skill>/commands/`).
-    /// This caused `sync_claude_commands` to early-exit and never create
-    /// `.claude/commands/`.
-    /// Test 9 (aibox#53 Q2): duplicate command basename across categories emits
-    /// a warning and exactly one source path wins (last-wins semantics).
+    /// Universe-side: duplicate command basenames across categories are
+    /// tolerated by `collect_command_filenames` (the universe is a set, not
+    /// a deployment plan). The hard-fail lives in `collect_live_commands`.
     #[test]
-    fn collect_warns_on_duplicate_command_basename_across_categories() {
+    fn collect_command_filenames_tolerates_duplicate_basename_across_categories() {
         let tmp = tempfile::tempdir().unwrap();
         let skills = tmp.path().join("skills");
         // Two skills in different categories both ship pk-foo.md.
@@ -611,15 +637,176 @@ mod tests {
             set
         );
         assert_eq!(set.len(), 1, "only one entry for the duplicate filename");
+    }
 
-        // collect_live_commands: map must contain pk-foo.md (once, last-wins).
-        let map = collect_live_commands(&skills);
-        assert!(
-            map.contains_key("pk-foo.md"),
-            "pk-foo.md must be in the live map; got: {:?}",
-            map
+    /// WS-4: duplicate command basename across two skills must hard-fail
+    /// `collect_live_commands` (and therefore `sync_claude_commands`). The
+    /// error message must include both source skill paths so the user can
+    /// disambiguate.
+    #[test]
+    fn collect_live_commands_hard_fails_on_collision() {
+        let tmp = tempfile::tempdir().unwrap();
+        let skills = tmp.path().join("skills");
+        make_skill_commands(
+            &skills,
+            "engineering",
+            "bar",
+            &["pk-foo.md"],
+            "# engineering",
         );
-        assert_eq!(map.len(), 1, "only one entry for the duplicate filename");
+        make_skill_commands(&skills, "devops", "baz", &["pk-foo.md"], "# devops");
+
+        let result = collect_live_commands(&skills);
+        assert!(result.is_err(), "expected collision to return Err");
+        let err = result.unwrap_err().to_string();
+        assert!(
+            err.contains("pk-foo.md"),
+            "error must name the colliding command; got: {err}"
+        );
+        assert!(
+            err.contains("engineering") && err.contains("bar"),
+            "error must name the first colliding skill path; got: {err}"
+        );
+        assert!(
+            err.contains("devops") && err.contains("baz"),
+            "error must name the second colliding skill path; got: {err}"
+        );
+        assert!(
+            err.contains("[skills].exclude"),
+            "error should mention the [skills].exclude resolution path; got: {err}"
+        );
+    }
+
+    /// WS-4: deterministic ordering — given the same on-disk layout, the
+    /// collision error names the same "first" path on every run. We verify
+    /// by sorting `(category, skill)` lexicographically: `devops/baz`
+    /// sorts before `engineering/bar`, so `devops/baz` must be the
+    /// "previous" path in the error message.
+    #[test]
+    fn collect_live_commands_collision_is_deterministic() {
+        let tmp = tempfile::tempdir().unwrap();
+        let skills = tmp.path().join("skills");
+        make_skill_commands(
+            &skills,
+            "engineering",
+            "bar",
+            &["pk-foo.md"],
+            "# engineering",
+        );
+        make_skill_commands(&skills, "devops", "baz", &["pk-foo.md"], "# devops");
+
+        let err = collect_live_commands(&skills).unwrap_err().to_string();
+        // The error format is "shipped by both\n  - <first>\n  - <second>".
+        // With (category, skill) sort, devops/baz precedes engineering/bar.
+        let first_idx = err.find("devops").expect("devops must appear");
+        let second_idx = err.find("engineering").expect("engineering must appear");
+        assert!(
+            first_idx < second_idx,
+            "deterministic order: devops/baz must precede engineering/bar in error; got: {err}"
+        );
+    }
+
+    /// WS-4: two skills with non-colliding command names → sync deploys
+    /// both files successfully.
+    #[test]
+    fn sync_succeeds_when_two_skills_have_non_colliding_commands() {
+        let tmp = tempfile::tempdir().unwrap();
+        let project = tmp.path();
+
+        let mirror = project.join("context/templates/processkit/v0.21.0/context/skills");
+        make_skill_commands(
+            &mirror,
+            "processkit",
+            "morning-briefing",
+            &["morning-briefing-generate.md"],
+            "# mb",
+        );
+        make_skill_commands(
+            &mirror,
+            "processkit",
+            "status-briefing",
+            &["status-briefing-generate.md"],
+            "# sb",
+        );
+
+        let live = project.join("context/skills");
+        make_skill_commands(
+            &live,
+            "processkit",
+            "morning-briefing",
+            &["morning-briefing-generate.md"],
+            "# mb body",
+        );
+        make_skill_commands(
+            &live,
+            "processkit",
+            "status-briefing",
+            &["status-briefing-generate.md"],
+            "# sb body",
+        );
+
+        let config = config_with_pk_version("v0.21.0");
+        sync_claude_commands(project, &config).expect("non-colliding sync must succeed");
+
+        let claude_cmds = project.join(".claude/commands");
+        assert!(claude_cmds.join("morning-briefing-generate.md").exists());
+        assert!(claude_cmds.join("status-briefing-generate.md").exists());
+        assert_eq!(
+            fs::read_to_string(claude_cmds.join("morning-briefing-generate.md")).unwrap(),
+            "# mb body"
+        );
+        assert_eq!(
+            fs::read_to_string(claude_cmds.join("status-briefing-generate.md")).unwrap(),
+            "# sb body"
+        );
+    }
+
+    /// WS-4: end-to-end — `sync_claude_commands` returns `Err` when two
+    /// skills' `commands/<same-name>.md` would both deploy.
+    #[test]
+    fn sync_claude_commands_hard_fails_on_collision() {
+        let tmp = tempfile::tempdir().unwrap();
+        let project = tmp.path();
+
+        let mirror = project.join("context/templates/processkit/v0.21.0/context/skills");
+        make_skill_commands(
+            &mirror,
+            "processkit",
+            "morning-briefing",
+            &["pk-resume.md"],
+            "# mb",
+        );
+        make_skill_commands(
+            &mirror,
+            "processkit",
+            "status-briefing",
+            &["pk-resume.md"],
+            "# sb",
+        );
+
+        let live = project.join("context/skills");
+        make_skill_commands(
+            &live,
+            "processkit",
+            "morning-briefing",
+            &["pk-resume.md"],
+            "# mb body",
+        );
+        make_skill_commands(
+            &live,
+            "processkit",
+            "status-briefing",
+            &["pk-resume.md"],
+            "# sb body",
+        );
+
+        let config = config_with_pk_version("v0.21.0");
+        let result = sync_claude_commands(project, &config);
+        assert!(result.is_err(), "expected collision to abort sync");
+        let err = result.unwrap_err().to_string();
+        assert!(err.contains("pk-resume.md"));
+        assert!(err.contains("morning-briefing"));
+        assert!(err.contains("status-briefing"));
     }
 
     #[test]

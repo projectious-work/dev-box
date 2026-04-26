@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "a2a/v0.3",
+  "name": "Cora",
+  "description": "AI product manager for processkit (senior). Drives roadmap, prioritisation, stakeholder alignment, release coordination.",
+  "role": "ROLE-product-manager",
+  "seniority": "senior",
+  "skills": [
+    "product-strategy",
+    "roadmap-planning",
+    "prioritization-frameworks",
+    "stakeholder-management",
+    "release-coordination",
+    "retrospective-facilitation"
+  ],
+  "modalities": [
+    "text",
+    "tools"
+  ],
+  "provider": "anthropic",
+  "contact": {},
+  "signature": {
+    "alg": "none",
+    "value": ""
+  }
+}

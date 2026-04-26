@@ -1,0 +1,39 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: TeamMember
+metadata:
+  id: TEAMMEMBER-TODO
+  created: TODO
+spec:
+  type: human
+  name: TODO
+  slug: TODO
+  email: TODO
+  handle: TODO           # optional — GitHub/Slack handle
+  default_role: TODO     # optional — ROLE-<slug>
+  default_seniority: specialist
+  personality:
+    communication_style: TODO
+    voice: TODO
+    declared_expertise: []
+    boundaries: []
+  memory:
+    enabled: true
+    tiers: [working, episodic, semantic, procedural, relational, lessons]
+    consolidation_cadence:
+      per_task: true
+      daily_journal: true
+      weekly_promotion: true
+    importance_threshold: 25
+    decay_enabled: true
+  relationships: []
+  exportable: true
+  export_policy:
+    include: [persona, card, knowledge, skills, lessons]
+    exclude: [journal, relations]
+    redact_sensitivity: [confidential, pii]
+  active: true
+  joined_at: TODO
+---
+
+# Persona body — optional freeform notes

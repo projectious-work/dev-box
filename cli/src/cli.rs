@@ -2,6 +2,20 @@ use clap::{Parser, Subcommand, ValueEnum};
 
 use crate::config::{AiProvider, BaseImage, StarshipPreset, Theme};
 
+/// Parse a truthy/falsy string for env-var-driven boolean flags.
+/// Accepts 1/0, true/false, yes/no, on/off (case-insensitive). Empty string is
+/// treated as false so an unset `AIBOX_NO_CONTAINER=` doesn't trip the parser.
+fn parse_truthy_flag(s: &str) -> Result<bool, String> {
+    match s.to_ascii_lowercase().as_str() {
+        "1" | "true" | "yes" | "on" => Ok(true),
+        "0" | "false" | "no" | "off" | "" => Ok(false),
+        other => Err(format!(
+            "expected one of 1/0/true/false/yes/no/on/off, got '{}'",
+            other
+        )),
+    }
+}
+
 /// Output format for list commands.
 #[derive(Clone, Debug, Default, ValueEnum)]
 pub enum OutputFormat {
@@ -161,6 +175,21 @@ pub enum Commands {
         /// fetch time but the version is still recorded in aibox.toml.
         #[arg(long)]
         processkit_branch: Option<String>,
+
+        /// Skip all container-runtime interaction (runtime probe + image
+        /// build). cmd_init is already container-free in practice; this
+        /// field is threaded through `InitParams` for symmetry with
+        /// `Commands::Sync` and to future-proof against added container
+        /// touchpoints. Also settable via `AIBOX_NO_CONTAINER=1`.
+        #[arg(
+            long,
+            env = "AIBOX_NO_CONTAINER",
+            value_parser = parse_truthy_flag,
+            num_args = 0..=1,
+            default_missing_value = "true",
+            default_value = "false",
+        )]
+        no_container: bool,
     },
     /// Reconcile project state with aibox.toml configuration
     ///
@@ -201,6 +230,21 @@ pub enum Commands {
         /// source is v2, markers are migrated to v2 as part of the fix.
         #[arg(long)]
         fix_compliance_contract: bool,
+
+        /// Skip all container-runtime interaction (runtime probe + image
+        /// build). All file scaffolding still runs — useful inside dev
+        /// containers where building sub-containers is wasteful (E2E
+        /// tests, CI). Distinct from `--no-build`, which still probes the
+        /// runtime. Also settable via `AIBOX_NO_CONTAINER=1`.
+        #[arg(
+            long,
+            env = "AIBOX_NO_CONTAINER",
+            value_parser = parse_truthy_flag,
+            num_args = 0..=1,
+            default_missing_value = "true",
+            default_value = "false",
+        )]
+        no_container: bool,
     },
     /// Start container and attach via zellij
     ///
@@ -234,7 +278,19 @@ pub enum Commands {
     /// Checks: config validity, container runtime, .aibox-home/ directories,
     /// .devcontainer/ files, context structure, .gitignore entries, and
     /// schema version. Generates migration artifacts when versions differ.
-    Doctor,
+    ///
+    /// With `--integrity`: skip the legacy doctor and run only the
+    /// install-integrity check (cheap, scriptable). Exits non-zero on
+    /// any non-Healthy / non-NotInstalled outcome.
+    Doctor {
+        /// Run only the install-integrity check. Cheap, scriptable.
+        #[arg(long)]
+        integrity: bool,
+        /// Emit JSON instead of human output. Implies --integrity-only
+        /// behaviour for now (the legacy doctor doesn't yet support JSON).
+        #[arg(long)]
+        json: bool,
+    },
     /// Generate shell completion script
     ///
     /// Example: aibox completions bash > ~/.bash_completion.d/aibox

@@ -1,0 +1,181 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: Schema
+metadata:
+  id: SCHEMA-model
+  target_kind: Model
+  version: "1.0.0"
+  created: 2026-04-22T00:00:00Z
+x-capacity-tiers:
+  - xs
+  - s
+  - m
+  - l
+  - xl
+  - xxl
+x-efforts:
+  - none
+  - low
+  - medium
+  - high
+  - extra-high
+  - max
+spec:
+  description: >
+    A first-class Model artifact: one file per (provider, family)
+    with versions nested under a versions[] array. Replaces the
+    monolithic model_scores.json registry
+    (DEC-20260422_0234-LoyalComet). Each Model carries capability
+    dimensions (R/E/S/B/L/G scored 1–5), efforts_supported,
+    modalities, access_tier, pricing per version, and an
+    equivalent_tier mapping to processkit's provider-neutral
+    T-shirt capacity ladder (xs/s/m/l/xl/xxl). Binding entities of
+    type 'model-assignment' reference Models for role/team-member/
+    project routing (see binding.yaml).
+  id_prefix: MODEL
+  state_machine: null
+  default_directory: context/models
+  metadata_schema:
+    $schema: https://json-schema.org/draft/2020-12/schema
+    type: object
+    required: [id]
+    properties:
+      id:
+        type: string
+        pattern: "^MODEL-[a-z][a-z0-9-]*$"
+        description: >
+          MODEL-<provider>-<family> kebab-slug. E.g.
+          MODEL-anthropic-claude-opus. Individual versions are
+          nested inside the artifact; they do not get their own IDs.
+  spec_schema:
+    $schema: https://json-schema.org/draft/2020-12/schema
+    type: object
+    required: [provider, family, versions]
+    additionalProperties: true
+    properties:
+      provider:
+        type: string
+        minLength: 1
+        description: >
+          Vendor slug: anthropic, openai, google, xai, deepseek,
+          meta, mistral, …
+      family:
+        type: string
+        minLength: 1
+        description: >
+          Family within the provider. E.g. claude-opus, claude-sonnet,
+          claude-haiku, gpt-5, gpt-5-mini, gemini-2-5-pro.
+      versions:
+        type: array
+        minItems: 1
+        description: "Ordered (newest first by convention) list of known versions."
+        items:
+          type: object
+          required: [version_id, status]
+          additionalProperties: true
+          properties:
+            version_id:
+              type: string
+              description: "Version identifier. E.g. '4.7', '5.4-turbo'."
+            released_at:
+              type: string
+              format: date
+              description: "Date the version became available."
+            status:
+              type: string
+              enum: [ga, beta, preview, deprecated, retired]
+              description: "Availability status."
+            deprecated_at:
+              type: string
+              format: date
+              description: "Date deprecated; omit if GA/beta/preview."
+            successor:
+              type: string
+              description: "version_id of the successor (if deprecated/retired)."
+            context_window:
+              type: integer
+              minimum: 1
+              description: "Input context window in tokens."
+            max_output:
+              type: integer
+              minimum: 1
+              description: "Max output tokens per response."
+            pricing_usd_per_1m:
+              type: object
+              additionalProperties: false
+              properties:
+                input:
+                  type: number
+                output:
+                  type: number
+                input_cache_read:
+                  type: number
+                input_cache_write:
+                  type: number
+            max_thinking_budget:
+              type: integer
+              description: >
+                Provider-maximum extended-thinking budget in tokens
+                (used to resolve effort='max').
+      efforts_supported:
+        type: array
+        items:
+          type: string
+          enum: [none, low, medium, high, extra-high, max]
+        description: >
+          Which processkit effort levels this model supports. 'none'
+          means no extended thinking / standard response mode.
+      dimensions:
+        type: object
+        description: "Capability scoring 1–5 across six dimensions (R/E/S/B/L/G)."
+        additionalProperties: false
+        properties:
+          reasoning:
+            type: integer
+            minimum: 1
+            maximum: 5
+          engineering:
+            type: integer
+            minimum: 1
+            maximum: 5
+          speed:
+            type: integer
+            minimum: 1
+            maximum: 5
+          breadth:
+            type: integer
+            minimum: 1
+            maximum: 5
+          reliability:
+            type: integer
+            minimum: 1
+            maximum: 5
+          governance:
+            type: integer
+            minimum: 1
+            maximum: 5
+      modalities:
+        type: array
+        items:
+          type: string
+          enum: [text, vision, audio, tools, computer-use, code-execution]
+        description: "Supported modalities beyond text."
+      access_tier:
+        type: string
+        enum: [public, waitlist, enterprise, restricted]
+        description: "Availability level for typical customers."
+      equivalent_tier:
+        type: string
+        enum: [xs, s, m, l, xl, xxl]
+        description: >
+          Capacity tier in processkit's provider-neutral T-shirt
+          ladder. Used by bindings (type='model-assignment') for
+          abstract matching. The ladder extends in both directions
+          by convention (xxxs, xxxl, …) via future schema updates.
+      status_page_url:
+        type: string
+        format: uri
+        description: "Provider's public status page."
+      rationale:
+        type: string
+        description: "One-line note on why this model is tracked."

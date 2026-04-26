@@ -1199,6 +1199,7 @@ installed_at = \"2026-04-01T00:00:00Z\"
     }
 
     #[test]
+    #[allow(deprecated)]
     fn test_format_migration_doc_with_processkit() {
         let pk = crate::lock::ProcessKitLockSection {
             source: "https://github.com/projectious-work/processkit.git".to_string(),
@@ -1208,6 +1209,8 @@ installed_at = \"2026-04-01T00:00:00Z\"
             resolved_commit: None,
             release_asset_sha256: None,
             installed_at: "2026-04-01T00:00:00Z".to_string(),
+            processkit_install_hash: None,
+            mcp_config_hash: None,
         };
         let doc = format_migration_doc("0.17.4", "0.17.5", "2026-04-10", Some(&pk), None);
 

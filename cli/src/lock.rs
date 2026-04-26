@@ -115,6 +115,49 @@ pub struct ProcessKitLockSection {
     pub release_asset_sha256: Option<String>,
     /// ISO 8601 UTC timestamp of the install (e.g. "2026-04-06T12:34:56Z").
     pub installed_at: String,
+    /// SHA256 fingerprint over the broad processkit-shipped install
+    /// payload (per-skill content under `context/skills/processkit/`,
+    /// the shared `_lib`, schemas, state-machines, and processes).
+    /// Stored after every successful `regenerate_mcp_configs` run. Used
+    /// to detect drift in any processkit-shipped file between syncs
+    /// without requiring a processkit version bump.
+    ///
+    /// Introduced in v0.19.3 (WS-7). Replaces the narrower
+    /// [`mcp_config_hash`] field, which only fingerprinted
+    /// `context/skills/*/mcp/mcp-config.json`. The two fingerprints are
+    /// **not** interchangeable — see [`Self::effective_install_hash`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub processkit_install_hash: Option<String>,
+    /// **Deprecated** — narrow fingerprint kept only so old (pre-v0.19.3)
+    /// lock files still parse without error. The next sync overwrites
+    /// this field with `None` and writes [`processkit_install_hash`]
+    /// instead. Do **not** auto-promote this value into the new field:
+    /// the broader fingerprint covers a different file set, so the
+    /// hashes are not equal even when the install is otherwise unchanged.
+    #[deprecated(
+        since = "0.19.3",
+        note = "use processkit_install_hash; this field is kept only for back-compat reads"
+    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mcp_config_hash: Option<String>,
+}
+
+#[allow(deprecated)]
+impl ProcessKitLockSection {
+    /// The "effective" install hash for read-side comparisons.
+    ///
+    /// Prefers [`processkit_install_hash`] (the post-WS-7 broad
+    /// fingerprint). Falls back to the deprecated [`mcp_config_hash`]
+    /// only when no broad hash has been written yet — useful for
+    /// equality checks against an old lock file before the next sync
+    /// has had a chance to rewrite it. **Do not** use this value as the
+    /// expected hash to compare against the broadened fingerprint
+    /// output; the two fingerprints cover different file sets.
+    pub fn effective_install_hash(&self) -> Option<&str> {
+        self.processkit_install_hash
+            .as_deref()
+            .or(self.mcp_config_hash.as_deref())
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -211,6 +254,9 @@ pub fn read_lock(project_root: &Path) -> Result<Option<AiboxLock>> {
             resolved_commit: legacy.resolved_commit,
             release_asset_sha256: legacy.release_asset_sha256,
             installed_at: legacy.installed_at,
+            processkit_install_hash: None,
+            #[allow(deprecated)]
+            mcp_config_hash: None,
         }),
         addons: None,
     }))
@@ -438,6 +484,7 @@ mod tests {
     use super::*;
     use tempfile::TempDir;
 
+    #[allow(deprecated)]
     fn sample_pk() -> ProcessKitLockSection {
         ProcessKitLockSection {
             source: crate::processkit_vocab::PROCESSKIT_GIT_SOURCE.to_string(),
@@ -447,6 +494,8 @@ mod tests {
             resolved_commit: Some("deadbeefcafebabe".to_string()),
             release_asset_sha256: None,
             installed_at: "2026-04-06T12:00:00Z".to_string(),
+            processkit_install_hash: None,
+            mcp_config_hash: None,
         }
     }
 
@@ -695,5 +744,48 @@ mod tests {
             group_for_path(Path::new("primitives/FORMAT.md")),
             Some("primitives".to_string())
         );
+    }
+
+    // -- WS-7 back-compat: lock with only the deprecated
+    //    `mcp_config_hash` field still parses without error and
+    //    `processkit_install_hash` is `None`.
+    #[test]
+    #[allow(deprecated)]
+    fn lock_back_compat_reads_legacy_mcp_config_hash_field() {
+        let tmp = TempDir::new().unwrap();
+        // Hand-write a sectioned lock that uses the old field name only
+        // (no `processkit_install_hash`).
+        let body = r#"
+[aibox]
+cli_version = "0.19.2"
+synced_at = "2026-04-06T12:00:00Z"
+
+[processkit]
+source = "https://github.com/projectious-work/processkit.git"
+version = "v0.19.1"
+src_path = "src"
+resolved_commit = "deadbeef"
+installed_at = "2026-04-06T12:00:00Z"
+mcp_config_hash = "abc123def456"
+"#;
+        fs::write(tmp.path().join("aibox.lock"), body).unwrap();
+        let lock = read_lock(tmp.path()).unwrap().unwrap();
+        let pk = lock.processkit.as_ref().unwrap();
+        // Old field still readable
+        assert_eq!(pk.mcp_config_hash.as_deref(), Some("abc123def456"));
+        // New field not auto-promoted
+        assert!(pk.processkit_install_hash.is_none());
+        // Effective accessor falls back to the legacy field
+        assert_eq!(pk.effective_install_hash(), Some("abc123def456"));
+    }
+
+    #[test]
+    #[allow(deprecated)]
+    fn lock_effective_install_hash_prefers_new_field() {
+        let mut pk = sample_pk();
+        pk.processkit_install_hash = Some("new_hash".to_string());
+        pk.mcp_config_hash = Some("old_hash".to_string());
+        // When both are present, prefer the broad fingerprint.
+        assert_eq!(pk.effective_install_hash(), Some("new_hash"));
     }
 }

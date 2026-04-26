@@ -27,6 +27,27 @@
 //! user-facing) are excluded from the diff entirely — they live in the
 //! templates dir as part of the full upstream snapshot but are never
 //! reported in the diff because they have no live counterpart.
+//!
+//! ## Upstream-removed-long-ago (`RemovedUpstreamStale`)
+//!
+//! The truth table above is "two-template" — it only consults the *most
+//! recent* reference snapshot (`template_old`, i.e. the mirror of the
+//! version recorded in `aibox.lock`). That misclassifies a real-world
+//! case the user encounters when they skip versions: a skill that was
+//! present in, say, v0.18.x but removed upstream in v0.19.0. If the user
+//! never ran a sync against an in-between version, neither
+//! `template_old` (v0.19.x) nor the new cache (v0.21.x) contains the
+//! file — yet the live tree still has it. The two-template diff would
+//! tag it `ChangedLocallyOnly` ("user-added"), which is wrong: it's
+//! upstream cruft, not local content.
+//!
+//! After the primary three-way diff runs, every `ChangedLocallyOnly`
+//! result is re-checked against *all* older mirrors under
+//! `context/templates/processkit/<v>/`. If any older mirror contains
+//! the file, the classification is rewritten to
+//! `RemovedUpstreamStale { last_seen_in: <newest older version> }`. The
+//! migration document then proposes (suggests, not auto-applies) the
+//! cleanup. Files absent from every mirror remain `ChangedLocallyOnly`.
 
 use anyhow::{Context, Result};
 use std::collections::{BTreeMap, BTreeSet};
@@ -42,7 +63,12 @@ use crate::lock::{group_for_path, sha256_of_file, should_skip_entry};
 // ---------------------------------------------------------------------------
 
 /// Per-file classification from the three-way comparison.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+///
+/// `RemovedUpstreamStale` carries a `String` (the older mirror version
+/// that last contained the file) so this enum is `Clone` rather than
+/// `Copy`. Pattern matching that previously held copies must now hold
+/// borrows or clones; see callers for the change.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FileClassification {
     /// Reference, cache, and live all match — nothing to do.
     Unchanged,
@@ -61,11 +87,21 @@ pub enum FileClassification {
     /// File exists in reference but not in cache (i.e. removed from
     /// upstream). Decide whether to drop locally or keep as a project fork.
     RemovedUpstream,
+    /// File is missing from both `template_old` and the new cache, but
+    /// is present in an *older* mirror under
+    /// `context/templates/processkit/`. Indicates upstream removed it
+    /// in a version the user skipped over, so the live copy is dead
+    /// content that the user never explicitly authored. The migration
+    /// document *suggests* removal — the apply step never auto-deletes.
+    /// `last_seen_in` is the version label of the newest older mirror
+    /// that still contained the file (used for the migration doc
+    /// diagnostic).
+    RemovedUpstreamStale { last_seen_in: String },
 }
 
 impl FileClassification {
     /// Short human-readable label used in migration documents.
-    pub fn label(self) -> &'static str {
+    pub fn label(&self) -> &'static str {
         match self {
             FileClassification::Unchanged => "unchanged",
             FileClassification::ChangedLocallyOnly => "changed-locally-only",
@@ -73,6 +109,7 @@ impl FileClassification {
             FileClassification::Conflict => "conflict",
             FileClassification::NewUpstream => "new-upstream",
             FileClassification::RemovedUpstream => "removed-upstream",
+            FileClassification::RemovedUpstreamStale { .. } => "removed-upstream-stale",
         }
     }
 }
@@ -238,6 +275,32 @@ pub fn three_way_diff(
         })?;
     }
 
+    // Reclassify any ChangedLocallyOnly entries that originate from a
+    // skill removed upstream long ago. See `RemovedUpstreamStale` in
+    // FileClassification for the rationale. We consult every mirror
+    // under context/templates/processkit/ EXCLUDING `templates_src_path`
+    // (which we've already considered as the "old" reference).
+    let older_mirrors = list_older_mirrors(project_root, templates_src_path).unwrap_or_default();
+    if !older_mirrors.is_empty() {
+        for diff in &mut diffs {
+            if !matches!(diff.classification, FileClassification::ChangedLocallyOnly) {
+                continue;
+            }
+            // Walk older mirrors NEWEST-first so `last_seen_in` records
+            // the latest pre-removal version (most informative for the
+            // migration doc).
+            for mirror in older_mirrors.iter().rev() {
+                let candidate = mirror.path.join(&diff.cache_rel_path);
+                if candidate.is_file() {
+                    diff.classification = FileClassification::RemovedUpstreamStale {
+                        last_seen_in: mirror.version.clone(),
+                    };
+                    break;
+                }
+            }
+        }
+    }
+
     // Build the grouped view.
     let mut groups: GroupedDiff = BTreeMap::new();
     for d in &diffs {
@@ -246,6 +309,84 @@ pub fn three_way_diff(
     }
 
     Ok((diffs, groups))
+}
+
+/// One older-mirror entry: the version label and the absolute path to
+/// `<project_root>/context/templates/processkit/<version>/`.
+#[derive(Debug, Clone)]
+struct OlderMirror {
+    version: String,
+    path: PathBuf,
+}
+
+/// Enumerate every mirror directory under
+/// `<project_root>/context/templates/processkit/` *except* the one at
+/// `current_mirror` (which is the `template_old` already consulted by the
+/// primary three-way diff).
+///
+/// Sorted by version label using semver semantics when both labels parse
+/// (with an optional leading `v`); otherwise lexicographic. Hidden
+/// entries (e.g. `.aibox`) and non-directories are skipped. The result
+/// is sorted oldest-first; callers iterate `.rev()` to walk newest-first
+/// when they want the most-recent containing mirror.
+fn list_older_mirrors(project_root: &Path, current_mirror: &Path) -> Result<Vec<OlderMirror>> {
+    let templates_root = project_root.join("context/templates/processkit");
+    if !templates_root.is_dir() {
+        return Ok(Vec::new());
+    }
+    // Canonicalize the current mirror so we can compare it to each
+    // candidate directory regardless of trailing slashes / `..` parts.
+    let current_canon = current_mirror.canonicalize().ok();
+
+    let mut mirrors: Vec<OlderMirror> = Vec::new();
+    for entry in fs::read_dir(&templates_root)
+        .with_context(|| format!("failed to read {}", templates_root.display()))?
+    {
+        let entry = entry?;
+        let path = entry.path();
+        let ft = entry
+            .file_type()
+            .with_context(|| format!("failed to stat {}", path.display()))?;
+        if !ft.is_dir() {
+            continue;
+        }
+        let name = entry.file_name();
+        let name_str = name.to_string_lossy().to_string();
+        // Skip hidden entries (e.g. `.aibox`), and the live "current"
+        // mirror that's already the diff's reference baseline.
+        if name_str.starts_with('.') {
+            continue;
+        }
+        if let Some(ref cur) = current_canon
+            && let Ok(this) = path.canonicalize()
+            && &this == cur
+        {
+            continue;
+        }
+        mirrors.push(OlderMirror {
+            version: name_str,
+            path,
+        });
+    }
+
+    mirrors.sort_by(|a, b| compare_version_labels(&a.version, &b.version));
+    Ok(mirrors)
+}
+
+/// Compare two version labels for ordering older→newer.
+///
+/// Strips an optional leading `v` and tries `semver::Version::parse` on
+/// each side. If both parse, uses semver ordering; otherwise falls back
+/// to lexicographic ordering of the raw labels (acceptable for the
+/// `v0.X.Y` scheme per WS-6).
+fn compare_version_labels(a: &str, b: &str) -> std::cmp::Ordering {
+    let strip = |s: &str| s.strip_prefix('v').unwrap_or(s).to_string();
+    let pa = semver::Version::parse(&strip(a)).ok();
+    let pb = semver::Version::parse(&strip(b)).ok();
+    match (pa, pb) {
+        (Some(va), Some(vb)) => va.cmp(&vb),
+        _ => a.cmp(b),
+    }
 }
 
 /// Recursively walk a directory, calling `cb` with each file's path
@@ -308,19 +449,26 @@ pub struct DiffSummary {
     pub conflict: usize,
     pub new_upstream: usize,
     pub removed_upstream: usize,
+    /// Count of `RemovedUpstreamStale` entries — files present in the
+    /// live tree that were removed upstream in a version the user
+    /// skipped over. Surfaced separately so the sync migration doc can
+    /// propose suggested cleanup without bumping the strict
+    /// upstream-side counters.
+    pub removed_upstream_stale: usize,
 }
 
 impl DiffSummary {
     pub fn from_diffs(diffs: &[FileDiff]) -> Self {
         let mut s = DiffSummary::default();
         for d in diffs {
-            match d.classification {
+            match &d.classification {
                 FileClassification::Unchanged => s.unchanged += 1,
                 FileClassification::ChangedLocallyOnly => s.changed_locally_only += 1,
                 FileClassification::ChangedUpstreamOnly => s.changed_upstream_only += 1,
                 FileClassification::Conflict => s.conflict += 1,
                 FileClassification::NewUpstream => s.new_upstream += 1,
                 FileClassification::RemovedUpstream => s.removed_upstream += 1,
+                FileClassification::RemovedUpstreamStale { .. } => s.removed_upstream_stale += 1,
             }
         }
         s
@@ -331,6 +479,7 @@ impl DiffSummary {
             || self.conflict > 0
             || self.new_upstream > 0
             || self.removed_upstream > 0
+            || self.removed_upstream_stale > 0
     }
 
     /// True when upstream itself introduced at least one file-level change
@@ -375,8 +524,13 @@ pub fn write_migration_document(
 ) -> Result<Option<PathBuf>> {
     // No-op guard: at `from == to`, every "conflict" is a local-only edit
     // that upstream never touched, so no migration is actually needed.
-    // Only write when upstream itself moved something.
-    if lock_before.version == cache_version && !summary.has_upstream_side_changes() {
+    // Only write when upstream itself moved something — or when we
+    // discovered an upstream-removed-long-ago skill that needs
+    // suggested cleanup (RemovedUpstreamStale; WS-6).
+    if lock_before.version == cache_version
+        && !summary.has_upstream_side_changes()
+        && summary.removed_upstream_stale == 0
+    {
         return Ok(None);
     }
 
@@ -411,17 +565,18 @@ pub fn write_migration_document(
     // Determine affected groups (groups with at least one non-Unchanged entry).
     let mut affected_groups: BTreeSet<String> = BTreeSet::new();
     for d in diffs {
-        if d.classification != FileClassification::Unchanged {
+        if !matches!(d.classification, FileClassification::Unchanged) {
             affected_groups.insert(d.group.clone().unwrap_or_default());
         }
     }
 
     let summary_line = format!(
-        "{} changed upstream, {} conflicts, {} new, {} removed ({} groups affected)",
+        "{} changed upstream, {} conflicts, {} new, {} removed, {} stale-removed ({} groups affected)",
         summary.changed_upstream_only,
         summary.conflict,
         summary.new_upstream,
         summary.removed_upstream,
+        summary.removed_upstream_stale,
         affected_groups.len(),
     );
 
@@ -484,14 +639,60 @@ pub fn write_migration_document(
     body.push_str(&format!("- conflict: {}\n", summary.conflict));
     body.push_str(&format!("- new-upstream: {}\n", summary.new_upstream));
     body.push_str(&format!(
-        "- removed-upstream: {}\n\n",
+        "- removed-upstream: {}\n",
         summary.removed_upstream
     ));
+    body.push_str(&format!(
+        "- removed-upstream-stale: {}\n\n",
+        summary.removed_upstream_stale
+    ));
+
+    // RemovedUpstreamStale gets its own dedicated section above the
+    // group-by-group breakdown so the user can see at a glance which
+    // local skills are upstream cruft. Listed by project_path with the
+    // version that last contained the file. The action is *suggested*
+    // — apply never auto-deletes user content (WS-6).
+    let stale_entries: Vec<(&FileDiff, &str)> = diffs
+        .iter()
+        .filter_map(|d| match &d.classification {
+            FileClassification::RemovedUpstreamStale { last_seen_in } => {
+                Some((d, last_seen_in.as_str()))
+            }
+            _ => None,
+        })
+        .collect();
+    if !stale_entries.is_empty() {
+        body.push_str("## Skills removed upstream (suggested cleanup)\n\n");
+        body.push_str("The following local skills were present in older processkit versions but\n");
+        body.push_str("have been removed upstream. Review and delete if no longer needed:\n\n");
+        for (d, last_seen) in &stale_entries {
+            let proj = d
+                .project_path
+                .as_ref()
+                .map(|p| p.display().to_string())
+                .unwrap_or_else(|| d.cache_rel_path.clone());
+            body.push_str(&format!(
+                "- `{}/`  (last present in {}, removed in {})\n",
+                proj, last_seen, lock_before.version,
+            ));
+        }
+        body.push_str("\n_Apply with care — `aibox migrate apply` only marks the document as\n");
+        body.push_str("applied; deletion is a manual step that you should only take after\n");
+        body.push_str("confirming the skill is no longer wanted._\n\n");
+    }
 
     // Group by group → classification → files.
     let mut by_group: BTreeMap<String, BTreeMap<&'static str, Vec<&FileDiff>>> = BTreeMap::new();
     for d in diffs {
-        if d.classification == FileClassification::Unchanged {
+        if matches!(d.classification, FileClassification::Unchanged) {
+            continue;
+        }
+        // RemovedUpstreamStale already shown above in its dedicated
+        // section; don't duplicate it in the per-group breakdown.
+        if matches!(
+            d.classification,
+            FileClassification::RemovedUpstreamStale { .. }
+        ) {
             continue;
         }
         by_group
@@ -502,9 +703,9 @@ pub fn write_migration_document(
             .push(d);
     }
 
-    if by_group.is_empty() {
+    if by_group.is_empty() && stale_entries.is_empty() {
         body.push_str("_No user-relevant changes._\n");
-    } else {
+    } else if !by_group.is_empty() {
         body.push_str("## Changes by group\n\n");
         for (group, by_class) in &by_group {
             let label = if group.is_empty() {
@@ -864,7 +1065,7 @@ mod tests {
         let (diffs, _groups) = three_way_diff(&project, &cache_src, &templates).unwrap();
         let by_path: BTreeMap<&str, FileClassification> = diffs
             .iter()
-            .map(|d| (d.cache_rel_path.as_str(), d.classification))
+            .map(|d| (d.cache_rel_path.as_str(), d.classification.clone()))
             .collect();
 
         assert_eq!(
@@ -1041,6 +1242,7 @@ mod tests {
 
     // -- write_migration_document ------------------------------------------
 
+    #[allow(deprecated)]
     fn sample_lock() -> crate::lock::ProcessKitLockSection {
         crate::lock::ProcessKitLockSection {
             source: "https://github.com/example/processkit.git".to_string(),
@@ -1050,6 +1252,8 @@ mod tests {
             resolved_commit: Some("dead".to_string()),
             release_asset_sha256: None,
             installed_at: "2026-04-06T00:00:00Z".to_string(),
+            processkit_install_hash: None,
+            mcp_config_hash: None,
         }
     }
 
@@ -1260,6 +1464,7 @@ mod tests {
         );
 
         // Write the migration using vA as from_pk (the pre-install lock).
+        #[allow(deprecated)]
         let from_lock = crate::lock::ProcessKitLockSection {
             source: "https://github.com/example/processkit.git".to_string(),
             version: "va".to_string(),
@@ -1268,6 +1473,8 @@ mod tests {
             resolved_commit: None,
             release_asset_sha256: None,
             installed_at: "2026-04-15T00:00:00Z".to_string(),
+            processkit_install_hash: None,
+            mcp_config_hash: None,
         };
         let written = write_migration_document(&project, &from_lock, "vb", None, &summary, &diffs)
             .unwrap()

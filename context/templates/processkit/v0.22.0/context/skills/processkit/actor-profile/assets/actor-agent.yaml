@@ -1,0 +1,17 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: Actor
+metadata:
+  id: ACTOR-TODO        # e.g. ACTOR-claude, ACTOR-copilot
+  created: TODO
+spec:
+  type: ai-agent
+  name: TODO            # e.g. "Claude Opus 4.6"
+  handle: TODO          # optional — CLI/IDE identifier
+  expertise: []
+  preferences:
+    model_id: TODO      # e.g. claude-opus-4-6
+    provider: TODO      # e.g. anthropic
+  active: true
+  joined_at: TODO
+---

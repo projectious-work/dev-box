@@ -1,0 +1,88 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: Schema
+metadata:
+  id: SCHEMA-process
+  target_kind: Process
+  version: "1.0.0"
+  created: 2026-04-07T00:00:00Z
+spec:
+  description: >
+    A declarative definition of a workflow — a sequence of steps with
+    roles, gates, and a definition of done. processkit defines processes
+    but does NOT execute them: agents and humans walk the steps and
+    log progress. Examples include code-review, release, incident
+    response, onboarding.
+  id_prefix: PROC
+  state_machine: null
+  default_directory: context/processes
+  spec_schema:
+    $schema: https://json-schema.org/draft/2020-12/schema
+    type: object
+    required: [name, description, steps, definition_of_done]
+    additionalProperties: true
+    properties:
+      name:
+        type: string
+        minLength: 1
+        description: "Kebab-case identifier."
+      description:
+        type: string
+        description: "One-sentence summary."
+      triggers:
+        type: array
+        items:
+          type: string
+        description: "Event types that kick off the process."
+      roles:
+        type: array
+        items:
+          type: string
+        description: "Role names involved."
+      steps:
+        type: array
+        minItems: 1
+        items:
+          type: object
+          required: [name]
+          additionalProperties: true
+          properties:
+            name:
+              type: string
+            role:
+              type: string
+              description: "Role name responsible for this step."
+            description:
+              type: string
+            uses_skill:
+              type: string
+              description: "Skill that guides execution of this step."
+            inputs:
+              type: array
+              items:
+                type: string
+            outputs:
+              type: array
+              items:
+                type: string
+            gates:
+              type: array
+              items:
+                type: string
+                pattern: "^GATE-[a-zA-Z0-9_-]+$"
+              description: "Gates that must pass to complete this step."
+            on_failure:
+              type: string
+              enum: [halt, retry, skip, escalate]
+        description: "Ordered list of steps."
+      definition_of_done:
+        type: string
+        description: "Acceptance criterion for the whole process."
+      parallel:
+        type: boolean
+        default: false
+        description: "If true, steps run in parallel rather than sequentially."
+      retryable:
+        type: boolean
+        default: true
+        description: "If true, the process can be re-run on failure."

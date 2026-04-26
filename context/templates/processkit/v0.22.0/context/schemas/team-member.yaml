@@ -1,0 +1,223 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: Schema
+metadata:
+  id: SCHEMA-team-member
+  target_kind: TeamMember
+  version: "1.0.0"
+  created: 2026-04-22T00:00:00Z
+x-allowed-seniority:
+  - junior
+  - specialist
+  - expert
+  - senior
+  - principal
+x-memory-tiers:
+  - working
+  - episodic
+  - semantic
+  - procedural
+  - relational
+  - lessons
+x-sensitivity-levels:
+  - public
+  - internal
+  - confidential
+  - pii
+spec:
+  description: >
+    A persistent participant in the project with stable identity,
+    personality, and accumulated memory. TeamMembers are humans,
+    named AI personas, or services. Unlike ephemeral worker
+    invocations (which are role+seniority dispatches resolved on the
+    fly and never persisted), TeamMembers live as directory trees:
+    persona + A2A Agent Card + tiered memory (working, episodic,
+    semantic, procedural, relational, lessons) + optional
+    developer-local `private/` subdirectory (gitignored). TeamMembers
+    are exportable; a versioned tarball bundle can travel to another
+    project with sensible default-exclude scoping. Replaces the
+    prior Actor abstraction (DEC-20260422_0233-SpryTulip).
+  id_prefix: TEAMMEMBER
+  state_machine: null
+  default_directory: context/team-members
+  metadata_schema:
+    $schema: https://json-schema.org/draft/2020-12/schema
+    type: object
+    required: [id]
+    properties:
+      id:
+        type: string
+        pattern: "^TEAMMEMBER-[a-z][a-z0-9-]*$"
+        description: >
+          TEAMMEMBER-<slug>. Slug is the team-member's canonical name
+          (e.g. `atlas`, `thrifty-otter`), kebab-case, starting with
+          a letter. For type=ai-agent, the slug must be drawn from
+          the team-manager name pool (see team-manager skill).
+  spec_schema:
+    $schema: https://json-schema.org/draft/2020-12/schema
+    type: object
+    required: [type, name, slug]
+    additionalProperties: true
+    properties:
+      type:
+        type: string
+        enum: [human, ai-agent, service]
+        description: "Kind of participant."
+      name:
+        type: string
+        minLength: 1
+        maxLength: 200
+        description: "Display name. E.g. 'Atlas' or 'Alice Müller'."
+      slug:
+        type: string
+        pattern: "^[a-z][a-z0-9-]*$"
+        description: "Canonical kebab-case slug; matches metadata.id suffix."
+      email:
+        type: string
+        format: email
+        description: "Optional. Human team-members only."
+      handle:
+        type: string
+        description: "Optional. GitHub handle, Slack user, etc."
+      default_role:
+        type: string
+        pattern: "^ROLE-[a-z0-9-]+$"
+        description: >
+          Default role for this team-member. Bindings of type
+          'role-assignment' may override at dispatch time.
+      default_seniority:
+        type: string
+        enum: [junior, specialist, expert, senior, principal]
+        description: >
+          Default seniority rung. Pure ordinal tag — bindings decide
+          what each rung maps to in (model, effort). See
+          DEC-20260422_0234-BraveFalcon.
+      personality:
+        type: object
+        description: "Static identity elements loaded as persona prompt."
+        additionalProperties: true
+        properties:
+          communication_style:
+            type: string
+            description: "Voice/tone. E.g. 'terse, direct, pragmatic'."
+          voice:
+            type: string
+            description: "Grammatical stance. E.g. 'first-person, collaborative'."
+          archetype_blend:
+            type: object
+            description: >
+              Optional blend weights (summing ~100) across personality
+              archetypes. E.g. {analyst: 60, operator: 30, guardian: 10}.
+            additionalProperties:
+              type: number
+          boundaries:
+            type: array
+            items:
+              type: string
+            description: "Behavioral no-go areas. Explicit, not implicit."
+          declared_expertise:
+            type: array
+            items:
+              type: string
+            description: "Self-declared depth areas. Advisory."
+      memory:
+        type: object
+        description: "Memory-system configuration for this team-member."
+        additionalProperties: true
+        properties:
+          enabled:
+            type: boolean
+            default: true
+          tiers:
+            type: array
+            items:
+              type: string
+              enum: [working, episodic, semantic, procedural, relational, lessons]
+            description: "Which tiers this team-member uses."
+          consolidation_cadence:
+            type: object
+            additionalProperties: false
+            properties:
+              per_task:
+                type: boolean
+                description: "Capture journal/lesson on task completion."
+              daily_journal:
+                type: boolean
+                description: "Append/compact a daily journal entry."
+              weekly_promotion:
+                type: boolean
+                description: "Weekly importance-triggered promotion to semantic."
+          importance_threshold:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+            description: >
+              Park-style cumulative importance score (1–10 per item)
+              that triggers reflection consolidation.
+          decay_enabled:
+            type: boolean
+            default: true
+            description: "Apply Ebbinghaus-style decay to unreinforced items."
+      relationships:
+        type: array
+        description: "Known-teammate relationship declarations."
+        items:
+          type: object
+          required: [with]
+          additionalProperties: true
+          properties:
+            with:
+              type: string
+              description: "TeamMember slug or full ID."
+            established:
+              type: string
+              format: date
+              description: "When the working relationship began."
+            notes_file:
+              type: string
+              description: >
+                Path (relative to this team-member's tree) to the
+                relationship notes, e.g. `relations/atlas.md`.
+      exportable:
+        type: boolean
+        default: true
+        description: "Whether this team-member can be exported."
+      export_policy:
+        type: object
+        additionalProperties: false
+        properties:
+          include:
+            type: array
+            items:
+              type: string
+              enum: [persona, card, knowledge, skills, lessons, journal, relations]
+            description: >
+              Tiers included in export bundles. Default:
+              [persona, card, knowledge, skills, lessons].
+          exclude:
+            type: array
+            items:
+              type: string
+            description: "Tiers or glob paths to always exclude."
+          redact_sensitivity:
+            type: array
+            items:
+              type: string
+              enum: [internal, confidential, pii]
+            description: >
+              Sensitivity levels that trigger redaction on export.
+              Default: [confidential, pii].
+      active:
+        type: boolean
+        default: true
+        description: >
+          False = inactive (profile preserved but no new dispatches).
+      joined_at:
+        type: string
+        format: date-time
+        description: "When the team-member joined the project."
+      left_at:
+        type: string
+        format: date-time
+        description: "When they left (typically sets active: false)."

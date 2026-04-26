@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "description": "processkit MCP preauth spec — read by aibox sync and merged into derived projects' .claude/settings.json so users do not re-prompt for processkit MCP tools after every container rebuild. See projectious-work/aibox#55 (consumer) and BACK-20260425_1316-WildGrove (producer).",
+  "permissions": {
+    "allow": [
+      "mcp__processkit-actor-profile__*",
+      "mcp__processkit-artifact-management__*",
+      "mcp__processkit-binding-management__*",
+      "mcp__processkit-decision-record__*",
+      "mcp__processkit-discussion-management__*",
+      "mcp__processkit-event-log__*",
+      "mcp__processkit-gate-management__*",
+      "mcp__processkit-id-management__*",
+      "mcp__processkit-index-management__*",
+      "mcp__processkit-migration-management__*",
+      "mcp__processkit-model-recommender__*",
+      "mcp__processkit-role-management__*",
+      "mcp__processkit-scope-management__*",
+      "mcp__processkit-skill-finder__*",
+      "mcp__processkit-skill-gate__*",
+      "mcp__processkit-task-router__*",
+      "mcp__processkit-team-manager__*",
+      "mcp__processkit-workitem-management__*"
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "processkit-actor-profile",
+    "processkit-artifact-management",
+    "processkit-binding-management",
+    "processkit-decision-record",
+    "processkit-discussion-management",
+    "processkit-event-log",
+    "processkit-gate-management",
+    "processkit-id-management",
+    "processkit-index-management",
+    "processkit-migration-management",
+    "processkit-model-recommender",
+    "processkit-role-management",
+    "processkit-scope-management",
+    "processkit-skill-finder",
+    "processkit-skill-gate",
+    "processkit-task-router",
+    "processkit-team-manager",
+    "processkit-workitem-management"
+  ]
+}

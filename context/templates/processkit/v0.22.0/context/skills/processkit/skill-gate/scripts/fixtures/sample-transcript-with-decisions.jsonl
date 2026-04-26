@@ -1,0 +1,10 @@
+{"type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "I can see three possible approaches for the deployment strategy. Option A uses blue-green, option B uses canary, option C is rolling."}]}, "timestamp": "2026-04-15T10:00:00Z"}
+{"type": "user", "message": {"role": "user", "content": [{"type": "text", "text": "What are the tradeoffs of each?"}]}, "timestamp": "2026-04-15T10:00:30Z"}
+{"type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "Blue-green gives instant rollback but costs double the infra. Canary is lower risk but slower. Rolling is simplest but has a mixed-version window."}]}, "timestamp": "2026-04-15T10:01:00Z"}
+{"type": "user", "message": {"role": "user", "content": [{"type": "text", "text": "Ok, let's go with blue-green. We'll use it for the next release."}]}, "timestamp": "2026-04-15T10:01:30Z"}
+{"type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "Understood. I'll set up the blue-green deployment pipeline. Shall I create a WorkItem to track this?"}]}, "timestamp": "2026-04-15T10:02:00Z"}
+{"type": "user", "message": {"role": "user", "content": [{"type": "text", "text": "Yes, please create the WorkItem. Also, it's decided that staging should mirror production exactly."}]}, "timestamp": "2026-04-15T10:02:30Z"}
+{"type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "Creating the WorkItem now. I'll also note that staging mirrors production."}]}, "timestamp": "2026-04-15T10:03:00Z"}
+{"type": "user", "message": {"role": "user", "content": [{"type": "text", "text": "What's the timeline?"}]}, "timestamp": "2026-04-15T10:03:30Z"}
+{"type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "Estimated 2 weeks for the pipeline setup plus 1 week for validation."}]}, "timestamp": "2026-04-15T10:04:00Z"}
+{"type": "user", "message": {"role": "user", "content": [{"type": "text", "text": "Ship it. Approved. Let's proceed with the 3-week plan."}]}, "timestamp": "2026-04-15T10:04:30Z"}

@@ -50,6 +50,7 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
 use crate::config::{AiProvider, AiboxConfig};
 use crate::output;
@@ -305,15 +306,38 @@ pub fn generate_claude_code_permissions(
         serde_json::Map::new()
     };
 
-    // Merge: preserve existing non-permissions keys
-    settings.insert(
-        "permissions.allow".to_string(),
-        serde_json::Value::Array(
-            permissions
-                .iter()
-                .map(|p| serde_json::Value::String(p.clone()))
-                .collect(),
-        ),
+    // Merge: preserve existing non-permissions keys, and merge generated
+    // entries into the nested object `settings.permissions.allow[]`.
+    //
+    // Claude Code reads `settings.permissions.allow` as a NESTED object
+    // access. Writing a flat dotted key like `"permissions.allow"` at the
+    // top level (the historical pre-v0.19.3 bug) is silently ignored by
+    // the harness — see `docs-site/docs/reference/configuration.md`. The
+    // merge must use a real nested structure and additively union with
+    // any user-added entries already present at `permissions.allow[]`.
+    let permissions_obj = settings
+        .entry("permissions".to_string())
+        .or_insert_with(|| serde_json::Value::Object(serde_json::Map::new()))
+        .as_object_mut()
+        .ok_or_else(|| {
+            anyhow::anyhow!(
+                "`permissions` in {} is not a JSON object",
+                settings_path.display()
+            )
+        })?;
+    let mut merged: BTreeSet<String> = permissions_obj
+        .get("allow")
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|v| v.as_str().map(String::from))
+                .collect()
+        })
+        .unwrap_or_default();
+    merged.extend(permissions.iter().cloned());
+    permissions_obj.insert(
+        "allow".to_string(),
+        serde_json::Value::Array(merged.into_iter().map(serde_json::Value::String).collect()),
     );
 
     // Ensure parent dir exists
@@ -1091,6 +1115,136 @@ pub fn collect_live_skills_mcp_specs(project_root: &Path) -> Result<Vec<McpServe
 /// from the existing harness config before adding the current ones.
 fn managed_set(specs: &[McpServerSpec]) -> BTreeSet<String> {
     specs.iter().map(|s| s.name.clone()).collect()
+}
+
+/// Compute a SHA256 fingerprint over the broad processkit-shipped
+/// install payload.
+///
+/// Walks (in sorted-path order) every regular file under any of:
+///
+/// 1. `context/skills/processkit/<skill>/**` — every file under the
+///    processkit-owned subtree of live skills (server.py, SKILL.md,
+///    mcp-config.json, prompt fragments, etc.). **Only the
+///    `processkit/` category** is in scope; user-authored skills under
+///    other categories are deliberately excluded.
+/// 2. `context/skills/_lib/**` — the shared Python lib used by every
+///    processkit MCP server.
+/// 3. `context/schemas/**` — entity-layer schemas.
+/// 4. `context/state-machines/**` — entity-layer state machines.
+/// 5. `context/processes/**` — agent-readable process docs.
+///
+/// `context/templates/**` is **not** included — that's the upstream
+/// reference mirror, owned by a separate concern (the 3-way diff).
+///
+/// For every visited file we feed `(rel_path_bytes, b"\0",
+/// file_content_bytes, b"\0")` into a single `Sha256` hasher. The
+/// path is relative to `project_root` and the directory walk is
+/// deterministic because we sort the collected file list before
+/// hashing. Returns `Some(hex_digest)` when at least one file was
+/// hashed, otherwise `None` (no processkit content installed yet).
+///
+/// Renames, content edits, additions, and removals all invalidate the
+/// fingerprint — which is the WS-7 contract: any change to a
+/// processkit-shipped file under the live tree will be detected on the
+/// next sync, regardless of whether `mcp-config.json` itself changed.
+pub fn compute_processkit_install_fingerprint(project_root: &Path) -> Option<String> {
+    // Roots we care about, project-root-relative. Order is purely
+    // documentation — we sort the merged file list before hashing, so
+    // these roots can be added/reordered without changing any hash.
+    let roots: [std::path::PathBuf; 5] = [
+        project_root
+            .join("context")
+            .join("skills")
+            .join("processkit"),
+        project_root.join("context").join("skills").join("_lib"),
+        project_root.join("context").join("schemas"),
+        project_root.join("context").join("state-machines"),
+        project_root.join("context").join("processes"),
+    ];
+
+    let mut paths: Vec<std::path::PathBuf> = Vec::new();
+    for root in &roots {
+        collect_files_recursive(root, &mut paths);
+    }
+
+    if paths.is_empty() {
+        return None;
+    }
+
+    // Sort for deterministic order across hosts and walk strategies.
+    paths.sort();
+
+    let mut hasher = Sha256::new();
+    for path in &paths {
+        // Feed relative path (so renames are detected).
+        if let Ok(rel) = path.strip_prefix(project_root) {
+            // Use forward-slash form so the hash is stable across
+            // Windows and Unix hosts.
+            let rel_str = crate::lock::path_to_forward_slash(rel);
+            hasher.update(rel_str.as_bytes());
+            hasher.update(b"\0");
+        }
+        // Feed file content (so edits are detected).
+        if let Ok(content) = fs::read(path) {
+            hasher.update(&content);
+            hasher.update(b"\0");
+        }
+    }
+
+    Some(format!("{:x}", hasher.finalize()))
+}
+
+/// Recursive directory walk — appends every regular file found under
+/// `dir` (skipping the standard ignore set: `.git`, `__pycache__`,
+/// `.fetch-complete`, dotfiles, `*.pyc`) into `out`. Silent on I/O
+/// errors so an unreadable corner of the tree degrades gracefully
+/// rather than aborting the whole fingerprint.
+fn collect_files_recursive(dir: &Path, out: &mut Vec<std::path::PathBuf>) {
+    if !dir.is_dir() {
+        return;
+    }
+    let entries = match fs::read_dir(dir) {
+        Ok(rd) => rd,
+        Err(_) => return,
+    };
+    for entry in entries.flatten() {
+        let name = entry.file_name();
+        let name_str = name.to_string_lossy();
+        if crate::lock::should_skip_entry(&name_str) {
+            continue;
+        }
+        let path = entry.path();
+        match entry.file_type() {
+            Ok(ft) if ft.is_dir() => collect_files_recursive(&path, out),
+            Ok(ft) if ft.is_file() => out.push(path),
+            // Symlinks and other entry kinds: skip — the install path
+            // never produces them under processkit-owned subtrees.
+            _ => {}
+        }
+    }
+}
+
+/// Back-compat shim for the pre-WS-7 `compute_mcp_configs_fingerprint`
+/// name. Forwards to [`compute_processkit_install_fingerprint`]. Kept
+/// for one version so any external caller that still imports the old
+/// name catches the rename via the deprecation warning.
+#[deprecated(
+    since = "0.19.3",
+    note = "renamed to compute_processkit_install_fingerprint; the new function covers a broader file set"
+)]
+#[allow(dead_code)]
+pub fn compute_mcp_configs_fingerprint(project_root: &Path) -> Option<String> {
+    compute_processkit_install_fingerprint(project_root)
+}
+
+/// Read the expected MCP config hash from
+/// `context/.processkit-mcp-manifest.json`, if it exists.
+/// Returns `None` when the manifest is absent or unparseable.
+pub fn read_processkit_mcp_manifest_hash(project_root: &Path) -> Option<String> {
+    let path = project_root.join(crate::processkit_vocab::PROCESSKIT_MCP_MANIFEST);
+    let body = fs::read_to_string(&path).ok()?;
+    let v: serde_json::Value = serde_json::from_str(&body).ok()?;
+    v.get("mcp_config_hash")?.as_str().map(String::from)
 }
 
 // ---------------------------------------------------------------------------
@@ -2954,15 +3108,17 @@ args = ["server.js"]
         let content = fs::read_to_string(&settings_path).unwrap();
         let parsed: serde_json::Value = serde_json::from_str(&content).unwrap();
 
-        // Check that mcp__processkit-* tools and bash are in permissions.allow
-        if let Some(perms) = parsed.get("permissions.allow").and_then(|p| p.as_array()) {
-            let perm_strs: Vec<_> = perms.iter().filter_map(|p| p.as_str()).collect();
-            assert!(perm_strs.contains(&"mcp__mcp__processkit-workitem")); // Note: double mcp__ due to format!
-            assert!(perm_strs.contains(&"mcp__bash"));
-            assert!(!perm_strs.iter().any(|p| p.contains("mcp__other")));
-        } else {
-            panic!("permissions.allow not found in settings");
-        }
+        // Check that mcp__processkit-* tools and bash are in
+        // permissions.allow (nested object access — see WS-2 / CLI-3).
+        let perms = parsed
+            .get("permissions")
+            .and_then(|p| p.get("allow"))
+            .and_then(|p| p.as_array())
+            .expect("permissions.allow must exist as a nested array");
+        let perm_strs: Vec<_> = perms.iter().filter_map(|p| p.as_str()).collect();
+        assert!(perm_strs.contains(&"mcp__mcp__processkit-workitem")); // Note: double mcp__ due to format!
+        assert!(perm_strs.contains(&"mcp__bash"));
+        assert!(!perm_strs.iter().any(|p| p.contains("mcp__other")));
     }
 
     #[test]
@@ -2997,11 +3153,16 @@ args = ["server.js"]
         let tmp = TempDir::new().unwrap();
         let settings_path = tmp.path().join(".claude").join("settings.local.json");
 
-        // Create existing settings with other keys
+        // Create existing settings with other top-level keys plus a
+        // pre-existing nested `permissions.allow[]` entry the user added
+        // by hand. The merge must preserve both the unrelated top-level
+        // key AND the user-added permission.
         fs::create_dir_all(settings_path.parent().unwrap()).unwrap();
         let existing = serde_json::json!({
             "other_key": "other_value",
-            "permissions.allow": ["custom-tool"]
+            "permissions": {
+                "allow": ["custom-tool"]
+            }
         });
         fs::write(&settings_path, existing.to_string()).unwrap();
 
@@ -3018,19 +3179,222 @@ args = ["server.js"]
         let content = fs::read_to_string(&settings_path).unwrap();
         let parsed: serde_json::Value = serde_json::from_str(&content).unwrap();
 
-        // Other keys should be preserved
+        // Other top-level keys should be preserved
         assert_eq!(
             parsed.get("other_key").and_then(|v| v.as_str()),
             Some("other_value")
         );
 
-        // Permissions should be updated
-        if let Some(perms) = parsed.get("permissions.allow").and_then(|p| p.as_array()) {
-            let perm_strs: Vec<_> = perms.iter().filter_map(|p| p.as_str()).collect();
-            assert!(perm_strs.contains(&"mcp__mcp__new-tool"));
-        } else {
-            panic!("permissions.allow not found");
-        }
+        // permissions.allow is a NESTED array; pre-existing user entry
+        // and newly-generated entry must both be present.
+        let perms = parsed
+            .get("permissions")
+            .and_then(|p| p.get("allow"))
+            .and_then(|p| p.as_array())
+            .expect("permissions.allow must exist as a nested array");
+        let perm_strs: Vec<_> = perms.iter().filter_map(|p| p.as_str()).collect();
+        assert!(
+            perm_strs.contains(&"custom-tool"),
+            "pre-existing user entry must survive merge"
+        );
+        assert!(
+            perm_strs.contains(&"mcp__mcp__new-tool"),
+            "newly-generated permission must be added"
+        );
+    }
+
+    // ---------------------------------------------------------------------------
+    // WS-2 (CLI-3) regression tests: nested-object JSON shape for
+    // .claude/settings.local.json — the historical pre-v0.19.3 bug
+    // wrote `"permissions.allow"` as a flat dotted top-level key, which
+    // Claude Code silently ignored. These tests guard against that
+    // shape ever returning.
+    // ---------------------------------------------------------------------------
+
+    /// Output JSON must place `allow` at `settings["permissions"]["allow"]`
+    /// as an array (nested-object access), NOT at a flat top-level
+    /// `"permissions.allow"` key.
+    #[test]
+    fn claude_code_permissions_writes_nested_object_shape() {
+        let tmp = TempDir::new().unwrap();
+        let config = McpConfig {
+            default_mode: "allow".to_string(),
+            allow_patterns: vec!["mcp__processkit-*".to_string()],
+            deny_patterns: vec![],
+            harness: BTreeMap::new(),
+        };
+        let tools = vec!["mcp__processkit-workitem".to_string()];
+
+        generate_claude_code_permissions(tmp.path(), &config, &tools).unwrap();
+
+        let settings_path = tmp.path().join(".claude").join("settings.local.json");
+        let content = fs::read_to_string(&settings_path).unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&content).unwrap();
+        let top = parsed.as_object().expect("top-level must be a JSON object");
+
+        // Positive: nested object access reaches an array.
+        let perms_obj = top
+            .get("permissions")
+            .and_then(|v| v.as_object())
+            .expect("settings.permissions must be a nested object");
+        assert!(
+            perms_obj.get("allow").and_then(|v| v.as_array()).is_some(),
+            "settings.permissions.allow must be an array"
+        );
+
+        // Negative tripwire: NO flat dotted top-level key.
+        assert!(
+            !top.contains_key("permissions.allow"),
+            "must not contain flat dotted top-level key `permissions.allow` \
+             (Claude Code reads `permissions.allow` as nested access; the \
+             dotted-top-level shape is the historical CLI-3 bug)"
+        );
+    }
+
+    /// Pre-existing user entries in `permissions.allow[]` must survive a
+    /// re-merge (additive semantics — union with newly-generated entries).
+    #[test]
+    fn claude_code_permissions_preserves_user_allow_entries() {
+        let tmp = TempDir::new().unwrap();
+        let settings_path = tmp.path().join(".claude").join("settings.local.json");
+        fs::create_dir_all(settings_path.parent().unwrap()).unwrap();
+
+        // Seed with two pre-existing user entries plus an unrelated
+        // top-level key.
+        let seed = serde_json::json!({
+            "unrelated": "preserved",
+            "permissions": {
+                "allow": ["user-tool-alpha", "user-tool-beta"]
+            }
+        });
+        fs::write(&settings_path, serde_json::to_string_pretty(&seed).unwrap()).unwrap();
+
+        let config = McpConfig {
+            default_mode: "allow".to_string(),
+            allow_patterns: vec!["mcp__processkit-*".to_string()],
+            deny_patterns: vec![],
+            harness: BTreeMap::new(),
+        };
+        let tools = vec!["mcp__processkit-workitem".to_string()];
+
+        generate_claude_code_permissions(tmp.path(), &config, &tools).unwrap();
+
+        let content = fs::read_to_string(&settings_path).unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&content).unwrap();
+
+        // Unrelated top-level key still there.
+        assert_eq!(
+            parsed.get("unrelated").and_then(|v| v.as_str()),
+            Some("preserved")
+        );
+
+        // Both user entries AND the generated entry are present.
+        let perms = parsed
+            .get("permissions")
+            .and_then(|p| p.get("allow"))
+            .and_then(|p| p.as_array())
+            .expect("permissions.allow must be a nested array");
+        let perm_strs: Vec<&str> = perms.iter().filter_map(|p| p.as_str()).collect();
+        assert!(
+            perm_strs.contains(&"user-tool-alpha"),
+            "user entry `user-tool-alpha` must survive re-merge"
+        );
+        assert!(
+            perm_strs.contains(&"user-tool-beta"),
+            "user entry `user-tool-beta` must survive re-merge"
+        );
+        assert!(
+            perm_strs.contains(&"mcp__mcp__processkit-workitem"),
+            "newly-generated entry must be merged in"
+        );
+    }
+
+    /// Running the generator twice on the same input must produce
+    /// byte-identical output (idempotency — required so re-syncs don't
+    /// thrash the file).
+    #[test]
+    fn claude_code_permissions_is_idempotent() {
+        let tmp = TempDir::new().unwrap();
+        let config = McpConfig {
+            default_mode: "allow".to_string(),
+            allow_patterns: vec!["mcp__processkit-*".to_string(), "bash".to_string()],
+            deny_patterns: vec!["mcp__processkit-private-*".to_string()],
+            harness: BTreeMap::new(),
+        };
+        let tools = vec![
+            "mcp__processkit-workitem".to_string(),
+            "mcp__processkit-actor".to_string(),
+            "mcp__processkit-private-secret".to_string(),
+            "bash".to_string(),
+            "unrelated".to_string(),
+        ];
+
+        // First run.
+        generate_claude_code_permissions(tmp.path(), &config, &tools).unwrap();
+        let settings_path = tmp.path().join(".claude").join("settings.local.json");
+        let after_first = fs::read_to_string(&settings_path).unwrap();
+
+        // Second run with identical inputs.
+        generate_claude_code_permissions(tmp.path(), &config, &tools).unwrap();
+        let after_second = fs::read_to_string(&settings_path).unwrap();
+
+        assert_eq!(
+            after_first, after_second,
+            "two consecutive runs with identical inputs must produce \
+             byte-identical output"
+        );
+    }
+
+    /// The merged `permissions.allow[]` is deduplicated and sorted (the
+    /// `BTreeSet` invariant). This is what makes idempotency hold even
+    /// when the on-disk order differs from input order.
+    #[test]
+    fn claude_code_permissions_dedupes_and_sorts_allow_entries() {
+        let tmp = TempDir::new().unwrap();
+        let settings_path = tmp.path().join(".claude").join("settings.local.json");
+        fs::create_dir_all(settings_path.parent().unwrap()).unwrap();
+
+        // Seed with an entry that will collide with one of the
+        // generated entries — after merge it must appear exactly once.
+        let seed = serde_json::json!({
+            "permissions": {
+                "allow": ["mcp__mcp__processkit-workitem", "z-user-entry", "a-user-entry"]
+            }
+        });
+        fs::write(&settings_path, serde_json::to_string_pretty(&seed).unwrap()).unwrap();
+
+        let config = McpConfig {
+            default_mode: "allow".to_string(),
+            allow_patterns: vec!["mcp__processkit-*".to_string()],
+            deny_patterns: vec![],
+            harness: BTreeMap::new(),
+        };
+        let tools = vec!["mcp__processkit-workitem".to_string()];
+
+        generate_claude_code_permissions(tmp.path(), &config, &tools).unwrap();
+
+        let content = fs::read_to_string(&settings_path).unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&content).unwrap();
+        let perms: Vec<String> = parsed
+            .get("permissions")
+            .and_then(|p| p.get("allow"))
+            .and_then(|p| p.as_array())
+            .unwrap()
+            .iter()
+            .filter_map(|v| v.as_str().map(String::from))
+            .collect();
+
+        // Dedup: the duplicate appears exactly once.
+        let dup_count = perms
+            .iter()
+            .filter(|s| s.as_str() == "mcp__mcp__processkit-workitem")
+            .count();
+        assert_eq!(dup_count, 1, "duplicate entries must be deduplicated");
+
+        // Sorted: BTreeSet guarantees lexicographic ordering.
+        let mut sorted = perms.clone();
+        sorted.sort();
+        assert_eq!(perms, sorted, "merged allow list must be sorted");
     }
 
     // ---------------------------------------------------------------------------
@@ -3357,5 +3721,152 @@ args = ["server.js"]
         assert!(content.contains("[project]"));
         assert!(content.contains("trust_level = \"trusted\""));
         assert!(content.contains("[mcp]"));
+    }
+
+    #[test]
+    fn compute_fingerprint_returns_none_when_no_processkit_content() {
+        let dir = TempDir::new().unwrap();
+        let result = compute_processkit_install_fingerprint(dir.path());
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn compute_fingerprint_changes_when_config_content_changes() {
+        let dir = TempDir::new().unwrap();
+        // Create a processkit skill with an mcp-config.json (note: the
+        // category is now `processkit`, not arbitrary — only that
+        // subtree is in WS-7's scope).
+        let path = dir
+            .path()
+            .join("context/skills/processkit/my-skill/mcp/mcp-config.json");
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(
+            &path,
+            r#"{"mcpServers":{"my-skill":{"command":"uv","args":[],"env":{}}}}"#,
+        )
+        .unwrap();
+
+        let h1 = compute_processkit_install_fingerprint(dir.path()).unwrap();
+        fs::write(
+            &path,
+            r#"{"mcpServers":{"my-skill":{"command":"python","args":[],"env":{}}}}"#,
+        )
+        .unwrap();
+        let h2 = compute_processkit_install_fingerprint(dir.path()).unwrap();
+        assert_ne!(h1, h2);
+    }
+
+    #[test]
+    fn compute_fingerprint_changes_when_new_skill_added() {
+        let dir = TempDir::new().unwrap();
+        let path1 = dir
+            .path()
+            .join("context/skills/processkit/skill-a/mcp/mcp-config.json");
+        fs::create_dir_all(path1.parent().unwrap()).unwrap();
+        fs::write(
+            &path1,
+            r#"{"mcpServers":{"skill-a":{"command":"uv","args":[],"env":{}}}}"#,
+        )
+        .unwrap();
+
+        let h1 = compute_processkit_install_fingerprint(dir.path()).unwrap();
+
+        let path2 = dir
+            .path()
+            .join("context/skills/processkit/skill-b/mcp/mcp-config.json");
+        fs::create_dir_all(path2.parent().unwrap()).unwrap();
+        fs::write(
+            &path2,
+            r#"{"mcpServers":{"skill-b":{"command":"uv","args":[],"env":{}}}}"#,
+        )
+        .unwrap();
+
+        let h2 = compute_processkit_install_fingerprint(dir.path()).unwrap();
+        assert_ne!(h1, h2);
+    }
+
+    /// WS-7 broadening: editing a non-mcp-config file under a
+    /// processkit skill (e.g. SKILL.md or server.py) must invalidate
+    /// the hash. This is the case the old narrow fingerprint missed —
+    /// e.g. the v0.21.0 `reload_schemas` tool added to four `server.py`
+    /// files without touching any `mcp-config.json`.
+    #[test]
+    fn compute_fingerprint_changes_when_skill_md_edited() {
+        let dir = TempDir::new().unwrap();
+        let skill_md = dir.path().join("context/skills/processkit/foo/SKILL.md");
+        fs::create_dir_all(skill_md.parent().unwrap()).unwrap();
+        fs::write(&skill_md, "---\nname: foo\n---\nv1\n").unwrap();
+        let h1 = compute_processkit_install_fingerprint(dir.path()).unwrap();
+
+        fs::write(&skill_md, "---\nname: foo\n---\nv2 changed\n").unwrap();
+        let h2 = compute_processkit_install_fingerprint(dir.path()).unwrap();
+        assert_ne!(
+            h1, h2,
+            "editing SKILL.md under processkit/ must invalidate the fingerprint"
+        );
+    }
+
+    /// WS-7 broadening: editing a schema YAML must invalidate the
+    /// hash. The narrow pre-WS-7 fingerprint didn't cover schemas at
+    /// all, so a workitem.yaml change went undetected.
+    #[test]
+    fn compute_fingerprint_changes_when_schema_yaml_edited() {
+        let dir = TempDir::new().unwrap();
+        let schema = dir.path().join("context/schemas/workitem.yaml");
+        fs::create_dir_all(schema.parent().unwrap()).unwrap();
+        fs::write(&schema, "name: workitem\nfields: []\n").unwrap();
+        let h1 = compute_processkit_install_fingerprint(dir.path()).unwrap();
+
+        fs::write(&schema, "name: workitem\nfields:\n  - id\n").unwrap();
+        let h2 = compute_processkit_install_fingerprint(dir.path()).unwrap();
+        assert_ne!(
+            h1, h2,
+            "editing context/schemas/*.yaml must invalidate the fingerprint"
+        );
+    }
+
+    /// WS-7 explicitly excludes user-authored skills outside the
+    /// `processkit/` category. Adding a file under
+    /// `context/skills/<other>/...` must NOT change the hash.
+    #[test]
+    fn compute_fingerprint_ignores_non_processkit_skills() {
+        let dir = TempDir::new().unwrap();
+        // Seed at least one processkit file so the hash is Some(..).
+        let pk_skill = dir.path().join("context/skills/processkit/foo/SKILL.md");
+        fs::create_dir_all(pk_skill.parent().unwrap()).unwrap();
+        fs::write(&pk_skill, "v1\n").unwrap();
+        let h1 = compute_processkit_install_fingerprint(dir.path()).unwrap();
+
+        // Add a user-authored skill under a different category.
+        let user_skill = dir.path().join("context/skills/user-pack/bar/SKILL.md");
+        fs::create_dir_all(user_skill.parent().unwrap()).unwrap();
+        fs::write(&user_skill, "user-owned\n").unwrap();
+        let h2 = compute_processkit_install_fingerprint(dir.path()).unwrap();
+        assert_eq!(
+            h1, h2,
+            "user-authored skills outside processkit/ must not affect the fingerprint"
+        );
+    }
+
+    #[test]
+    fn read_manifest_hash_returns_none_when_absent() {
+        let dir = TempDir::new().unwrap();
+        let result = read_processkit_mcp_manifest_hash(dir.path());
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn read_manifest_hash_extracts_value() {
+        let dir = TempDir::new().unwrap();
+        let path = dir.path().join("context/.processkit-mcp-manifest.json");
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(
+            &path,
+            r#"{"mcp_config_hash":"abc123def456","other_field":"value"}"#,
+        )
+        .unwrap();
+
+        let result = read_processkit_mcp_manifest_hash(dir.path());
+        assert_eq!(result, Some("abc123def456".to_string()));
     }
 }

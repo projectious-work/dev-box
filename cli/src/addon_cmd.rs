@@ -196,7 +196,7 @@ pub fn cmd_addon_add(config_path: &Option<String>, name: &str, no_build: bool) -
         .with_context(|| format!("Failed to write {}", path.display()))?;
 
     // Run sync to apply changes
-    crate::container::cmd_sync(config_path, false, no_build, false)?;
+    crate::container::cmd_sync(config_path, false, no_build, false, false)?;
 
     Ok(())
 }
@@ -232,7 +232,7 @@ pub fn cmd_addon_remove(config_path: &Option<String>, name: &str, no_build: bool
     output::ok(&format!("Removed add-on '{}' from aibox.toml", name));
 
     // Run sync to apply changes
-    crate::container::cmd_sync(config_path, false, no_build, false)?;
+    crate::container::cmd_sync(config_path, false, no_build, false, false)?;
 
     Ok(())
 }

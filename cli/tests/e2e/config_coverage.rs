@@ -225,6 +225,19 @@ enabled = false
     );
 }
 
+// ─── MCP Permissions Section Tests ──────────────────────────────────────────
+
+#[test]
+fn mcp_permissions_in_aibox_toml() {
+    let dir = tempfile::tempdir().unwrap();
+    init_project(dir.path(), "mcp-perms");
+    let toml = read_generated(dir.path(), "aibox.toml");
+    assert!(
+        toml.contains("[mcp.permissions]"),
+        "aibox.toml should contain [mcp.permissions] block"
+    );
+}
+
 // ─── Addon Section Tests ─────────────────────────────────────────────────────
 
 #[test]
@@ -409,4 +422,28 @@ fn process_research_creates_skeleton() {
     );
     assert!(output.status.success());
     assert_post_init_skeleton(dir.path());
+}
+
+#[test]
+fn sync_updates_processkit_install_hash_in_lock() {
+    // After a sync that installs processkit content, aibox.lock should
+    // contain a non-empty processkit_install_hash under [processkit]
+    // (WS-7: renamed from mcp_config_hash and broadened to cover the
+    // full processkit-shipped install payload).
+    let dir = tempfile::tempdir().unwrap();
+    init_project(dir.path(), "mcp-test");
+    sync_project(dir.path());
+
+    // Read the lock file and verify processkit_install_hash is set
+    let lock_path = dir.path().join("aibox.lock");
+    let lock_content = fs::read_to_string(&lock_path).expect("failed to read aibox.lock");
+    assert!(
+        lock_content.contains("processkit_install_hash"),
+        "aibox.lock should contain processkit_install_hash field after sync"
+    );
+    // The hash should be a non-empty hex string
+    assert!(
+        lock_content.contains("processkit_install_hash = \""),
+        "processkit_install_hash should have a value"
+    );
 }

@@ -1,0 +1,13 @@
+{
+  "_comment": "Golden fixture for check_decision_captured.py tests. transcript_path points at sample-transcript-with-decisions.jsonl in the same fixtures/ directory. Tests must resolve the path relative to this file's location.",
+  "hook_event_name": "PreToolUse",
+  "session_id": "test-session-decision-gate-001",
+  "transcript_path": "__FIXTURES_DIR__/sample-transcript-with-decisions.jsonl",
+  "cwd": "/workspace",
+  "tool_name": "create_workitem",
+  "tool_input": {
+    "title": "Set up blue-green deployment pipeline",
+    "type": "feature",
+    "state": "proposed"
+  }
+}

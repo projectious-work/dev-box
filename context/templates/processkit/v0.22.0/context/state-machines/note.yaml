@@ -1,0 +1,71 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: StateMachine
+metadata:
+  id: SM-note
+  name: note
+  version: "1.0.0"
+  created: 2026-04-08T00:00:00Z
+spec:
+  description: >
+    State machine for Note entities. Designed for the capture-then-refine
+    lifecycle: notes enter at captured, are reviewed periodically, and
+    either get promoted to a more structured primitive, kept as a
+    permanent reference, or archived if no longer useful.
+    Fleeting notes that have not been reviewed within their review_due
+    date should surface as overdue in periodic reviews.
+  initial: captured
+  terminal: [promoted, archived]
+  states:
+    captured:
+      description: >
+        Freshly captured. Not yet reviewed. May be rough or incomplete.
+        Fleeting notes in this state have a review_due date and should
+        be reviewed within a week.
+      transitions:
+        - to: reviewing
+          guard: "The agent or user has started a periodic note review session."
+        - to: archived
+          guard: "The note is clearly not useful and does not warrant review."
+
+    reviewing:
+      description: >
+        Under active review. The reviewer is deciding whether to refine,
+        link, promote, or archive the note.
+      transitions:
+        - to: permanent
+          guard: "The note contains a self-contained insight worth keeping in the knowledge base."
+        - to: promoted
+          guard: "The note has become actionable — a WorkItem, DecisionRecord, or other primitive has been created from it."
+        - to: archived
+          guard: "The note is not useful enough to keep or promote."
+        - to: captured
+          guard: "Review was interrupted — return to captured for next review cycle."
+
+    permanent:
+      description: >
+        A refined, self-contained note worth keeping in the knowledge base
+        long-term. Not yet promoted but not fleeting. Should be explicitly
+        linked to related notes, workitems, or decisions.
+      transitions:
+        - to: promoted
+          guard: "A downstream primitive (WorkItem, DecisionRecord) has been created from this note."
+        - to: reviewing
+          guard: "A subsequent review session re-examines this note."
+        - to: archived
+          guard: "The note's content has been superseded or is no longer relevant."
+
+    promoted:
+      description: >
+        Terminal. The note has been converted into a more structured
+        primitive (WorkItem, DecisionRecord, Artifact, Discussion).
+        The promotes_to field records the destination. The note is kept
+        as a record of how the idea originated.
+      transitions: []
+
+    archived:
+      description: >
+        Terminal. The note was reviewed and deemed not useful enough
+        to keep active or promote. Retained for reference; no further
+        action required.
+      transitions: []

@@ -1,0 +1,54 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: StateMachine
+metadata:
+  id: SM-workitem
+  name: workitem
+  version: "1.0.0"
+  created: 2026-04-06T00:00:00Z
+spec:
+  description: >
+    Default state machine for WorkItem entities. Intentionally minimal —
+    backlog → in-progress → review → done, with blocked and cancelled as
+    side channels. Projects are encouraged to override this with their own
+    machine in context/state-machines/workitem.yaml if they need more states.
+  initial: backlog
+  terminal: [done, cancelled]
+  states:
+    backlog:
+      description: "Not started. Waiting to be picked up."
+      transitions:
+        - to: in-progress
+        - to: cancelled
+          guard: "Work is no longer needed or out of scope."
+    in-progress:
+      description: "Being actively worked on."
+      transitions:
+        - to: review
+          guard: "Work is complete and ready for review."
+        - to: blocked
+          guard: "Progress is halted by a dependency or question."
+        - to: backlog
+          guard: "Work is paused and returned to backlog."
+        - to: cancelled
+    blocked:
+      description: "Work cannot proceed until an external condition is met."
+      transitions:
+        - to: in-progress
+          guard: "Blocker resolved."
+        - to: backlog
+        - to: cancelled
+    review:
+      description: "Awaiting code review, approval, or validation."
+      transitions:
+        - to: done
+          guard: "Review passed; work item is complete."
+        - to: in-progress
+          guard: "Review found issues that need more work."
+        - to: cancelled
+    done:
+      description: "Work is complete and accepted. Terminal state."
+      transitions: []
+    cancelled:
+      description: "Work was abandoned. Terminal state."
+      transitions: []

@@ -1,0 +1,60 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: Schema
+metadata:
+  id: SCHEMA-schedule
+  target_kind: Schedule
+  version: "1.0.0"
+  created: 2026-04-07T00:00:00Z
+spec:
+  description: >
+    A time-based trigger describing when a process should run or a
+    reminder should fire — daily standups, weekly retros, monthly ops
+    reviews, quarterly planning. processkit does NOT execute schedules;
+    an external runner (cron, GitHub Actions, an agent on a loop) reads
+    the Schedule and fires the trigger at the right time. The triggers
+    field is the contract between the definition and the runner.
+  id_prefix: SCHED
+  state_machine: null
+  default_directory: context/schedules
+  spec_schema:
+    $schema: https://json-schema.org/draft/2020-12/schema
+    type: object
+    required: [name, description, cadence]
+    additionalProperties: true
+    properties:
+      name:
+        type: string
+        minLength: 1
+        description: "Kebab-case identifier."
+      description:
+        type: string
+        description: "Human-readable summary."
+      cadence:
+        type: string
+        enum: [daily, weekly, monthly, quarterly, adhoc, custom]
+        description: "High-level human cadence."
+      cron:
+        type: string
+        description: "Standard cron expression for machine-readable scheduling."
+      timezone:
+        type: string
+        description: "IANA timezone name (e.g. Europe/Berlin)."
+      triggers:
+        type: array
+        items:
+          type: object
+          additionalProperties: true
+        description: "What this schedule fires: processes, reminders, events."
+      active:
+        type: boolean
+        default: true
+        description: "False = suspended."
+      last_run:
+        type: string
+        format: date-time
+        description: "Advisory — set by whoever runs the schedule."
+      next_run:
+        type: string
+        format: date-time
+        description: "Advisory — set by the runner."

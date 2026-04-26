@@ -9,6 +9,8 @@ pub mod runner;
 // Tier 1 tests (fast, no container needed)
 mod appearance;
 mod config_coverage;
+mod no_container_harness;
+mod preauth_merge;
 mod preview;
 mod version_upgrade;
 

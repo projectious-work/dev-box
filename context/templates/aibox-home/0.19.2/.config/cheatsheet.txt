@@ -1,0 +1,21 @@
+  aibox Quick Reference
+  -----------------------------------------------
+  ZELLIJ (leader: Ctrl+g)    YAZI (file manager)
+  Alt+h/j/k/l     Move pane  h/j/k/l  Navigate
+  Alt+p            Float pane Enter    Open in vim
+  Alt+[/]          Prev/next  g s      Git summary
+  Alt+1-5          Jump tab   g c      Git changes
+  Ctrl+g h/j/k/l  Move pane  g r      Refresh git
+  Ctrl+g f         Fullscreen Space    Select
+  Ctrl+g x         Close pane
+  Ctrl+g n/d/r     New pane
+  Ctrl+g t/w       Tab +/-
+  Ctrl+g p         Toggle float panes
+  Ctrl+g R         Resize mode (h/j/k/l)
+  Ctrl+g s         Strider
+  Ctrl+g u         Scroll
+  Ctrl+g /         Search
+  Ctrl+g q         QUIT
+
+  LAYOUTS: aibox start --layout dev|focus|cowork|cowork-swap|browse|ai
+  TABS: Alt+1 dev  Alt+2 git  Alt+3 shell

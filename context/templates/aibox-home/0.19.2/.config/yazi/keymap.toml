@@ -1,0 +1,14 @@
+[mgr]
+prepend_keymap = [
+    { on = "<Enter>", run = "open", desc = "Edit in-place" },
+    { on = "e", run = "shell 'open-in-editor \"$1\"'", desc = "Open in vim pane" },
+    { on = "O", run = "open --interactive", desc = "Open interactively" },
+    { on = [ "z", "h" ], run = "plugin toggle-pane min-parent", desc = "Toggle parent pane" },
+    { on = [ "z", "l" ], run = "plugin toggle-pane min-preview", desc = "Toggle preview pane" },
+    { on = [ "z", "m" ], run = "plugin toggle-pane max-preview", desc = "Maximize preview pane" },
+    { on = [ "z", "c" ], run = "plugin toggle-pane max-current", desc = "Maximize current pane" },
+    { on = [ "z", "0" ], run = "plugin toggle-pane", desc = "Reset pane layout" },
+    { on = [ "g", "s" ], run = "shell 'git -c color.status=always status --short --branch --ignored=matching --untracked-files=all | ${PAGER:-less} -R' --block", desc = "Git summary" },
+    { on = [ "g", "c" ], run = "shell 'git -c color.status=always status --short --ignored=matching --untracked-files=all | ${PAGER:-less} -R' --block", desc = "Show git changes" },
+    { on = [ "g", "r" ], run = "cd .", desc = "Refresh directory" },
+]

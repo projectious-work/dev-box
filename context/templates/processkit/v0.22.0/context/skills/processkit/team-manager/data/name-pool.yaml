@@ -1,0 +1,81 @@
+apiVersion: processkit.projectious.work/v1
+kind: NamePool
+metadata:
+  id: NAMEPOOL-team-manager
+  version: 1.0.0
+  created: 2026-04-22 00:00:00+00:00
+spec:
+  description: 'Curated international name pool for AI-agent TeamMembers. Three gender
+    buckets (feminine, masculine, neutral) of short, human-friendly first names that
+    are internationally recognizable and non-brand-conflicting. Managed by the team-manager
+    skill; reservations are added/removed via reserve_name/release_name.
+
+    '
+  names:
+    feminine:
+    - Alice
+    - Aria
+    - Ava
+    - Cora
+    - Emma
+    - Eva
+    - Hazel
+    - Iris
+    - Ivy
+    - Kira
+    - Lara
+    - Lena
+    - Lily
+    - Luna
+    - Maya
+    - Mia
+    - Nina
+    - Nora
+    - Ruby
+    - Sara
+    - Sophie
+    - Zoe
+    masculine:
+    - Adam
+    - Alex
+    - Cole
+    - Dean
+    - Eli
+    - Ethan
+    - Felix
+    - Finn
+    - Henry
+    - Ivan
+    - Jack
+    - Leo
+    - Liam
+    - Luke
+    - Mark
+    - Max
+    - Milo
+    - Noah
+    - Oscar
+    - Owen
+    - Theo
+    - Tim
+    neutral:
+    - Avery
+    - Blake
+    - Casey
+    - Dana
+    - Jamie
+    - Jordan
+    - Kai
+    - Morgan
+    - Quinn
+    - Rae
+    - Riley
+    - Robin
+    - Sage
+    - Sam
+    - Taylor
+  reserved:
+    Cora: cora
+---
+null
+...

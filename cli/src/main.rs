@@ -27,12 +27,14 @@ mod doctor;
 mod env;
 mod generate;
 mod hook_registration;
+mod integrity;
 #[allow(dead_code)]
 mod lock;
 mod log;
 mod mcp_registration;
 mod migration;
 mod output;
+mod preauth;
 mod processkit_vocab;
 mod reset;
 mod runtime;
@@ -96,6 +98,7 @@ fn dispatch(cli: cli::Cli) -> anyhow::Result<()> {
             processkit_source,
             processkit_version,
             processkit_branch,
+            no_container,
         } => {
             let timer = crate::log::LogTimer::start("init");
             let result = container::cmd_init(
@@ -113,6 +116,7 @@ fn dispatch(cli: cli::Cli) -> anyhow::Result<()> {
                     processkit_source,
                     processkit_version,
                     processkit_branch,
+                    no_container,
                 },
             );
             timer.finish(
@@ -130,10 +134,16 @@ fn dispatch(cli: cli::Cli) -> anyhow::Result<()> {
             no_cache,
             no_build,
             fix_compliance_contract,
+            no_container,
         } => {
             let timer = crate::log::LogTimer::start("sync");
-            let result =
-                container::cmd_sync(config_path, no_cache, no_build, fix_compliance_contract);
+            let result = container::cmd_sync(
+                config_path,
+                no_cache,
+                no_build,
+                fix_compliance_contract,
+                no_container,
+            );
             timer.finish(
                 Path::new("."),
                 if result.is_ok() { 0 } else { 1 },
@@ -166,7 +176,14 @@ fn dispatch(cli: cli::Cli) -> anyhow::Result<()> {
         cli::Commands::Stop => container::cmd_stop(config_path),
         cli::Commands::Remove => container::cmd_remove(config_path),
         cli::Commands::Status { format } => container::cmd_status(config_path, format),
-        cli::Commands::Doctor => doctor::cmd_doctor(config_path),
+        cli::Commands::Doctor { integrity, json } => {
+            if integrity {
+                let cwd = std::env::current_dir()?;
+                integrity::cmd_doctor_integrity(&cwd, json)
+            } else {
+                doctor::cmd_doctor(config_path)
+            }
+        }
         cli::Commands::Completions { shell } => {
             let mut cmd = cli::Cli::command();
             let bin_name = cmd.get_name().to_string();

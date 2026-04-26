@@ -336,13 +336,19 @@ fn build_intermediate_hops(project_root: &Path, from: &str, to: &str) -> Vec<Int
 fn summarize(diffs: &[RuntimeFileDiff]) -> DiffSummary {
     let mut summary = DiffSummary::default();
     for diff in diffs {
-        match diff.classification {
+        match &diff.classification {
             FileClassification::Unchanged => summary.unchanged += 1,
             FileClassification::ChangedLocallyOnly => summary.changed_locally_only += 1,
             FileClassification::ChangedUpstreamOnly => summary.changed_upstream_only += 1,
             FileClassification::Conflict => summary.conflict += 1,
             FileClassification::NewUpstream => summary.new_upstream += 1,
             FileClassification::RemovedUpstream => summary.removed_upstream += 1,
+            // Runtime sync (managed runtime files like
+            // .config/zellij/...) does not consult older mirrors, so
+            // it never produces RemovedUpstreamStale itself. Count it
+            // toward the same bucket for parity if it ever appears
+            // (e.g. a future caller passes a content_diff result here).
+            FileClassification::RemovedUpstreamStale { .. } => summary.removed_upstream_stale += 1,
         }
     }
     summary
