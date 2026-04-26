@@ -1,0 +1,8 @@
+{
+  "_comment": "Golden fixture for decision_sweeper.py tests. Represents a Claude Code SessionEnd hook input. transcript_path must be resolved to an actual JSONL file at test time (replace __FIXTURES_DIR__ with the fixtures/ directory path).",
+  "hook_event_name": "SessionEnd",
+  "session_id": "test-session-sweeper-001",
+  "transcript_path": "__FIXTURES_DIR__/sample-transcript-with-decisions.jsonl",
+  "cwd": "/workspace",
+  "reason": "prompt_input_exit"
+}

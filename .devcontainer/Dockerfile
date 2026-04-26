@@ -46,8 +46,8 @@ RUN install -d /usr/local/bin && \
 # rustup can freely download components (no directory or permission issues).
 RUN rustup target add x86_64-unknown-linux-gnu
 
-FROM ghcr.io/projectious-work/aibox:base-debian-v0.21.0 AS aibox
-LABEL aibox.version="0.21.0"
+FROM ghcr.io/projectious-work/aibox:base-debian-v0.21.1 AS aibox
+LABEL aibox.version="0.21.1"
 
 # Addon: ai-claude
 # Install Claude Code CLI via the native installer (recommended by Anthropic).
@@ -151,4 +151,4 @@ EOF
 
 # Record image version inside container for runtime checks
 USER root
-RUN echo "0.21.0" > /etc/aibox-version
+RUN echo "0.21.1" > /etc/aibox-version

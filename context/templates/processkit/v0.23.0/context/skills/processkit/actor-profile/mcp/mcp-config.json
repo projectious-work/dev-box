@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "processkit-actor-profile": {
+      "command": "uv",
+      "args": [
+        "run",
+        "context/skills/processkit/actor-profile/mcp/server.py"
+      ],
+      "env": {}
+    }
+  }
+}

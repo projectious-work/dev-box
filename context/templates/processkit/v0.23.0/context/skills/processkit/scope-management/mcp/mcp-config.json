@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "processkit-scope-management": {
+      "command": "uv",
+      "args": [
+        "run",
+        "context/skills/processkit/scope-management/mcp/server.py"
+      ],
+      "env": {}
+    }
+  }
+}

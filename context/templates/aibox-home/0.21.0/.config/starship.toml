@@ -1,0 +1,33 @@
+# aibox starship config — pastel powerline preset
+palette = "aibox"
+
+format = """
+[](fg:#88C0D0)\
+$directory\
+[](fg:#88C0D0 bg:#A3BE8C)\
+$git_branch\
+$git_status\
+[](fg:#A3BE8C bg:#2E3440)\
+$python$rust$nodejs$golang\
+$cmd_duration\
+$line_break$character"""
+
+[directory]
+style = "bold bg:#88C0D0 fg:#2E3440"
+truncation_length = 3
+
+[git_branch]
+style = "bg:#A3BE8C fg:#2E3440"
+symbol = " "
+
+[git_status]
+style = "bg:#A3BE8C fg:#2E3440"
+
+[character]
+success_symbol = "[❯](bold fg:#88C0D0)"
+error_symbol = "[❯](bold fg:#BF616A)"
+
+[palettes.aibox]
+bg = "#2E3440"
+fg = "#D8DEE9"
+accent = "#88C0D0"

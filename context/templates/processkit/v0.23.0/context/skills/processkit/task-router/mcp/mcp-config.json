@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "processkit-task-router": {
+      "command": "uv",
+      "args": [
+        "run",
+        "context/skills/processkit/task-router/mcp/server.py"
+      ],
+      "env": {}
+    }
+  }
+}

@@ -200,6 +200,11 @@ pub static COMPAT_TABLE: &[CompatEntry] = &[
         processkit_version: "v0.22.0",
         note: "Minor release: sync content-diff data-loss fix (closes aibox#57) — RemovedUpstreamStale reclassification now requires live SHA == older-mirror SHA, preserving user-extended files; same-version sync short-circuit (closes aibox#56) — run_content_sync returns empty diff when from_pk.version == config.processkit.version, no migration document written; multi-harness slash-command scaffolding via new `harness_commands` engine — Codex (`.aibox-home/.codex/prompts/`), Cursor (`.cursor/commands/`), Gemini (`.gemini/commands/` with TOML conversion), OpenCode (`.opencode/commands/`), all gated on `config.ai.harnesses`; `claude_commands.rs` removed and merged into the generic engine; doctor command-registration check now per-harness; sync_perimeter extended; all 654 tests passing.",
     },
+    CompatEntry {
+        aibox_version: "0.21.1",
+        processkit_version: "v0.23.0",
+        note: "Patch release: integrates processkit v0.23.0 (RoyalFern governance fields on 34 model entries, new `release-audit` skill, `pk-doctor` `skill_dag` check, `skill-finder` `catalog()` MCP tool, prefix-based PreToolUse matcher in `skill-gate`, YAML literal-block-scalar serialization in `_lib/processkit/frontmatter.py`, `event-log` actor-field validation, content-only layer bumps on 4 skills); applies the resulting migration (50 mirror updates + 9 new upstream files); bumps PROCESSKIT_DEFAULT_VERSION to v0.23.0; no aibox CLI behavior changes — purely a content integration pass.",
+    },
 ];
 
 /// Find the minimum compatible processkit version for the given aibox version.

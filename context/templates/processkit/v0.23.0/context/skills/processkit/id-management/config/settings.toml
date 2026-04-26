@@ -1,0 +1,11 @@
+# id-management configuration
+# Edited by the agent during first-time setup (see AGENTS.md).
+# Changes take effect immediately — no MCP server restart required.
+
+format          = "word"    # word (e.g. BoldVale) | uuid (550e8400)
+word_style      = "pascal"  # pascal (BoldVale) | camel (boldVale) | kebab (bold-vale)
+datetime_prefix = true      # prefix IDs with YYYYMMDD_HHMM from created
+                            # timestamp. Format: PREFIX-YYYYMMDD_HHMM-WordPair
+slug            = true      # true  → append a content-derived slug
+                            #           e.g. BACK-20260409_1449-BoldVale-fts5-search
+                            # false → datetime+wordpair only

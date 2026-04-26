@@ -1,0 +1,19 @@
+# Template for a new LogEntry. Fields marked TODO must be replaced.
+# The MCP server (Phase 3) replaces `id` and `created` automatically.
+---
+apiVersion: processkit.projectious.work/v1
+kind: LogEntry
+metadata:
+  id: LOG-TODO
+  created: TODO
+spec:
+  event_type: TODO          # e.g. workitem.created, decision.accepted
+  timestamp: TODO           # ISO 8601 UTC — when the event occurred
+  actor: ACTOR-TODO         # who caused the event
+  subject: TODO             # optional — entity ID the event concerns
+  subject_kind: TODO        # optional — kind of the subject entity
+  summary: TODO             # one-line human-readable summary
+  details: {}               # optional structured payload
+---
+
+<!-- Optional human-readable narrative below. -->

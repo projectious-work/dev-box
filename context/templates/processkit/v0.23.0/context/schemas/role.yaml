@@ -1,0 +1,145 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: Schema
+metadata:
+  id: SCHEMA-role
+  target_kind: Role
+  version: "2.0.0"
+  created: 2026-04-22T00:00:00Z
+  supersedes: SCHEMA-role@1.0.0
+x-allowed-seniority:
+  - junior
+  - specialist
+  - expert
+  - senior
+  - principal
+x-function-groups:
+  - engineering-software
+  - platform-infra
+  - data-ml
+  - research-rnd
+  - security
+  - qa
+  - architecture
+  - devrel-docs
+  - product-program
+  - design-ux
+  - marketing
+  - sales-customer
+  - people-hr
+  - finance
+  - legal-compliance
+  - operations
+  - executive
+  - support
+spec:
+  description: >
+    A named set of responsibilities a TeamMember or ephemeral
+    invocation can fulfil. Roles are organizational labels for
+    routing and human team management — they cluster tasks by
+    archetype so (role, seniority) can bind to (model, effort) via
+    Binding entities of type 'model-assignment'. Roles remain
+    descriptive, not restrictive (DEC-017).
+
+    v2 changes (DEC-20260422_0234-BraveFalcon): no seniority baked
+    into slugs (no jr-/sr-/senior-/junior- prefixes allowed);
+    seniority is a pure ordinal attribute carried by TeamMembers or
+    per-dispatch; embedded model_profiles[] removed (model linkage
+    lives in Binding entities of type 'model-assignment').
+  id_prefix: ROLE
+  state_machine: null
+  default_directory: context/roles
+  metadata_schema:
+    $schema: https://json-schema.org/draft/2020-12/schema
+    type: object
+    required: [id]
+    properties:
+      id:
+        type: string
+        pattern: "^ROLE-[a-z][a-z0-9-]*$"
+        not:
+          anyOf:
+            - pattern: "^ROLE-jr-"
+            - pattern: "^ROLE-sr-"
+            - pattern: "^ROLE-junior-"
+            - pattern: "^ROLE-senior-"
+            - pattern: "^ROLE-principal-"
+            - pattern: "^ROLE-specialist-"
+            - pattern: "^ROLE-expert-"
+        description: >
+          ROLE-<kebab-slug>. Slug must not encode seniority: use the
+          pure-ordinal seniority attribute at dispatch instead.
+  spec_schema:
+    $schema: https://json-schema.org/draft/2020-12/schema
+    type: object
+    required: [name, description]
+    additionalProperties: true
+    properties:
+      name:
+        type: string
+        minLength: 1
+        maxLength: 100
+        description: "Kebab-case identifier. Matches metadata.id suffix."
+      description:
+        type: string
+        minLength: 1
+        description: "One-sentence purpose statement."
+      responsibilities:
+        type: array
+        items:
+          type: string
+        description: "Imperative bullet points. Concrete, not vague."
+      skills_required:
+        type: array
+        items:
+          type: string
+        description: "Skill IDs or names. Advisory — not enforced."
+      default_scope:
+        type: string
+        enum: [project, sprint, permanent]
+        description: >
+          Default scope assumption when the role is bound to a
+          TeamMember without an explicit scope.
+      default_seniority:
+        type: string
+        enum: [junior, specialist, expert, senior, principal]
+        description: >
+          Optional. If set, dispatches default to this seniority
+          when none is specified. Otherwise the router defaults to
+          'senior'.
+      default_model:
+        type: string
+        pattern: "^MODEL-[a-z0-9-]+$"
+        description: >
+          Optional shim fallback (Layer 8 of binding resolution;
+          DEC-20260422_0234-LoyalComet). Used only when no bindings
+          match. A warning is emitted whenever the shim resolves
+          the model.
+      function_group:
+        type: string
+        enum:
+          - engineering-software
+          - platform-infra
+          - data-ml
+          - research-rnd
+          - security
+          - qa
+          - architecture
+          - devrel-docs
+          - product-program
+          - design-ux
+          - marketing
+          - sales-customer
+          - people-hr
+          - finance
+          - legal-compliance
+          - operations
+          - executive
+          - support
+        description: >
+          Top-level functional grouping for catalog navigation and
+          cross-project reuse. Advisory, not enforced in routing.
+      supersedes:
+        type: string
+        pattern: "^ROLE-[a-zA-Z0-9_-]+$"
+        description: "Role ID this one replaces (for renames/reorganizations)."

@@ -1,0 +1,18 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: Metric
+metadata:
+  id: METRIC-TODO
+  created: TODO
+spec:
+  name: TODO
+  description: TODO
+  unit: TODO
+  direction: higher-is-better    # higher-is-better | lower-is-better | target
+  measurement: TODO
+  target: TODO
+  tolerance: TODO
+  cadence: TODO
+  owner: null
+  active: true
+---
