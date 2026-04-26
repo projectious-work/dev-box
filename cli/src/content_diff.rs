@@ -193,6 +193,13 @@ pub fn three_way_diff(
 
     let mut diffs: Vec<FileDiff> = Vec::new();
     let mut seen_cache_keys: BTreeSet<String> = BTreeSet::new();
+    // Side-table of live SHAs keyed by cache_rel_path. Used by the
+    // RemovedUpstreamStale reclassification pass below to distinguish
+    // "live is byte-identical to the kept-old-upstream baseline"
+    // (genuine stale upstream cruft) from "user has extended/modified
+    // the file on top of that baseline" (real local content). Without
+    // this guard we silently propose deletion of user work — Bug #57.
+    let mut live_shas: BTreeMap<String, String> = BTreeMap::new();
 
     // Walk the cache to find every installable file.
     walk_tree(cache_src_path, cache_src_path, &mut |rel_path| {
@@ -225,6 +232,9 @@ pub fn three_way_diff(
         } else {
             None
         };
+        if let Some(s) = &live_sha_opt {
+            live_shas.insert(rel_str.clone(), s.clone());
+        }
 
         let reference_abs = templates_src_path.join(rel_path);
         let reference_sha_opt = if reference_abs.is_file() {
@@ -265,6 +275,17 @@ pub fn three_way_diff(
             if seen_cache_keys.contains(&rel_str) {
                 return Ok(());
             }
+            // Capture the live SHA (if any) so the stale-reclassification
+            // pass below can compare it to older mirrors. RemovedUpstream
+            // entries don't currently get reclassified, but recording the
+            // live SHA here keeps the side-table consistent for any future
+            // caller that wants it.
+            let live_abs = project_root.join(&project_install);
+            if live_abs.is_file()
+                && let Ok(s) = sha256_of_file(&live_abs)
+            {
+                live_shas.insert(rel_str.clone(), s);
+            }
             diffs.push(FileDiff {
                 cache_rel_path: rel_str,
                 project_path: Some(project_install),
@@ -280,6 +301,14 @@ pub fn three_way_diff(
     // FileClassification for the rationale. We consult every mirror
     // under context/templates/processkit/ EXCLUDING `templates_src_path`
     // (which we've already considered as the "old" reference).
+    //
+    // Critical guard (Bug #57): only convert to RemovedUpstreamStale
+    // when the LIVE file is byte-identical to the older mirror's copy.
+    // If the user has modified or extended the file on top of the
+    // older-mirror baseline, the live content represents real local
+    // work — emitting a "suggested cleanup" migration for it is silent
+    // data loss. In that case leave the classification as
+    // ChangedLocallyOnly so the user's edits are preserved.
     let older_mirrors = list_older_mirrors(project_root, templates_src_path).unwrap_or_default();
     if !older_mirrors.is_empty() {
         for diff in &mut diffs {
@@ -291,12 +320,32 @@ pub fn three_way_diff(
             // migration doc).
             for mirror in older_mirrors.iter().rev() {
                 let candidate = mirror.path.join(&diff.cache_rel_path);
-                if candidate.is_file() {
-                    diff.classification = FileClassification::RemovedUpstreamStale {
-                        last_seen_in: mirror.version.clone(),
-                    };
+                if !candidate.is_file() {
+                    continue;
+                }
+                // Hash the older-mirror file and compare to the live SHA
+                // captured during the cache walk. If the live file is
+                // missing entirely, also treat as a non-match — there's
+                // no live copy to confirm the file is upstream cruft, so
+                // leave the classification alone.
+                let mirror_sha = match sha256_of_file(&candidate) {
+                    Ok(s) => s,
+                    Err(_) => continue,
+                };
+                let live_sha = match live_shas.get(&diff.cache_rel_path) {
+                    Some(s) => s,
+                    None => break,
+                };
+                if live_sha != &mirror_sha {
+                    // Live diverges from the kept-old-upstream baseline:
+                    // user has modified or extended the file. Preserve
+                    // the ChangedLocallyOnly classification.
                     break;
                 }
+                diff.classification = FileClassification::RemovedUpstreamStale {
+                    last_seen_in: mirror.version.clone(),
+                };
+                break;
             }
         }
     }
@@ -852,6 +901,26 @@ pub fn run_content_sync(
     from_pk: &crate::lock::ProcessKitLockSection,
     config: &crate::config::AiboxConfig,
 ) -> Result<SyncReport> {
+    // Bug #56 short-circuit: when the lock and config target the same
+    // processkit version, the "old" templates mirror IS the just-fetched
+    // cache. Running the diff in that case produces nonsensical "new
+    // upstream" / `RemovedUpstreamStale` reports because the reference,
+    // cache, and (possibly) older-mirror sets all point at the same
+    // snapshot. Skip the diff entirely and return an empty report.
+    //
+    // This is content-sync-only. Install-integrity self-heal lives in a
+    // separate code path (`container.rs`) and is unaffected.
+    if from_pk.version == config.processkit.version {
+        tracing::info!(
+            "skipping content sync: already at version {}",
+            config.processkit.version
+        );
+        return Ok(SyncReport {
+            summary: DiffSummary::default(),
+            migration_document_path: None,
+        });
+    }
+
     // Fetch the version that config (and the just-updated lock) targets.
     // The cache is already populated by install_content_source; this fetch
     // is idempotent (returns the cached entry without a network round-trip).
@@ -1491,5 +1560,190 @@ mod tests {
             "migration must record to_version: vb but got:\n{}",
             body
         );
+    }
+
+    // -- Regression: Bug #57 — extended-locally must NOT reclassify ---------
+    //
+    // The reclassification pass that converts ChangedLocallyOnly →
+    // RemovedUpstreamStale used to fire whenever an older mirror still had
+    // the file, regardless of whether the live content matched the older
+    // mirror or had been extended on top of it. That silently proposed
+    // deletion of the user's added content. The fix only converts when the
+    // live SHA equals the older-mirror SHA (i.e. the live copy is true
+    // upstream cruft that the user never customised).
+
+    /// Negative test: live extends the older-mirror baseline → must stay
+    /// `ChangedLocallyOnly`. Without the fix this would flip to
+    /// `RemovedUpstreamStale` and the migration doc would propose deletion
+    /// of the user's added content.
+    #[test]
+    fn three_way_diff_extended_locally_stays_changed_locally_only() {
+        let tmp = TempDir::new().unwrap();
+        let project = tmp.path().join("project");
+        fs::create_dir_all(&project).unwrap();
+
+        // The "new" cache + matching template_old: file present, same
+        // bytes both sides. Reference == cache satisfies the precondition
+        // for ChangedLocallyOnly.
+        let cache_src = tmp.path().join("cache/src");
+        fs::create_dir_all(cache_src.join("skills/processkit/foo")).unwrap();
+        fs::write(
+            cache_src.join("skills/processkit/foo/SKILL.md"),
+            "A\nB\nC\n",
+        )
+        .unwrap();
+        install_files_from_cache(&cache_src, &project).unwrap();
+        copy_templates_from_cache(&cache_src, &project, "v1.0.0").unwrap();
+        let templates = templates_dir_for_version(&project, "v1.0.0");
+
+        // Older mirror at v0.9.0 contains the same file (so the
+        // reclassification candidate exists).
+        let older = project.join("context/templates/processkit/v0.9.0/skills/processkit/foo");
+        fs::create_dir_all(&older).unwrap();
+        fs::write(older.join("SKILL.md"), "A\nB\nC\n").unwrap();
+
+        // User has extended the live file with their own content.
+        let live = project.join("context/skills/processkit/foo/SKILL.md");
+        fs::write(&live, "A\nB\nC\nLOCAL_EXTENSION\n").unwrap();
+
+        let (diffs, _) = three_way_diff(&project, &cache_src, &templates).unwrap();
+        let cls = diffs
+            .iter()
+            .find(|d| d.cache_rel_path == "skills/processkit/foo/SKILL.md")
+            .map(|d| d.classification.clone())
+            .expect("SKILL.md should appear in diff");
+
+        assert_eq!(
+            cls,
+            FileClassification::ChangedLocallyOnly,
+            "user-extended file must NOT be reclassified to RemovedUpstreamStale; got {:?}",
+            cls
+        );
+    }
+
+    /// Positive paired test: live is byte-identical to the older-mirror
+    /// baseline → must remain `RemovedUpstreamStale`. Proves the fix does
+    /// not regress the original kept-old-stale behaviour.
+    #[test]
+    fn three_way_diff_byte_identical_to_old_mirror_still_stale() {
+        let tmp = TempDir::new().unwrap();
+        let project = tmp.path().join("project");
+        fs::create_dir_all(&project).unwrap();
+
+        // Cache + template_old hold the same NEW content for the file.
+        // (We need cache == reference to land in ChangedLocallyOnly.)
+        let cache_src = tmp.path().join("cache/src");
+        fs::create_dir_all(cache_src.join("skills/processkit/foo")).unwrap();
+        fs::write(
+            cache_src.join("skills/processkit/foo/SKILL.md"),
+            "NEW\nUPSTREAM\n",
+        )
+        .unwrap();
+        install_files_from_cache(&cache_src, &project).unwrap();
+        copy_templates_from_cache(&cache_src, &project, "v1.0.0").unwrap();
+        let templates = templates_dir_for_version(&project, "v1.0.0");
+
+        // Older mirror has the OLD bytes — `"A\nB\nC\n"`.
+        let older = project.join("context/templates/processkit/v0.9.0/skills/processkit/foo");
+        fs::create_dir_all(&older).unwrap();
+        fs::write(older.join("SKILL.md"), "A\nB\nC\n").unwrap();
+
+        // Overwrite the live file with the OLD bytes — byte-identical to
+        // the older mirror, so the file IS upstream cruft from a skipped
+        // version.
+        let live = project.join("context/skills/processkit/foo/SKILL.md");
+        fs::write(&live, "A\nB\nC\n").unwrap();
+
+        let (diffs, _) = three_way_diff(&project, &cache_src, &templates).unwrap();
+        let cls = diffs
+            .iter()
+            .find(|d| d.cache_rel_path == "skills/processkit/foo/SKILL.md")
+            .map(|d| d.classification.clone())
+            .expect("SKILL.md should appear in diff");
+
+        match &cls {
+            FileClassification::RemovedUpstreamStale { last_seen_in } => {
+                assert_eq!(last_seen_in, "v0.9.0");
+            }
+            other => panic!(
+                "byte-identical-to-old-mirror file should be RemovedUpstreamStale; got {:?}",
+                other
+            ),
+        }
+    }
+
+    // -- Regression: Bug #56 — same-version sync writes no migration -------
+
+    /// Bug #56: when `from_pk.version == config.processkit.version` the
+    /// "old" templates mirror is the just-fetched cache, so the diff sees
+    /// identical trees and produces noisy/incorrect entries. The fix
+    /// short-circuits `run_content_sync` before touching the cache or the
+    /// diff — the returned `SyncReport` is empty and no migration document
+    /// is written.
+    #[test]
+    fn run_content_sync_short_circuits_when_versions_match() {
+        let tmp = TempDir::new().unwrap();
+        let project = tmp.path().join("project");
+        fs::create_dir_all(&project).unwrap();
+
+        // Build a cache and snapshot as the v0.21.0 reference. Install the
+        // files into the live tree, then extend one of them so the diff
+        // (if it ran) would surface a ChangedLocallyOnly entry.
+        let cache_src = tmp.path().join("cache/src");
+        fs::create_dir_all(cache_src.join("primitives/schemas")).unwrap();
+        fs::create_dir_all(cache_src.join("skills/event-log")).unwrap();
+        fs::write(
+            cache_src.join("primitives/schemas/workitem.yaml"),
+            "name: workitem\n",
+        )
+        .unwrap();
+        fs::write(cache_src.join("skills/event-log/SKILL.md"), "# v1\n").unwrap();
+        install_files_from_cache(&cache_src, &project).unwrap();
+        copy_templates_from_cache(&cache_src, &project, "v0.21.0").unwrap();
+
+        // User extends the live SKILL.md.
+        let live_skill = project.join("context/skills/event-log/SKILL.md");
+        fs::write(&live_skill, "# v1\nLOCAL_EXTENSION\n").unwrap();
+
+        // from_pk and config both at v0.21.0.
+        #[allow(deprecated)]
+        let from_pk = crate::lock::ProcessKitLockSection {
+            source: "https://github.com/example/processkit.git".to_string(),
+            version: "v0.21.0".to_string(),
+            src_path: "src".to_string(),
+            branch: None,
+            resolved_commit: None,
+            release_asset_sha256: None,
+            installed_at: "2026-04-26T00:00:00Z".to_string(),
+            processkit_install_hash: None,
+            mcp_config_hash: None,
+        };
+        let mut config = crate::config::test_config();
+        config.processkit.version = "v0.21.0".to_string();
+        config.processkit.source = from_pk.source.clone();
+
+        let report = run_content_sync(&project, &from_pk, &config)
+            .expect("same-version sync should succeed");
+
+        assert!(
+            report.migration_document_path.is_none(),
+            "no migration document should be written for same-version sync"
+        );
+        assert_eq!(report.summary.removed_upstream_stale, 0);
+        assert_eq!(report.summary.new_upstream, 0);
+        assert_eq!(report.summary.removed_upstream, 0);
+        assert_eq!(report.summary.changed_upstream_only, 0);
+        assert_eq!(report.summary.conflict, 0);
+        assert_eq!(report.summary.changed_locally_only, 0);
+
+        // Belt-and-suspenders: pending/ should be empty (or absent).
+        let pending = project.join("context/migrations/pending");
+        if pending.is_dir() {
+            let count = fs::read_dir(&pending).unwrap().count();
+            assert_eq!(
+                count, 0,
+                "no migration files should land in pending/ for same-version sync"
+            );
+        }
     }
 }
