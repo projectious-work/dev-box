@@ -318,7 +318,19 @@ cmd_docs_deploy() {
   git_email=$(git -C "${PROJECT_ROOT}" config user.email 2>/dev/null || echo "release@aibox.local")
   git -c "user.name=${git_user}" -c "user.email=${git_email}" \
     commit -q -m "${commit_msg}"
-  git push --force "${remote_url}" gh-pages:gh-pages
+  # The fresh tmpdir worktree has no credential helper inherited from the
+  # project. When `remote_url` is HTTPS, plain git push prompts for a
+  # username and aborts non-interactively. Inject the gh CLI's OAuth token
+  # into the URL when (a) the URL is HTTPS-on-github.com and (b) `gh auth
+  # token` succeeds. SSH and other hosts pass through unchanged.
+  local push_url="${remote_url}"
+  if [[ "${remote_url}" == https://github.com/* ]] && command -v gh &>/dev/null; then
+    local gh_token
+    if gh_token=$(gh auth token 2>/dev/null) && [[ -n "${gh_token}" ]]; then
+      push_url="https://x-access-token:${gh_token}@github.com/${repo_slug}.git"
+    fi
+  fi
+  git push --force "${push_url}" gh-pages:gh-pages
   cd "${PROJECT_ROOT}"
   ok "Deployed to gh-pages branch"
 
