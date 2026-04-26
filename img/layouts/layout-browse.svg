@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="200" viewBox="0 0 900 200">
+  <style>
+    text { font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace; }
+    .tab-name  { font-size: 11px; font-weight: 700; fill: #444; }
+    .tab-num   { font-size: 10px; font-weight: 700; fill: #fff; }
+    .badge     { fill: #6c757d; }
+    .badge-act { fill: #4a6fa5; }
+    .screen    { fill: #1e1e2e; }
+    .panel     { fill: #2a2a3e; stroke: #4a4a6a; stroke-width: 1; }
+    .panel-act { fill: #313244; stroke: #7c7caa; stroke-width: 1; }
+    .lbl       { font-size: 13px; font-weight: 700; fill: #cdd6f4; }
+    .dim       { font-size: 10px; fill: #6c7086; }
+  </style>
+
+  <!-- 4 tabs: browse, editor, git, shell — width = (900-5×10)/4 = 212px -->
+
+  <!-- ── Tab 1: browse (active) ────────────────────── -->
+  <!-- top 60%: yazi  |  bottom 40%: claude (horizontal split) -->
+  <circle cx="19" cy="14" r="9" class="badge-act"/>
+  <text class="tab-num" x="19" y="18" text-anchor="middle">1</text>
+  <text class="tab-name" x="33" y="18" fill="#4a6fa5">browse  ●</text>
+
+  <rect x="10" y="26" width="212" height="164" rx="4" class="screen"/>
+  <!-- yazi top 60% of 160 = 96px -->
+  <rect x="12" y="28" width="208" height="94" rx="2" class="panel-act"/>
+  <text class="lbl" x="116" y="76" text-anchor="middle">yazi</text>
+  <text class="dim" x="116" y="90" text-anchor="middle">top 60%</text>
+  <!-- claude bottom 40% of 160 = 64px -->
+  <rect x="12" y="124" width="208" height="64" rx="2" class="panel"/>
+  <text class="lbl" x="116" y="159" text-anchor="middle">claude</text>
+  <text class="dim" x="116" y="173" text-anchor="middle">bottom 40%</text>
+
+  <!-- ── Tab 2: editor ──────────────────────────────── -->
+  <circle cx="241" cy="14" r="9" class="badge"/>
+  <text class="tab-num" x="241" y="18" text-anchor="middle">2</text>
+  <text class="tab-name" x="255" y="18">editor</text>
+  <rect x="232" y="26" width="212" height="164" rx="4" class="screen"/>
+  <rect x="234" y="28" width="208" height="160" rx="2" class="panel"/>
+  <text class="lbl" x="338" y="113" text-anchor="middle">vim</text>
+
+  <!-- ── Tab 3: git ─────────────────────────────────── -->
+  <circle cx="463" cy="14" r="9" class="badge"/>
+  <text class="tab-num" x="463" y="18" text-anchor="middle">3</text>
+  <text class="tab-name" x="477" y="18">git</text>
+  <rect x="454" y="26" width="212" height="164" rx="4" class="screen"/>
+  <rect x="456" y="28" width="208" height="160" rx="2" class="panel"/>
+  <text class="lbl" x="560" y="113" text-anchor="middle">lazygit</text>
+
+  <!-- ── Tab 4: shell ───────────────────────────────── -->
+  <circle cx="685" cy="14" r="9" class="badge"/>
+  <text class="tab-num" x="685" y="18" text-anchor="middle">4</text>
+  <text class="tab-name" x="699" y="18">shell</text>
+  <rect x="676" y="26" width="212" height="164" rx="4" class="screen"/>
+  <rect x="678" y="28" width="208" height="160" rx="2" class="panel"/>
+  <text class="lbl" x="782" y="113" text-anchor="middle">bash</text>
+</svg>

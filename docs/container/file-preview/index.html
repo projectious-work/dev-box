@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-container/file-preview" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.9.2">
+<title data-rh="true">File Preview | aibox</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://projectious-work.github.io/aibox/docs/container/file-preview"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="File Preview | aibox"><meta data-rh="true" name="description" content="aibox containers ship with a complete set of TUI-native preview tools covering raster images, vector graphics, PDF, and video — both inside the Yazi file manager and as standalone command-line viewers. Several formats also support watch-mode preview, where the rendered output updates automatically whenever the source file changes."><meta data-rh="true" property="og:description" content="aibox containers ship with a complete set of TUI-native preview tools covering raster images, vector graphics, PDF, and video — both inside the Yazi file manager and as standalone command-line viewers. Several formats also support watch-mode preview, where the rendered output updates automatically whenever the source file changes."><link data-rh="true" rel="icon" href="/aibox/img/favicon.ico"><link data-rh="true" rel="canonical" href="https://projectious-work.github.io/aibox/docs/container/file-preview"><link data-rh="true" rel="alternate" href="https://projectious-work.github.io/aibox/docs/container/file-preview" hreflang="en"><link data-rh="true" rel="alternate" href="https://projectious-work.github.io/aibox/docs/container/file-preview" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"File Preview","item":"https://projectious-work.github.io/aibox/docs/container/file-preview"}]}</script><link rel="icon" type="image/png" sizes="32x32" href="/aibox/img/favicon.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/aibox/img/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/aibox/img/apple-touch-icon.png">
+<link rel="stylesheet" href="/aibox/player/asciinema-player.css">
+<link rel="stylesheet" href="/aibox/player/asciinema-fonts.css">
+<script src="/aibox/player/asciinema-player.min.js"></script>
+<script src="/aibox/player/asciinema-init.js" defer="defer"></script><link rel="stylesheet" href="/aibox/assets/css/styles.ab1a9c31.css">
+<script src="/aibox/assets/js/runtime~main.b852c9ad.js" defer="defer"></script>
+<script src="/aibox/assets/js/main.449a359b.js" defer="defer"></script>
+</head>
+<body class="navigation-with-keyboard">
+<svg style="display: none;"><defs>
+<symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
+</defs></svg>
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")),document.documentElement.setAttribute("data-theme-choice",t||"system")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/aibox/img/logo-light.svg"><link rel="preload" as="image" href="/aibox/img/logo-dark.svg"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/aibox/"><div class="navbar__logo"><img src="/aibox/img/logo-light.svg" alt="aibox logo" class="themedComponent_mlkZ themedComponent--light_NVdE" height="32" width="32"><img src="/aibox/img/logo-dark.svg" alt="aibox logo" class="themedComponent_mlkZ themedComponent--dark_xIcU" height="32" width="32"></div><b class="navbar__title text--truncate">aibox</b></a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/aibox/docs/getting-started/installation">Docs</a><a class="navbar__item navbar__link" href="/aibox/features">Features</a><a class="navbar__item navbar__link" href="/aibox/changelog">Changelog</a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><a href="https://github.com/projectious-work/aibox" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="Switch between dark and light mode (currently system mode)"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><aside class="theme-doc-sidebar-container docSidebarContainer_YfHR"><div class="sidebarViewport_aRkj"><div class="sidebar_njMd"><nav aria-label="Docs sidebar" class="menu thin-scrollbar menu_SIkG"><ul class="theme-doc-sidebar-menu menu__list"><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="true" href="/aibox/docs/getting-started/installation"><span title="Getting Started" class="categoryLinkLabel_W154">Getting Started</span></a></div><ul class="menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/aibox/docs/getting-started/installation"><span title="Installation" class="linkLabel_WmDU">Installation</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/aibox/docs/getting-started/new-project"><span title="New Project" class="linkLabel_WmDU">New Project</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/aibox/docs/getting-started/existing-project"><span title="Existing Project" class="linkLabel_WmDU">Existing Project</span></a></li></ul></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret menu__link--active" role="button" aria-expanded="true" href="/aibox/docs/container/base-image"><span title="Container" class="categoryLinkLabel_W154">Container</span></a></div><ul class="menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/aibox/docs/container/base-image"><span title="Base Image" class="linkLabel_WmDU">Base Image</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link menu__link--active" aria-current="page" tabindex="0" href="/aibox/docs/container/file-preview"><span title="File Preview" class="linkLabel_WmDU">File Preview</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/aibox/docs/container/configuration"><span title="Container Configuration" class="linkLabel_WmDU">Container Configuration</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/aibox/docs/container/audio"><span title="Audio Support" class="linkLabel_WmDU">Audio Support</span></a></li></ul></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/aibox/docs/addons/overview"><span title="Addons" class="categoryLinkLabel_W154">Addons</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/aibox/docs/providers/ai-claude"><span title="AI Providers" class="categoryLinkLabel_W154">AI Providers</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/aibox/docs/context/overview"><span title="Context System" class="categoryLinkLabel_W154">Context System</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/aibox/docs/skills/"><span title="Skills (via processkit)" class="categoryLinkLabel_W154">Skills (via processkit)</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/aibox/docs/customization/themes"><span title="Customization" class="categoryLinkLabel_W154">Customization</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/aibox/docs/reference/cli-commands"><span title="Reference" class="categoryLinkLabel_W154">Reference</span></a></div></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/aibox/docs/roadmap"><span title="Roadmap" class="linkLabel_WmDU">Roadmap</span></a></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/aibox/docs/contributing/"><span title="Contributing" class="categoryLinkLabel_W154">Contributing</span></a></div></li></ul></nav></div></div></aside><main class="docMainContainer_TBSr"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><nav class="theme-doc-breadcrumbs breadcrumbsContainer_Z_bl" aria-label="Breadcrumbs"><ul class="breadcrumbs"><li class="breadcrumbs__item"><a aria-label="Home page" class="breadcrumbs__link" href="/aibox/"><svg viewBox="0 0 24 24" class="breadcrumbHomeIcon_YNFT"><path d="M10 19v-5h4v5c0 .55.45 1 1 1h3c.55 0 1-.45 1-1v-7h1.7c.46 0 .68-.57.33-.87L12.67 3.6c-.38-.34-.96-.34-1.34 0l-8.36 7.53c-.34.3-.13.87.33.87H5v7c0 .55.45 1 1 1h3c.55 0 1-.45 1-1z" fill="currentColor"></path></svg></a></li><li class="breadcrumbs__item"><span class="breadcrumbs__link">Container</span></li><li class="breadcrumbs__item breadcrumbs__item--active"><span class="breadcrumbs__link">File Preview</span></li></ul></nav><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>File Preview</h1></header>
+<p>aibox containers ship with a complete set of TUI-native preview tools covering raster images, vector graphics, PDF, and video — both inside the Yazi file manager and as standalone command-line viewers. Several formats also support <strong>watch-mode preview</strong>, where the rendered output updates automatically whenever the source file changes.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="overview">Overview<a href="#overview" class="hash-link" aria-label="Direct link to Overview" title="Direct link to Overview" translate="no">​</a></h2>
+<p>There are two independent preview mechanisms:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Mechanism</th><th>When to use</th></tr></thead><tbody><tr><td><a href="#yazi-file-preview" class="">Yazi file preview</a></td><td>Browsing files — preview appears automatically in the right panel as you navigate</td></tr><tr><td><a href="#standalone-tui-viewers" class="">Standalone TUI viewers</a></td><td>Viewing a specific file in a pane, or piping output from a build tool</td></tr></tbody></table>
+<p>Watch-mode (live-updating preview) is available via the standalone tools — see <a href="#watch-mode-preview" class="">Watch-Mode Preview</a>.</p>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="yazi-file-preview">Yazi File Preview<a href="#yazi-file-preview" class="hash-link" aria-label="Direct link to Yazi File Preview" title="Direct link to Yazi File Preview" translate="no">​</a></h2>
+<p>When you open Yazi (<code>Ctrl+b s</code> from the file manager pane, or via the layout sidebar), files are previewed automatically in the right panel as you navigate. No manual invocation needed.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="supported-formats">Supported formats<a href="#supported-formats" class="hash-link" aria-label="Direct link to Supported formats" title="Direct link to Supported formats" translate="no">​</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Format</th><th>Extensions</th><th>Previewer</th><th>Requirement</th></tr></thead><tbody><tr><td>JPEG / PNG</td><td><code>.jpg</code> <code>.jpeg</code> <code>.png</code></td><td><code>image</code> (built-in)</td><td><code>chafa</code></td></tr><tr><td>GIF (incl. animated)</td><td><code>.gif</code></td><td><code>image</code> (built-in)</td><td><code>chafa</code></td></tr><tr><td>WebP</td><td><code>.webp</code></td><td><code>image</code> (built-in)</td><td><code>chafa</code></td></tr><tr><td>BMP</td><td><code>.bmp</code></td><td><code>image</code> (built-in)</td><td><code>chafa</code></td></tr><tr><td>TIFF</td><td><code>.tiff</code> <code>.tif</code></td><td><code>image</code> (built-in)</td><td><code>chafa</code></td></tr><tr><td>SVG</td><td><code>.svg</code></td><td><code>svg.yazi</code> plugin</td><td><code>resvg</code> or <code>rsvg-convert</code></td></tr><tr><td>EPS</td><td><code>.eps</code></td><td><code>eps.yazi</code> plugin</td><td><code>ghostscript</code> (addon)</td></tr><tr><td>PDF</td><td><code>.pdf</code></td><td><code>pdf</code> (built-in)</td><td><code>poppler-utils</code></td></tr><tr><td>Video</td><td><code>.mp4</code> <code>.mkv</code> <code>.webm</code> <code>.avi</code></td><td><code>video</code> (built-in)</td><td><code>ffmpeg</code> (addon)</td></tr><tr><td>Text / code</td><td>most text formats</td><td><code>code</code> (built-in)</td><td>—</td></tr></tbody></table>
+<p>Most tools are pre-installed in the base image. EPS, video thumbnails, and advanced image conversion require the <strong>preview-enhanced</strong> addon:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#F8F8F2"><span class="token plain">aibox addon add preview-enhanced   # adds ffmpeg, imagemagick, ghostscript</span><br></span></code></pre></div></div>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="how-previewer-dispatch-works">How previewer dispatch works<a href="#how-previewer-dispatch-works" class="hash-link" aria-label="Direct link to How previewer dispatch works" title="Direct link to How previewer dispatch works" translate="no">​</a></h3>
+<p>Yazi matches files against a list of <code>prepend_previewers</code> in <code>~/.config/yazi/yazi.toml</code>. The first matching entry wins:</p>
+<div class="language-toml codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-toml codeBlock_bY9V thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#F8F8F2"><span class="token plain">[plugin]</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">prepend_previewers = [</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">    { name = &quot;*.svg&quot;, run = &quot;svg&quot; },</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">    { name = &quot;*.eps&quot;, run = &quot;eps&quot; },</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">    { name = &quot;*.jpg&quot;,  run = &quot;image&quot; },</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">    { name = &quot;*.jpeg&quot;, run = &quot;image&quot; },</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">    { name = &quot;*.png&quot;,  run = &quot;image&quot; },</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">    { name = &quot;*.gif&quot;,  run = &quot;image&quot; },</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">    { name = &quot;*.webp&quot;, run = &quot;image&quot; },</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">    { name = &quot;*.bmp&quot;,  run = &quot;image&quot; },</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">    { name = &quot;*.tiff&quot;, run = &quot;image&quot; },</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">    { name = &quot;*.tif&quot;,  run = &quot;image&quot; },</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">]</span><br></span></code></pre></div></div>
+<p>Custom plugins (<code>svg.yazi</code>, <code>eps.yazi</code>) live at <code>~/.config/yazi/plugins/&lt;name&gt;.yazi/init.lua</code>. They are seeded into <code>.aibox-home/.config/yazi/</code> on first <code>aibox init</code>.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="format-notes">Format notes<a href="#format-notes" class="hash-link" aria-label="Direct link to Format notes" title="Direct link to Format notes" translate="no">​</a></h3>
+<p><strong>SVG</strong> — converted to PNG by <code>resvg</code>, a fast standalone Rust-based SVG renderer bundled as a static binary in <code>/usr/local/bin/resvg</code>. The rendered PNG is cached under Yazi&#x27;s cache directory. If <code>resvg</code> is absent from <code>PATH</code>, the plugin fails gracefully and Yazi falls back to the text previewer.</p>
+<p><strong>EPS</strong> — rendered to PNG at 150 DPI by <code>gs</code> (Ghostscript), then displayed as an image. Result is cached.</p>
+<p><strong>PDF</strong> — page 1 is rendered by <code>pdftoppm</code> (from <code>poppler-utils</code>). Navigate multi-page documents with Yazi&#x27;s built-in PDF plugin controls.</p>
+<p><strong><code>.excalidraw</code> files</strong> — Excalidraw&#x27;s native format is JSON. A graphical preview is not possible in a TUI environment. Yazi falls back to the text previewer showing the raw JSON. This is a known limitation — Excalidraw requires a browser to render.</p>
+<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>Image protocol inside Zellij</div><div class="admonitionContent_BuS1"><p>Zellij currently passes only <strong>Sixel</strong> through to the terminal (Kitty and iTerm2 protocols are dropped — <a href="https://github.com/zellij-org/zellij/issues/4336" target="_blank" rel="noopener noreferrer" class="">Zellij #4336</a>). Yazi auto-detects this and uses Sixel when inside Zellij. Sixel rendering works but is more CPU-intensive than Kitty protocol — if you notice high CPU during image preview, this is expected. On hosts with a Kitty or WezTerm terminal outside Zellij, Yazi will use the more efficient Kitty protocol automatically.</p></div></div>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="standalone-tui-viewers">Standalone TUI Viewers<a href="#standalone-tui-viewers" class="hash-link" aria-label="Direct link to Standalone TUI Viewers" title="Direct link to Standalone TUI Viewers" translate="no">​</a></h2>
+<p>These tools are available directly in the shell for viewing a specific file or integrating into a pipeline. Both are pre-installed in the base image.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="chafa--universal-image-renderer">chafa — universal image renderer<a href="#chafa--universal-image-renderer" class="hash-link" aria-label="Direct link to chafa — universal image renderer" title="Direct link to chafa — universal image renderer" translate="no">​</a></h3>
+<p><code>chafa</code> converts images to terminal graphics using Sixel, Kitty protocol, half-block Unicode, or plain ASCII, auto-detecting the best mode for the current terminal.</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#F8F8F2"><span class="token plain"># View any raster image</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">chafa photo.jpg</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain"># Force half-block mode (safe inside Zellij, no Sixel CPU spike)</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">chafa --format=halfblock diagram.png</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain"># SVG via librsvg (if chafa was compiled with librsvg support)</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">chafa --format=halfblock logo.svg</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain"># Constrain to a specific cell size</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">chafa -s 80x40 banner.png</span><br></span></code></pre></div></div>
+<p><strong>Supported formats:</strong> JPEG, PNG, GIF (animated), WebP, BMP, TIFF, AVIF, and more. SVG support depends on whether <code>chafa</code> was built with <code>librsvg</code> — run <code>chafa --version</code> and check for <code>SVG: yes</code>.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="timg--terminal-image-and-document-viewer">timg — terminal image and document viewer<a href="#timg--terminal-image-and-document-viewer" class="hash-link" aria-label="Direct link to timg — terminal image and document viewer" title="Direct link to timg — terminal image and document viewer" translate="no">​</a></h3>
+<p><code>timg</code> renders images, animated GIFs, videos, and <strong>PDFs</strong> (page by page) directly in the terminal.</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#F8F8F2"><span class="token plain"># View an image</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">timg photo.jpg</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain"># View a PDF — renders all pages sequentially</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">timg document.pdf</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain"># View a specific PDF page (page 2)</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">timg -p2 document.pdf</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain"># Constrain output size</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">timg -g 120x40 wide-image.png</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain"># Clear previous output before rendering (useful in watch loops)</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">timg --clear output.pdf</span><br></span></code></pre></div></div>
+<p><strong>Supported formats:</strong> JPEG, PNG, GIF (animated), WebP, BMP, TIFF, PDF (via MuPDF), video (via ffmpeg).</p>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="watch-mode-preview">Watch-Mode Preview<a href="#watch-mode-preview" class="hash-link" aria-label="Direct link to Watch-Mode Preview" title="Direct link to Watch-Mode Preview" translate="no">​</a></h2>
+<p>Watch-mode preview automatically re-renders a file whenever it changes on disk. This is particularly useful for <strong>LaTeX, Typst, and other document workflows</strong> where you write source in one pane and see the rendered output update in real time in another.</p>
+<p>The pattern uses <code>entr</code> (an inotify-based file watcher) combined with a rasteriser and <code>timg --clear</code>:</p>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#F8F8F2"><span class="token plain">source file changes → entr triggers → rasteriser produces PNG → timg renders PNG in terminal</span><br></span></code></pre></div></div>
+<p>All tools (<code>entr</code>, <code>mupdf-tools</code>, <code>resvg</code>, <code>timg</code>) are pre-installed in the base image.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="pdf-watch-preview-">PDF watch preview ⟳<a href="#pdf-watch-preview-" class="hash-link" aria-label="Direct link to PDF watch preview ⟳" title="Direct link to PDF watch preview ⟳" translate="no">​</a></h3>
+<p>Run this in a dedicated pane while editing your LaTeX or Typst source:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#F8F8F2"><span class="token plain">ls output.pdf | entr -s &#x27;mutool draw -o /tmp/p.png output.pdf 1 &amp;&amp; timg --clear /tmp/p.png&#x27;</span><br></span></code></pre></div></div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Part</th><th>Role</th></tr></thead><tbody><tr><td><code>entr</code></td><td>Watches <code>output.pdf</code> for changes (inotify, near-zero CPU at idle)</td></tr><tr><td><code>mutool draw</code></td><td>MuPDF rasteriser — renders a PDF page to PNG (fast, no X11 needed)</td></tr><tr><td><code>-o /tmp/p.png output.pdf 1</code></td><td>Output file, input file, page number</td></tr><tr><td><code>timg --clear</code></td><td>Renders the PNG inline, clearing the previous frame first</td></tr></tbody></table>
+<p><strong>Tips:</strong></p>
+<ul>
+<li class="">Change the final <code>1</code> to preview a different page number.</li>
+<li class="">To watch all pages: <code>mutool draw -o /tmp/p-%d.png output.pdf</code> (produces <code>/tmp/p-1.png</code>, <code>/tmp/p-2.png</code>, …); then <code>timg --clear /tmp/p-*.png</code>.</li>
+<li class="">Add <code>-r 150</code> to <code>mutool draw</code> for higher resolution (default is 72 DPI).</li>
+<li class="">Use <code>timg -g 120x40</code> to constrain the rendered size to fit a specific pane.</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="svg-watch-preview-">SVG watch preview ⟳<a href="#svg-watch-preview-" class="hash-link" aria-label="Direct link to SVG watch preview ⟳" title="Direct link to SVG watch preview ⟳" translate="no">​</a></h3>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#F8F8F2"><span class="token plain">ls diagram.svg | entr -s &#x27;resvg diagram.svg /tmp/d.png &amp;&amp; timg --clear /tmp/d.png&#x27;</span><br></span></code></pre></div></div>
+<p><code>resvg</code> converts the SVG to a high-fidelity PNG. Unlike Inkscape or rsvg-convert, <code>resvg</code> is a static binary with no runtime dependencies and typically renders in under 100 ms for typical diagrams.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="general-pattern">General pattern<a href="#general-pattern" class="hash-link" aria-label="Direct link to General pattern" title="Direct link to General pattern" translate="no">​</a></h3>
+<p>The same <code>entr</code> + rasteriser + <code>timg</code> pattern works for any file format that has a headless rasteriser:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#F8F8F2"><span class="token plain"># Watch a file and re-render on change</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">ls &lt;file&gt; | entr -s &#x27;&lt;rasterise-command&gt; &amp;&amp; timg --clear &lt;output.png&gt;&#x27;</span><br></span></code></pre></div></div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Source format</th><th>Rasteriser command</th></tr></thead><tbody><tr><td>PDF (page 1)</td><td><code>mutool draw -o /tmp/p.png file.pdf 1</code></td></tr><tr><td>SVG</td><td><code>resvg file.svg /tmp/p.png</code></td></tr><tr><td>EPS</td><td><code>gs -dBATCH -dNOPAUSE -sDEVICE=png16m -r150 -sOutputFile=/tmp/p.png file.eps</code></td></tr></tbody></table>
+<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>Pane layout for watch preview</div><div class="admonitionContent_BuS1"><p>In the <code>dev</code> or <code>cowork</code> layouts, open a new horizontal pane below the editor (<code>Ctrl+b d</code>) and run the watch command there. The preview refreshes in that pane every time you save. Use <code>Ctrl+b =</code> to resize the pane to taste.</p></div></div>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="format-coverage-summary">Format Coverage Summary<a href="#format-coverage-summary" class="hash-link" aria-label="Direct link to Format Coverage Summary" title="Direct link to Format Coverage Summary" translate="no">​</a></h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Format</th><th style="text-align:center">Yazi preview</th><th style="text-align:center"><code>chafa</code></th><th style="text-align:center"><code>timg</code></th><th style="text-align:center">Watch-mode</th></tr></thead><tbody><tr><td>JPEG / PNG</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">—</td></tr><tr><td>GIF (animated)</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">—</td></tr><tr><td>WebP</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">—</td></tr><tr><td>BMP</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">—</td></tr><tr><td>TIFF</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">—</td></tr><tr><td>SVG</td><td style="text-align:center">✓ (resvg)</td><td style="text-align:center">✓ (librsvg)</td><td style="text-align:center">—</td><td style="text-align:center">✓ (resvg)</td></tr><tr><td>EPS</td><td style="text-align:center">✓ (ghostscript)</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">✓ (ghostscript)</td></tr><tr><td>PDF</td><td style="text-align:center">✓ (poppler)</td><td style="text-align:center">—</td><td style="text-align:center">✓</td><td style="text-align:center">✓ (mutool)</td></tr><tr><td>Video</td><td style="text-align:center">✓ (ffmpeg)</td><td style="text-align:center">—</td><td style="text-align:center">✓</td><td style="text-align:center">—</td></tr><tr><td><code>.excalidraw</code></td><td style="text-align:center">text fallback</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td></tr></tbody></table></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/projectious-work/aibox/tree/main/docs-site/docs/container/file-preview.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"><a class="pagination-nav__link pagination-nav__link--prev" href="/aibox/docs/container/base-image"><div class="pagination-nav__sublabel">Previous</div><div class="pagination-nav__label">Base Image</div></a><a class="pagination-nav__link pagination-nav__link--next" href="/aibox/docs/container/configuration"><div class="pagination-nav__sublabel">Next</div><div class="pagination-nav__label">Container Configuration</div></a></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#overview" class="table-of-contents__link toc-highlight">Overview</a></li><li><a href="#yazi-file-preview" class="table-of-contents__link toc-highlight">Yazi File Preview</a><ul><li><a href="#supported-formats" class="table-of-contents__link toc-highlight">Supported formats</a></li><li><a href="#how-previewer-dispatch-works" class="table-of-contents__link toc-highlight">How previewer dispatch works</a></li><li><a href="#format-notes" class="table-of-contents__link toc-highlight">Format notes</a></li></ul></li><li><a href="#standalone-tui-viewers" class="table-of-contents__link toc-highlight">Standalone TUI Viewers</a><ul><li><a href="#chafa--universal-image-renderer" class="table-of-contents__link toc-highlight">chafa — universal image renderer</a></li><li><a href="#timg--terminal-image-and-document-viewer" class="table-of-contents__link toc-highlight">timg — terminal image and document viewer</a></li></ul></li><li><a href="#watch-mode-preview" class="table-of-contents__link toc-highlight">Watch-Mode Preview</a><ul><li><a href="#pdf-watch-preview-" class="table-of-contents__link toc-highlight">PDF watch preview ⟳</a></li><li><a href="#svg-watch-preview-" class="table-of-contents__link toc-highlight">SVG watch preview ⟳</a></li><li><a href="#general-pattern" class="table-of-contents__link toc-highlight">General pattern</a></li></ul></li><li><a href="#format-coverage-summary" class="table-of-contents__link toc-highlight">Format Coverage Summary</a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="row footer__links"><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Docs</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/aibox/docs/getting-started/installation">Getting Started</a></li><li class="footer__item"><a class="footer__link-item" href="/aibox/docs/reference/configuration">Configuration</a></li><li class="footer__item"><a class="footer__link-item" href="/aibox/docs/skills/">Skills Library</a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Project</div><ul class="footer__items clean-list"><li class="footer__item"><a href="https://github.com/projectious-work/aibox" target="_blank" rel="noopener noreferrer" class="footer__link-item">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li><li class="footer__item"><a class="footer__link-item" href="/aibox/changelog">Changelog</a></li></ul></div></div><div class="footer__bottom text--center"><div class="footer__copyright">© 2026 projectious.work</div></div></div></footer></div>
+</body>
+</html>

@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-contributing/maintenance" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.9.2">
+<title data-rh="true">Maintenance | aibox</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://projectious-work.github.io/aibox/docs/contributing/maintenance"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Maintenance | aibox"><meta data-rh="true" name="description" content="Internal procedures for building, releasing, and deploying aibox."><meta data-rh="true" property="og:description" content="Internal procedures for building, releasing, and deploying aibox."><link data-rh="true" rel="icon" href="/aibox/img/favicon.ico"><link data-rh="true" rel="canonical" href="https://projectious-work.github.io/aibox/docs/contributing/maintenance"><link data-rh="true" rel="alternate" href="https://projectious-work.github.io/aibox/docs/contributing/maintenance" hreflang="en"><link data-rh="true" rel="alternate" href="https://projectious-work.github.io/aibox/docs/contributing/maintenance" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Maintenance","item":"https://projectious-work.github.io/aibox/docs/contributing/maintenance"}]}</script><link rel="icon" type="image/png" sizes="32x32" href="/aibox/img/favicon.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/aibox/img/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/aibox/img/apple-touch-icon.png">
+<link rel="stylesheet" href="/aibox/player/asciinema-player.css">
+<link rel="stylesheet" href="/aibox/player/asciinema-fonts.css">
+<script src="/aibox/player/asciinema-player.min.js"></script>
+<script src="/aibox/player/asciinema-init.js" defer="defer"></script><link rel="stylesheet" href="/aibox/assets/css/styles.ab1a9c31.css">
+<script src="/aibox/assets/js/runtime~main.b852c9ad.js" defer="defer"></script>
+<script src="/aibox/assets/js/main.449a359b.js" defer="defer"></script>
+</head>
+<body class="navigation-with-keyboard">
+<svg style="display: none;"><defs>
+<symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
+</defs></svg>
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")),document.documentElement.setAttribute("data-theme-choice",t||"system")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/aibox/img/logo-light.svg"><link rel="preload" as="image" href="/aibox/img/logo-dark.svg"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/aibox/"><div class="navbar__logo"><img src="/aibox/img/logo-light.svg" alt="aibox logo" class="themedComponent_mlkZ themedComponent--light_NVdE" height="32" width="32"><img src="/aibox/img/logo-dark.svg" alt="aibox logo" class="themedComponent_mlkZ themedComponent--dark_xIcU" height="32" width="32"></div><b class="navbar__title text--truncate">aibox</b></a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/aibox/docs/getting-started/installation">Docs</a><a class="navbar__item navbar__link" href="/aibox/features">Features</a><a class="navbar__item navbar__link" href="/aibox/changelog">Changelog</a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><a href="https://github.com/projectious-work/aibox" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="Switch between dark and light mode (currently system mode)"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><aside class="theme-doc-sidebar-container docSidebarContainer_YfHR"><div class="sidebarViewport_aRkj"><div class="sidebar_njMd"><nav aria-label="Docs sidebar" class="menu thin-scrollbar menu_SIkG"><ul class="theme-doc-sidebar-menu menu__list"><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="true" href="/aibox/docs/getting-started/installation"><span title="Getting Started" class="categoryLinkLabel_W154">Getting Started</span></a></div><ul class="menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/aibox/docs/getting-started/installation"><span title="Installation" class="linkLabel_WmDU">Installation</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/aibox/docs/getting-started/new-project"><span title="New Project" class="linkLabel_WmDU">New Project</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/aibox/docs/getting-started/existing-project"><span title="Existing Project" class="linkLabel_WmDU">Existing Project</span></a></li></ul></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/aibox/docs/container/base-image"><span title="Container" class="categoryLinkLabel_W154">Container</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/aibox/docs/addons/overview"><span title="Addons" class="categoryLinkLabel_W154">Addons</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/aibox/docs/providers/ai-claude"><span title="AI Providers" class="categoryLinkLabel_W154">AI Providers</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/aibox/docs/context/overview"><span title="Context System" class="categoryLinkLabel_W154">Context System</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/aibox/docs/skills/"><span title="Skills (via processkit)" class="categoryLinkLabel_W154">Skills (via processkit)</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/aibox/docs/customization/themes"><span title="Customization" class="categoryLinkLabel_W154">Customization</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/aibox/docs/reference/cli-commands"><span title="Reference" class="categoryLinkLabel_W154">Reference</span></a></div></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/aibox/docs/roadmap"><span title="Roadmap" class="linkLabel_WmDU">Roadmap</span></a></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret menu__link--active" role="button" aria-expanded="true" href="/aibox/docs/contributing/"><span title="Contributing" class="categoryLinkLabel_W154">Contributing</span></a></div><ul class="menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/aibox/docs/contributing/"><span title="Contributing" class="linkLabel_WmDU">Contributing</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link menu__link--active" aria-current="page" tabindex="0" href="/aibox/docs/contributing/maintenance"><span title="Maintenance" class="linkLabel_WmDU">Maintenance</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/aibox/docs/contributing/e2e-tests"><span title="E2E Test Catalogue" class="linkLabel_WmDU">E2E Test Catalogue</span></a></li></ul></li></ul></nav></div></div></aside><main class="docMainContainer_TBSr"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><nav class="theme-doc-breadcrumbs breadcrumbsContainer_Z_bl" aria-label="Breadcrumbs"><ul class="breadcrumbs"><li class="breadcrumbs__item"><a aria-label="Home page" class="breadcrumbs__link" href="/aibox/"><svg viewBox="0 0 24 24" class="breadcrumbHomeIcon_YNFT"><path d="M10 19v-5h4v5c0 .55.45 1 1 1h3c.55 0 1-.45 1-1v-7h1.7c.46 0 .68-.57.33-.87L12.67 3.6c-.38-.34-.96-.34-1.34 0l-8.36 7.53c-.34.3-.13.87.33.87H5v7c0 .55.45 1 1 1h3c.55 0 1-.45 1-1z" fill="currentColor"></path></svg></a></li><li class="breadcrumbs__item"><span class="breadcrumbs__link">Contributing</span></li><li class="breadcrumbs__item breadcrumbs__item--active"><span class="breadcrumbs__link">Maintenance</span></li></ul></nav><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>Maintenance</h1></header>
+<p>Internal procedures for building, releasing, and deploying aibox.
+All builds and deploys are run locally — there are no GitHub Actions.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="the-maintainsh-script">The <code>maintain.sh</code> Script<a href="#the-maintainsh-script" class="hash-link" aria-label="Direct link to the-maintainsh-script" title="Direct link to the-maintainsh-script" translate="no">​</a></h2>
+<p>All maintenance tasks are driven by <code>scripts/maintain.sh</code>:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#F8F8F2"><span class="token plain">./scripts/maintain.sh &lt;command&gt; [options]</span><br></span></code></pre></div></div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Command</th><th>Purpose</th></tr></thead><tbody><tr><td><code>test</code></td><td>Run <code>cargo fmt --check</code>, <code>clippy -D warnings</code>, and all tests</td></tr><tr><td><code>build-images [--no-cache]</code></td><td>Build published container images locally</td></tr><tr><td><code>push-images &lt;version&gt;</code></td><td>Push images to GHCR (requires login)</td></tr><tr><td><code>docs-serve</code></td><td>Preview documentation at <code>http://localhost:8000</code></td></tr><tr><td><code>docs-deploy [--dry-run]</code></td><td>Build and push docs to <code>gh-pages</code> branch</td></tr><tr><td><code>release &lt;version&gt;</code></td><td>Full release prep: test, build CLI, build images, tag, generate release notes</td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="release-checklist">Release Checklist<a href="#release-checklist" class="hash-link" aria-label="Direct link to Release Checklist" title="Direct link to Release Checklist" translate="no">​</a></h2>
+<p>A full release covers three artifacts: CLI binaries, container images, and documentation.</p>
+<p>!!! tip &quot;Always start with <code>maintain.sh release</code>&quot;
+The <code>release</code> command is the single entry point. It runs tests, builds
+artifacts, creates the git tag, and generates release notes and a step-by-step
+prompt (<code>dist/RELEASE-PROMPT.md</code>) for the remaining manual steps.
+Don&#x27;t skip it and assemble releases by hand — you&#x27;ll miss release notes.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-prepare-the-release">1. Prepare the release<a href="#1-prepare-the-release" class="hash-link" aria-label="Direct link to 1. Prepare the release" title="Direct link to 1. Prepare the release" translate="no">​</a></h3>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#F8F8F2"><span class="token plain">./scripts/maintain.sh release 0.8.0</span><br></span></code></pre></div></div>
+<p>This runs tests, builds the CLI binary for the current platform, builds all 10 container images (if a runtime is available), creates a git tag, and generates <code>dist/RELEASE-NOTES.md</code> and <code>dist/RELEASE-PROMPT.md</code>.</p>
+<p>!!! warning &quot;Don&#x27;t forget Cargo.toml&quot;
+Update the version in <code>cli/Cargo.toml</code> <strong>before</strong> running the release command.
+The <code>--version</code> flag and release artifacts derive from it.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-build-cli-binaries-for-other-platforms">2. Build CLI binaries for other platforms<a href="#2-build-cli-binaries-for-other-platforms" class="hash-link" aria-label="Direct link to 2. Build CLI binaries for other platforms" title="Direct link to 2. Build CLI binaries for other platforms" translate="no">​</a></h3>
+<p>The release command only builds for the current architecture. Cross-platform
+binaries must be built on their respective machines (or via cross-compilation):</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Target</th><th>Where to build</th></tr></thead><tbody><tr><td><code>aarch64-apple-darwin</code></td><td>macOS Apple Silicon</td></tr><tr><td><code>x86_64-apple-darwin</code></td><td>macOS Intel (or cross-compile on Apple Silicon)</td></tr><tr><td><code>aarch64-unknown-linux-gnu</code></td><td>Linux ARM64 (e.g., this dev container)</td></tr><tr><td><code>x86_64-unknown-linux-gnu</code></td><td>Linux x86_64</td></tr></tbody></table>
+<p>For macOS builds there&#x27;s a helper script:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#F8F8F2"><span class="token plain">./scripts/build-macos.sh 0.8.0</span><br></span></code></pre></div></div>
+<p>Attach additional binaries to the release after creation:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#F8F8F2"><span class="token plain">gh release upload v0.8.0 dist/aibox-v0.8.0-x86_64-apple-darwin.tar.gz</span><br></span></code></pre></div></div>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-push-the-tag-and-create-the-github-release">3. Push the tag and create the GitHub release<a href="#3-push-the-tag-and-create-the-github-release" class="hash-link" aria-label="Direct link to 3. Push the tag and create the GitHub release" title="Direct link to 3. Push the tag and create the GitHub release" translate="no">​</a></h3>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#F8F8F2"><span class="token plain">git push origin v0.8.0</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">gh release create v0.8.0 \</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">  --title &quot;aibox v0.8.0&quot; \</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">  --notes-file dist/RELEASE-NOTES.md \</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">  dist/aibox-v0.8.0-*.tar.gz</span><br></span></code></pre></div></div>
+<p>!!! warning &quot;Always use <code>--notes-file</code>, never <code>--generate-notes</code>&quot;
+The <code>release</code> command generates <code>dist/RELEASE-NOTES.md</code> with commit history,
+image tags, and binary listings. Always use <code>--notes-file dist/RELEASE-NOTES.md</code>
+when creating the GitHub release. The <code>--generate-notes</code> flag only produces
+a bare diff link with no useful content.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="4-push-container-images-to-ghcr">4. Push container images to GHCR<a href="#4-push-container-images-to-ghcr" class="hash-link" aria-label="Direct link to 4. Push container images to GHCR" title="Direct link to 4. Push container images to GHCR" translate="no">​</a></h3>
+<p>First, authenticate with the GitHub Container Registry:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#F8F8F2"><span class="token plain">echo $GITHUB_TOKEN | podman login ghcr.io -u &lt;username&gt; --password-stdin</span><br></span></code></pre></div></div>
+<p>The token needs the <code>write:packages</code> scope. Create one at
+<a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer" class="">github.com/settings/tokens</a>.</p>
+<p>Then push images:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#F8F8F2"><span class="token plain">./scripts/maintain.sh push-images 0.8.0</span><br></span></code></pre></div></div>
+<p>This pushes both versioned tags (<code>python-v0.8.0</code>) and <code>latest</code> tags (<code>python-latest</code>)
+for each flavor.</p>
+<p>!!! note &quot;Build order matters&quot;
+Derived images (<code>python-latex</code>, <code>rust-latex</code>, etc.) depend on their base
+flavors. <code>build-images</code> handles the correct order automatically.
+If you&#x27;re building manually, always build and push <code>base</code> first.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="5-deploy-documentation">5. Deploy documentation<a href="#5-deploy-documentation" class="hash-link" aria-label="Direct link to 5. Deploy documentation" title="Direct link to 5. Deploy documentation" translate="no">​</a></h3>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#F8F8F2"><span class="token plain">./scripts/maintain.sh docs-deploy</span><br></span></code></pre></div></div>
+<p>This builds the MkDocs site and force-pushes to the <code>gh-pages</code> branch.
+GitHub Pages serves the site at
+<a href="https://projectious-work.github.io/aibox/" target="_blank" rel="noopener noreferrer" class="">projectious-work.github.io/aibox</a>.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="6-verify">6. Verify<a href="#6-verify" class="hash-link" aria-label="Direct link to 6. Verify" title="Direct link to 6. Verify" translate="no">​</a></h3>
+<p>After a release, verify:</p>
+<ul class="contains-task-list containsTaskList_mC6p">
+<li class="task-list-item"><input type="checkbox" disabled=""> <code>curl -fsSL .../install.sh | bash</code> installs the new version</li>
+<li class="task-list-item"><input type="checkbox" disabled=""> <code>aibox --version</code> shows the correct version</li>
+<li class="task-list-item"><input type="checkbox" disabled=""> <code>podman pull ghcr.io/projectious-work/aibox:base-v0.8.0</code> succeeds</li>
+<li class="task-list-item"><input type="checkbox" disabled=""> Documentation site reflects changes</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="container-images">Container Images<a href="#container-images" class="hash-link" aria-label="Direct link to Container Images" title="Direct link to Container Images" translate="no">​</a></h2>
+<p>Ten images are published to <code>ghcr.io/projectious-work/aibox</code>:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Image</th><th>Tag pattern</th><th>Depends on</th></tr></thead><tbody><tr><td>base</td><td><code>base-vX.Y.Z</code></td><td>debian:trixie-slim</td></tr><tr><td>python</td><td><code>python-vX.Y.Z</code></td><td>base</td></tr><tr><td>rust</td><td><code>rust-vX.Y.Z</code></td><td>base</td></tr><tr><td>latex</td><td><code>latex-vX.Y.Z</code></td><td>base</td></tr><tr><td>typst</td><td><code>typst-vX.Y.Z</code></td><td>base</td></tr><tr><td>node</td><td><code>node-vX.Y.Z</code></td><td>base</td></tr><tr><td>go</td><td><code>go-vX.Y.Z</code></td><td>base</td></tr><tr><td>python-latex</td><td><code>python-latex-vX.Y.Z</code></td><td>python</td></tr><tr><td>python-typst</td><td><code>python-typst-vX.Y.Z</code></td><td>python</td></tr><tr><td>rust-latex</td><td><code>rust-latex-vX.Y.Z</code></td><td>rust</td></tr></tbody></table>
+<p>Build all locally:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#F8F8F2"><span class="token plain">./scripts/maintain.sh build-images</span><br></span></code></pre></div></div>
+<p>Build a single image manually:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#F8F8F2"><span class="token plain">podman build -t ghcr.io/projectious-work/aibox:python-v0.8.0 images/python/</span><br></span></code></pre></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="documentation">Documentation<a href="#documentation" class="hash-link" aria-label="Direct link to Documentation" title="Direct link to Documentation" translate="no">​</a></h2>
+<p>Documentation uses MkDocs with the Material theme. Source lives in <code>docs/</code>.</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#F8F8F2"><span class="token plain"># Preview locally</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">./scripts/maintain.sh docs-serve</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain"># Deploy to GitHub Pages</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">./scripts/maintain.sh docs-deploy</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain"># Dry run (build only, don&#x27;t push)</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">./scripts/maintain.sh docs-deploy --dry-run</span><br></span></code></pre></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="running-tests">Running Tests<a href="#running-tests" class="hash-link" aria-label="Direct link to Running Tests" title="Direct link to Running Tests" translate="no">​</a></h2>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#F8F8F2"><span class="token plain"># Full test suite (fmt + clippy + tests)</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">./scripts/maintain.sh test</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain"># Or individually</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">cd cli</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">cargo fmt --check</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">cargo clippy -- -D warnings</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">cargo test</span><br></span></code></pre></div></div>
+<p>The test suite includes 135 unit tests and 16 integration tests (151 total).
+Integration tests run the <code>aibox</code> binary as a subprocess.</p></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/projectious-work/aibox/tree/main/docs-site/docs/contributing/maintenance.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"><a class="pagination-nav__link pagination-nav__link--prev" href="/aibox/docs/contributing/"><div class="pagination-nav__sublabel">Previous</div><div class="pagination-nav__label">Contributing</div></a><a class="pagination-nav__link pagination-nav__link--next" href="/aibox/docs/contributing/e2e-tests"><div class="pagination-nav__sublabel">Next</div><div class="pagination-nav__label">E2E Test Catalogue</div></a></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#the-maintainsh-script" class="table-of-contents__link toc-highlight">The <code>maintain.sh</code> Script</a></li><li><a href="#release-checklist" class="table-of-contents__link toc-highlight">Release Checklist</a><ul><li><a href="#1-prepare-the-release" class="table-of-contents__link toc-highlight">1. Prepare the release</a></li><li><a href="#2-build-cli-binaries-for-other-platforms" class="table-of-contents__link toc-highlight">2. Build CLI binaries for other platforms</a></li><li><a href="#3-push-the-tag-and-create-the-github-release" class="table-of-contents__link toc-highlight">3. Push the tag and create the GitHub release</a></li><li><a href="#4-push-container-images-to-ghcr" class="table-of-contents__link toc-highlight">4. Push container images to GHCR</a></li><li><a href="#5-deploy-documentation" class="table-of-contents__link toc-highlight">5. Deploy documentation</a></li><li><a href="#6-verify" class="table-of-contents__link toc-highlight">6. Verify</a></li></ul></li><li><a href="#container-images" class="table-of-contents__link toc-highlight">Container Images</a></li><li><a href="#documentation" class="table-of-contents__link toc-highlight">Documentation</a></li><li><a href="#running-tests" class="table-of-contents__link toc-highlight">Running Tests</a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="row footer__links"><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Docs</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/aibox/docs/getting-started/installation">Getting Started</a></li><li class="footer__item"><a class="footer__link-item" href="/aibox/docs/reference/configuration">Configuration</a></li><li class="footer__item"><a class="footer__link-item" href="/aibox/docs/skills/">Skills Library</a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Project</div><ul class="footer__items clean-list"><li class="footer__item"><a href="https://github.com/projectious-work/aibox" target="_blank" rel="noopener noreferrer" class="footer__link-item">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li><li class="footer__item"><a class="footer__link-item" href="/aibox/changelog">Changelog</a></li></ul></div></div><div class="footer__bottom text--center"><div class="footer__copyright">© 2026 projectious.work</div></div></div></footer></div>
+</body>
+</html>

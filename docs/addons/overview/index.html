@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-addons/overview" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.9.2">
+<title data-rh="true">Overview | aibox</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://projectious-work.github.io/aibox/docs/addons/overview"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Overview | aibox"><meta data-rh="true" name="description" content="aibox uses a single base image (base-debian) with 21 composable addons that install language runtimes, tool bundles, documentation frameworks, and AI coding agents into your container."><meta data-rh="true" property="og:description" content="aibox uses a single base image (base-debian) with 21 composable addons that install language runtimes, tool bundles, documentation frameworks, and AI coding agents into your container."><link data-rh="true" rel="icon" href="/aibox/img/favicon.ico"><link data-rh="true" rel="canonical" href="https://projectious-work.github.io/aibox/docs/addons/overview"><link data-rh="true" rel="alternate" href="https://projectious-work.github.io/aibox/docs/addons/overview" hreflang="en"><link data-rh="true" rel="alternate" href="https://projectious-work.github.io/aibox/docs/addons/overview" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Overview","item":"https://projectious-work.github.io/aibox/docs/addons/overview"}]}</script><link rel="icon" type="image/png" sizes="32x32" href="/aibox/img/favicon.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/aibox/img/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/aibox/img/apple-touch-icon.png">
+<link rel="stylesheet" href="/aibox/player/asciinema-player.css">
+<link rel="stylesheet" href="/aibox/player/asciinema-fonts.css">
+<script src="/aibox/player/asciinema-player.min.js"></script>
+<script src="/aibox/player/asciinema-init.js" defer="defer"></script><link rel="stylesheet" href="/aibox/assets/css/styles.ab1a9c31.css">
+<script src="/aibox/assets/js/runtime~main.b852c9ad.js" defer="defer"></script>
+<script src="/aibox/assets/js/main.449a359b.js" defer="defer"></script>
+</head>
+<body class="navigation-with-keyboard">
+<svg style="display: none;"><defs>
+<symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
+</defs></svg>
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")),document.documentElement.setAttribute("data-theme-choice",t||"system")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/aibox/img/logo-light.svg"><link rel="preload" as="image" href="/aibox/img/logo-dark.svg"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/aibox/"><div class="navbar__logo"><img src="/aibox/img/logo-light.svg" alt="aibox logo" class="themedComponent_mlkZ themedComponent--light_NVdE" height="32" width="32"><img src="/aibox/img/logo-dark.svg" alt="aibox logo" class="themedComponent_mlkZ themedComponent--dark_xIcU" height="32" width="32"></div><b class="navbar__title text--truncate">aibox</b></a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/aibox/docs/getting-started/installation">Docs</a><a class="navbar__item navbar__link" href="/aibox/features">Features</a><a class="navbar__item navbar__link" href="/aibox/changelog">Changelog</a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><a href="https://github.com/projectious-work/aibox" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="Switch between dark and light mode (currently system mode)"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><aside class="theme-doc-sidebar-container docSidebarContainer_YfHR"><div class="sidebarViewport_aRkj"><div class="sidebar_njMd"><nav aria-label="Docs sidebar" class="menu thin-scrollbar menu_SIkG"><ul class="theme-doc-sidebar-menu menu__list"><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="true" href="/aibox/docs/getting-started/installation"><span title="Getting Started" class="categoryLinkLabel_W154">Getting Started</span></a></div><ul class="menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/aibox/docs/getting-started/installation"><span title="Installation" class="linkLabel_WmDU">Installation</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/aibox/docs/getting-started/new-project"><span title="New Project" class="linkLabel_WmDU">New Project</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/aibox/docs/getting-started/existing-project"><span title="Existing Project" class="linkLabel_WmDU">Existing Project</span></a></li></ul></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/aibox/docs/container/base-image"><span title="Container" class="categoryLinkLabel_W154">Container</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret menu__link--active" role="button" aria-expanded="true" href="/aibox/docs/addons/overview"><span title="Addons" class="categoryLinkLabel_W154">Addons</span></a></div><ul class="menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link menu__link--active" aria-current="page" tabindex="0" href="/aibox/docs/addons/overview"><span title="Overview" class="linkLabel_WmDU">Overview</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/aibox/docs/addons/language-runtimes"><span title="Language Runtimes" class="linkLabel_WmDU">Language Runtimes</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/aibox/docs/addons/tool-bundles"><span title="Tool Bundles" class="linkLabel_WmDU">Tool Bundles</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/aibox/docs/addons/documentation"><span title="Documentation Frameworks" class="linkLabel_WmDU">Documentation Frameworks</span></a></li></ul></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/aibox/docs/providers/ai-claude"><span title="AI Providers" class="categoryLinkLabel_W154">AI Providers</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/aibox/docs/context/overview"><span title="Context System" class="categoryLinkLabel_W154">Context System</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/aibox/docs/skills/"><span title="Skills (via processkit)" class="categoryLinkLabel_W154">Skills (via processkit)</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/aibox/docs/customization/themes"><span title="Customization" class="categoryLinkLabel_W154">Customization</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/aibox/docs/reference/cli-commands"><span title="Reference" class="categoryLinkLabel_W154">Reference</span></a></div></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/aibox/docs/roadmap"><span title="Roadmap" class="linkLabel_WmDU">Roadmap</span></a></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/aibox/docs/contributing/"><span title="Contributing" class="categoryLinkLabel_W154">Contributing</span></a></div></li></ul></nav></div></div></aside><main class="docMainContainer_TBSr"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><nav class="theme-doc-breadcrumbs breadcrumbsContainer_Z_bl" aria-label="Breadcrumbs"><ul class="breadcrumbs"><li class="breadcrumbs__item"><a aria-label="Home page" class="breadcrumbs__link" href="/aibox/"><svg viewBox="0 0 24 24" class="breadcrumbHomeIcon_YNFT"><path d="M10 19v-5h4v5c0 .55.45 1 1 1h3c.55 0 1-.45 1-1v-7h1.7c.46 0 .68-.57.33-.87L12.67 3.6c-.38-.34-.96-.34-1.34 0l-8.36 7.53c-.34.3-.13.87.33.87H5v7c0 .55.45 1 1 1h3c.55 0 1-.45 1-1z" fill="currentColor"></path></svg></a></li><li class="breadcrumbs__item"><span class="breadcrumbs__link">Addons</span></li><li class="breadcrumbs__item breadcrumbs__item--active"><span class="breadcrumbs__link">Overview</span></li></ul></nav><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>Addons</h1></header>
+<p>aibox uses a single base image (<code>base-debian</code>) with <strong>21 composable addons</strong> that install language runtimes, tool bundles, documentation frameworks, and AI coding agents into your container.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="managing-addons">Managing Addons<a href="#managing-addons" class="hash-link" aria-label="Direct link to Managing Addons" title="Direct link to Managing Addons" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="via-cli">Via CLI<a href="#via-cli" class="hash-link" aria-label="Direct link to Via CLI" title="Direct link to Via CLI" translate="no">​</a></h3>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#F8F8F2"><span class="token plain"># See all available addons</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">aibox addon list</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain"># Add an addon (updates aibox.toml and runs sync)</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">aibox addon add python</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain"># Remove an addon</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">aibox addon remove python</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain"># View addon details (tools, versions)</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">aibox addon info rust</span><br></span></code></pre></div></div>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="via-aiboxtoml">Via aibox.toml<a href="#via-aiboxtoml" class="hash-link" aria-label="Direct link to Via aibox.toml" title="Direct link to Via aibox.toml" translate="no">​</a></h3>
+<div class="language-toml codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-toml codeBlock_bY9V thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#F8F8F2"><span class="token plain">[addons.python.tools]</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">python = { version = &quot;3.13&quot; }</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">uv = { version = &quot;0.7&quot; }</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">[addons.rust.tools]</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">rustc = { version = &quot;1.87&quot; }</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">clippy = {}</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">rustfmt = {}</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">[addons.node.tools]</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">node = { version = &quot;22&quot; }</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">pnpm = { version = &quot;10&quot; }</span><br></span></code></pre></div></div>
+<p>Each addon has <strong>default-enabled tools</strong> that are included automatically, and <strong>optional tools</strong> you can enable explicitly. Tools with version selection let you pick from curated, tested versions.</p>
+<p>After editing <code>aibox.toml</code>, run <code>aibox sync</code> to regenerate the Dockerfile and rebuild.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="available-addons">Available Addons<a href="#available-addons" class="hash-link" aria-label="Direct link to Available Addons" title="Direct link to Available Addons" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="language-runtimes">Language Runtimes<a href="#language-runtimes" class="hash-link" aria-label="Direct link to Language Runtimes" title="Direct link to Language Runtimes" translate="no">​</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Addon</th><th>Default Tools</th><th>Optional Tools</th></tr></thead><tbody><tr><td><code>python</code></td><td>python (3.12/3.13/3.14), uv (0.6/0.7)</td><td>poetry, pdm</td></tr><tr><td><code>rust</code></td><td>rustc (1.85/1.87), clippy, rustfmt</td><td>—</td></tr><tr><td><code>node</code></td><td>node (20/22), pnpm (9/10)</td><td>yarn, bun</td></tr><tr><td><code>go</code></td><td>go (1.25/1.26)</td><td>—</td></tr><tr><td><code>typst</code></td><td>typst (0.13/0.14)</td><td>—</td></tr><tr><td><code>latex</code></td><td>texlive-core, texlive-recommended, texlive-fonts, biber, texlive-code, texlive-diagrams, texlive-math</td><td>texlive-music, texlive-chemistry</td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="tool-bundles">Tool Bundles<a href="#tool-bundles" class="hash-link" aria-label="Direct link to Tool Bundles" title="Direct link to Tool Bundles" translate="no">​</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Addon</th><th>Default Tools</th><th>Optional Tools</th></tr></thead><tbody><tr><td><code>infrastructure</code></td><td>opentofu, ansible, packer</td><td>—</td></tr><tr><td><code>kubernetes</code></td><td>kubectl, helm, kustomize</td><td>k9s</td></tr><tr><td><code>cloud-aws</code></td><td>aws-cli</td><td>—</td></tr><tr><td><code>cloud-gcp</code></td><td>gcloud-cli</td><td>—</td></tr><tr><td><code>cloud-azure</code></td><td>azure-cli</td><td>—</td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="documentation-frameworks">Documentation Frameworks<a href="#documentation-frameworks" class="hash-link" aria-label="Direct link to Documentation Frameworks" title="Direct link to Documentation Frameworks" translate="no">​</a></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Addon</th><th>Tools</th></tr></thead><tbody><tr><td><code>docs-mkdocs</code></td><td>mkdocs + mkdocs-material</td></tr><tr><td><code>docs-zensical</code></td><td>zensical</td></tr><tr><td><code>docs-docusaurus</code></td><td>docusaurus</td></tr><tr><td><code>docs-starlight</code></td><td>starlight</td></tr><tr><td><code>docs-mdbook</code></td><td>mdbook</td></tr><tr><td><code>docs-hugo</code></td><td>hugo</td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="ai-coding-agents">AI Coding Agents<a href="#ai-coding-agents" class="hash-link" aria-label="Direct link to AI Coding Agents" title="Direct link to AI Coding Agents" translate="no">​</a></h3>
+<p>AI providers configured in <code>[ai].providers</code> are automatically resolved to addons. You can also add them directly:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Addon</th><th>Install Method</th></tr></thead><tbody><tr><td><code>ai-claude</code></td><td>Claude Code CLI (curl installer)</td></tr><tr><td><code>ai-aider</code></td><td>aider-chat (uv tool)</td></tr><tr><td><code>ai-gemini</code></td><td>Google Generative AI CLI (npm)</td></tr><tr><td><code>ai-mistral</code></td><td>Mistral AI SDK (pip)</td></tr></tbody></table>
+<div class="language-toml codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-toml codeBlock_bY9V thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#F8F8F2"><span class="token plain"># These are equivalent:</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">[ai]</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">providers = [&quot;claude&quot;, &quot;aider&quot;]</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain"># ...produces the same result as explicitly adding:</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain"># [addons.ai-claude.tools]</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain"># claude = {}</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain"># [addons.ai-aider.tools]</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain"># aider = {}</span><br></span></code></pre></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="addons-and-skills">Addons and Skills<a href="#addons-and-skills" class="hash-link" aria-label="Direct link to Addons and Skills" title="Direct link to Addons and Skills" translate="no">​</a></h2>
+<p>As of v0.16.0, all skills live in <a href="https://github.com/projectious-work/processkit" target="_blank" rel="noopener noreferrer" class="">processkit</a>
+and <strong>every project gets every skill installed</strong> under <code>context/skills/</code>,
+regardless of which addons are active. There is no longer an addon-driven
+&quot;auto-deploy a skill&quot; mechanism, and no <code>[skills].include</code> to manage.</p>
+<p>The relevant skills for each addon&#x27;s tooling are still in the catalogue —
+agents pick them up via skill descriptions, not via addon membership:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Addon</th><th>Naturally relevant skills</th></tr></thead><tbody><tr><td><code>python</code></td><td><code>python-best-practices</code>, <code>fastapi-patterns</code>, <code>pandas-polars</code></td></tr><tr><td><code>rust</code></td><td><code>rust-conventions</code>, <code>concurrency-patterns</code></td></tr><tr><td><code>go</code></td><td>concurrency-patterns and the Go-flavoured patterns shipped upstream</td></tr><tr><td><code>node</code></td><td><code>typescript-patterns</code>, <code>tailwind</code></td></tr><tr><td><code>latex</code> / <code>typst</code></td><td><code>documentation</code></td></tr><tr><td><code>kubernetes</code></td><td><code>container-orchestration</code></td></tr><tr><td><code>infrastructure</code></td><td>terraform-flavoured patterns shipped upstream</td></tr></tbody></table>
+<p>See <a class="" href="/aibox/docs/skills/">Skills (via processkit)</a> for the full split.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="how-addons-work">How Addons Work<a href="#how-addons-work" class="hash-link" aria-label="Direct link to How Addons Work" title="Direct link to How Addons Work" translate="no">​</a></h2>
+<p>When you run <code>aibox sync</code>, the CLI:</p>
+<ol>
+<li class="">Reads <code>[addons]</code> from <code>aibox.toml</code></li>
+<li class="">Looks up each addon definition from YAML files in <code>~/.config/aibox/addons/</code></li>
+<li class="">Merges your tool selections with addon defaults</li>
+<li class="">Generates Dockerfile builder stages (for heavy builds like Rust, LaTeX)</li>
+<li class="">Generates runtime <code>RUN</code>/<code>COPY</code> commands</li>
+<li class="">Builds the container image</li>
+</ol>
+<p>Addons that need compilation (Rust, LaTeX, infrastructure, Kubernetes) use <strong>multi-stage Docker builds</strong> -- heavy compilation happens in isolated builder stages, and only the final binaries are copied into the runtime image.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="addon-definition-format">Addon Definition Format<a href="#addon-definition-format" class="hash-link" aria-label="Direct link to Addon Definition Format" title="Direct link to Addon Definition Format" translate="no">​</a></h3>
+<p>Addon definitions are YAML files stored in <code>~/.config/aibox/addons/</code> with category subdirectories (<code>languages/</code>, <code>tools/</code>, <code>docs/</code>, <code>ai/</code>). They are installed automatically by the install script and updated when you upgrade aibox.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="extra-packages">Extra Packages<a href="#extra-packages" class="hash-link" aria-label="Direct link to Extra Packages" title="Direct link to Extra Packages" translate="no">​</a></h2>
+<p>For one-off apt packages not covered by addons, use <code>extra_packages</code>:</p>
+<div class="language-toml codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-toml codeBlock_bY9V thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#F8F8F2"><span class="token plain">[container]</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">extra_packages = [&quot;universal-ctags&quot;, &quot;graphviz&quot;, &quot;postgresql-client&quot;]</span><br></span></code></pre></div></div>
+<p>These are installed during <code>aibox sync</code> via the generated Dockerfile. They persist across container restarts but are reinstalled on image rebuild.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="version-selection">Version Selection<a href="#version-selection" class="hash-link" aria-label="Direct link to Version Selection" title="Direct link to Version Selection" translate="no">​</a></h2>
+<p>Each tool in an addon has a curated list of supported versions. Use <code>aibox addon info &lt;name&gt;</code> to see available versions:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#F8F8F2"><span class="token plain">$ aibox addon info python</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">Add-on: python</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">Recipe version: 1.0.0</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">  TOOL      DEFAULT    VERSION  SUPPORTED</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">  python        yes       3.13  3.12, 3.13, 3.14</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">  uv            yes        0.7  0.6, 0.7</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">  poetry         no        2.0  1.8, 2.0</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">  pdm            no       2.22  2.22</span><br></span></code></pre></div></div>
+<p>Tools marked &quot;DEFAULT: yes&quot; are included automatically when you add the addon. Tools marked &quot;no&quot; must be explicitly listed in your <code>aibox.toml</code> to be installed.</p></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/projectious-work/aibox/tree/main/docs-site/docs/addons/overview.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"><a class="pagination-nav__link pagination-nav__link--prev" href="/aibox/docs/container/audio"><div class="pagination-nav__sublabel">Previous</div><div class="pagination-nav__label">Audio Support</div></a><a class="pagination-nav__link pagination-nav__link--next" href="/aibox/docs/addons/language-runtimes"><div class="pagination-nav__sublabel">Next</div><div class="pagination-nav__label">Language Runtimes</div></a></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#managing-addons" class="table-of-contents__link toc-highlight">Managing Addons</a><ul><li><a href="#via-cli" class="table-of-contents__link toc-highlight">Via CLI</a></li><li><a href="#via-aiboxtoml" class="table-of-contents__link toc-highlight">Via aibox.toml</a></li></ul></li><li><a href="#available-addons" class="table-of-contents__link toc-highlight">Available Addons</a><ul><li><a href="#language-runtimes" class="table-of-contents__link toc-highlight">Language Runtimes</a></li><li><a href="#tool-bundles" class="table-of-contents__link toc-highlight">Tool Bundles</a></li><li><a href="#documentation-frameworks" class="table-of-contents__link toc-highlight">Documentation Frameworks</a></li><li><a href="#ai-coding-agents" class="table-of-contents__link toc-highlight">AI Coding Agents</a></li></ul></li><li><a href="#addons-and-skills" class="table-of-contents__link toc-highlight">Addons and Skills</a></li><li><a href="#how-addons-work" class="table-of-contents__link toc-highlight">How Addons Work</a><ul><li><a href="#addon-definition-format" class="table-of-contents__link toc-highlight">Addon Definition Format</a></li></ul></li><li><a href="#extra-packages" class="table-of-contents__link toc-highlight">Extra Packages</a></li><li><a href="#version-selection" class="table-of-contents__link toc-highlight">Version Selection</a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="row footer__links"><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Docs</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/aibox/docs/getting-started/installation">Getting Started</a></li><li class="footer__item"><a class="footer__link-item" href="/aibox/docs/reference/configuration">Configuration</a></li><li class="footer__item"><a class="footer__link-item" href="/aibox/docs/skills/">Skills Library</a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Project</div><ul class="footer__items clean-list"><li class="footer__item"><a href="https://github.com/projectious-work/aibox" target="_blank" rel="noopener noreferrer" class="footer__link-item">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li><li class="footer__item"><a class="footer__link-item" href="/aibox/changelog">Changelog</a></li></ul></div></div><div class="footer__bottom text--center"><div class="footer__copyright">© 2026 projectious.work</div></div></div></footer></div>
+</body>
+</html>

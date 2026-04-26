@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-reference/configuration" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.9.2">
+<title data-rh="true">Configuration | aibox</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://projectious-work.github.io/aibox/docs/reference/configuration"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Configuration | aibox"><meta data-rh="true" name="description" content="aibox.toml is the single source of truth for an aibox project. All generated files derive from it."><meta data-rh="true" property="og:description" content="aibox.toml is the single source of truth for an aibox project. All generated files derive from it."><link data-rh="true" rel="icon" href="/aibox/img/favicon.ico"><link data-rh="true" rel="canonical" href="https://projectious-work.github.io/aibox/docs/reference/configuration"><link data-rh="true" rel="alternate" href="https://projectious-work.github.io/aibox/docs/reference/configuration" hreflang="en"><link data-rh="true" rel="alternate" href="https://projectious-work.github.io/aibox/docs/reference/configuration" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Configuration","item":"https://projectious-work.github.io/aibox/docs/reference/configuration"}]}</script><link rel="icon" type="image/png" sizes="32x32" href="/aibox/img/favicon.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/aibox/img/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/aibox/img/apple-touch-icon.png">
+<link rel="stylesheet" href="/aibox/player/asciinema-player.css">
+<link rel="stylesheet" href="/aibox/player/asciinema-fonts.css">
+<script src="/aibox/player/asciinema-player.min.js"></script>
+<script src="/aibox/player/asciinema-init.js" defer="defer"></script><link rel="stylesheet" href="/aibox/assets/css/styles.ab1a9c31.css">
+<script src="/aibox/assets/js/runtime~main.b852c9ad.js" defer="defer"></script>
+<script src="/aibox/assets/js/main.449a359b.js" defer="defer"></script>
+</head>
+<body class="navigation-with-keyboard">
+<svg style="display: none;"><defs>
+<symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
+</defs></svg>
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")),document.documentElement.setAttribute("data-theme-choice",t||"system")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/aibox/img/logo-light.svg"><link rel="preload" as="image" href="/aibox/img/logo-dark.svg"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/aibox/"><div class="navbar__logo"><img src="/aibox/img/logo-light.svg" alt="aibox logo" class="themedComponent_mlkZ themedComponent--light_NVdE" height="32" width="32"><img src="/aibox/img/logo-dark.svg" alt="aibox logo" class="themedComponent_mlkZ themedComponent--dark_xIcU" height="32" width="32"></div><b class="navbar__title text--truncate">aibox</b></a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/aibox/docs/getting-started/installation">Docs</a><a class="navbar__item navbar__link" href="/aibox/features">Features</a><a class="navbar__item navbar__link" href="/aibox/changelog">Changelog</a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><a href="https://github.com/projectious-work/aibox" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="Switch between dark and light mode (currently system mode)"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><aside class="theme-doc-sidebar-container docSidebarContainer_YfHR"><div class="sidebarViewport_aRkj"><div class="sidebar_njMd"><nav aria-label="Docs sidebar" class="menu thin-scrollbar menu_SIkG"><ul class="theme-doc-sidebar-menu menu__list"><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="true" href="/aibox/docs/getting-started/installation"><span title="Getting Started" class="categoryLinkLabel_W154">Getting Started</span></a></div><ul class="menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/aibox/docs/getting-started/installation"><span title="Installation" class="linkLabel_WmDU">Installation</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/aibox/docs/getting-started/new-project"><span title="New Project" class="linkLabel_WmDU">New Project</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/aibox/docs/getting-started/existing-project"><span title="Existing Project" class="linkLabel_WmDU">Existing Project</span></a></li></ul></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/aibox/docs/container/base-image"><span title="Container" class="categoryLinkLabel_W154">Container</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/aibox/docs/addons/overview"><span title="Addons" class="categoryLinkLabel_W154">Addons</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/aibox/docs/providers/ai-claude"><span title="AI Providers" class="categoryLinkLabel_W154">AI Providers</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/aibox/docs/context/overview"><span title="Context System" class="categoryLinkLabel_W154">Context System</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/aibox/docs/skills/"><span title="Skills (via processkit)" class="categoryLinkLabel_W154">Skills (via processkit)</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/aibox/docs/customization/themes"><span title="Customization" class="categoryLinkLabel_W154">Customization</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret menu__link--active" role="button" aria-expanded="true" href="/aibox/docs/reference/cli-commands"><span title="Reference" class="categoryLinkLabel_W154">Reference</span></a></div><ul class="menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/aibox/docs/reference/cli-commands"><span title="CLI Commands" class="linkLabel_WmDU">CLI Commands</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link menu__link--active" aria-current="page" tabindex="0" href="/aibox/docs/reference/configuration"><span title="Configuration" class="linkLabel_WmDU">Configuration</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/aibox/docs/reference/local-config"><span title="Local Config (.aibox-local.toml)" class="linkLabel_WmDU">Local Config (.aibox-local.toml)</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/aibox/docs/reference/cheatsheet"><span title="Cheatsheet" class="linkLabel_WmDU">Cheatsheet</span></a></li></ul></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/aibox/docs/roadmap"><span title="Roadmap" class="linkLabel_WmDU">Roadmap</span></a></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/aibox/docs/contributing/"><span title="Contributing" class="categoryLinkLabel_W154">Contributing</span></a></div></li></ul></nav></div></div></aside><main class="docMainContainer_TBSr"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><nav class="theme-doc-breadcrumbs breadcrumbsContainer_Z_bl" aria-label="Breadcrumbs"><ul class="breadcrumbs"><li class="breadcrumbs__item"><a aria-label="Home page" class="breadcrumbs__link" href="/aibox/"><svg viewBox="0 0 24 24" class="breadcrumbHomeIcon_YNFT"><path d="M10 19v-5h4v5c0 .55.45 1 1 1h3c.55 0 1-.45 1-1v-7h1.7c.46 0 .68-.57.33-.87L12.67 3.6c-.38-.34-.96-.34-1.34 0l-8.36 7.53c-.34.3-.13.87.33.87H5v7c0 .55.45 1 1 1h3c.55 0 1-.45 1-1z" fill="currentColor"></path></svg></a></li><li class="breadcrumbs__item"><span class="breadcrumbs__link">Reference</span></li><li class="breadcrumbs__item breadcrumbs__item--active"><span class="breadcrumbs__link">Configuration</span></li></ul></nav><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>Configuration</h1></header>
+<p><code>aibox.toml</code> is the single source of truth for an aibox project. All generated files derive from it.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="full-specification">Full Specification<a href="#full-specification" class="hash-link" aria-label="Direct link to Full Specification" title="Direct link to Full Specification" translate="no">​</a></h2>
+<div class="language-toml codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-toml codeBlock_bY9V thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#F8F8F2"><span class="token plain">[aibox]</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">version = &quot;0.17.5&quot;                    # aibox version used to generate this project</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">base    = &quot;debian&quot;                    # Base image</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">[container]</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">name     = &quot;my-app&quot;                   # Container name</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">hostname = &quot;my-app&quot;                   # Container hostname</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">user     = &quot;aibox&quot;                    # Container user (default: aibox)</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">post_create_command = &quot;npm install&quot;   # Command to run after container creation</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">keepalive = false                     # Network keepalive (default: false)</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">[container.environment]</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">NODE_ENV = &quot;development&quot;              # Project-wide env vars (non-secret; use .aibox-local.toml for secrets)</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">[[container.extra_volumes]]</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">source    = &quot;~/.config/gh&quot;            # Host path (~ expanded)</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">target    = &quot;/home/aibox/.config/gh&quot;  # Container path</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">read_only = true</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">[context]</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">schema_version = &quot;1.0.0&quot;              # Context schema version (semver)</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain"># processkit packages: minimal, managed (default), software, research, product</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">packages = [&quot;managed&quot;]</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">[processkit]</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">source   = &quot;https://github.com/projectious-work/processkit.git&quot;</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">version  = &quot;v0.8.0&quot;                   # Pin a real tag; &quot;unset&quot; skips fetching</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">src_path = &quot;src&quot;</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain"># branch = &quot;main&quot;                     # Optional; tarball-first, branch as fallback</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain"># release_asset_url_template = &quot;...&quot;  # Optional, for non-GitHub hosts</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">[addons.python.tools]                 # Addon: Python runtime</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">python = { version = &quot;3.13&quot; }</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">uv     = { version = &quot;0.7&quot; }</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">[addons.rust.tools]                   # Addon: Rust toolchain</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">rustc   = { version = &quot;1.87&quot; }</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">clippy  = {}</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">rustfmt = {}</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">[ai]</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">providers = [&quot;claude&quot;, &quot;aider&quot;]       # AI providers to install</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">[mcp]</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain"># Team-shared MCP servers merged into all generated MCP client configs</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain"># (see also [[mcp.servers]] in .aibox-local.toml for personal servers)</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">[[mcp.servers]]</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">name    = &quot;my-team-tool&quot;              # Unique server name</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">command = &quot;npx&quot;                       # Executable to run</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">args    = [&quot;-y&quot;, &quot;@acme/team-server&quot;] # Arguments</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain"># [mcp.servers.env]                   # Optional environment variables</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain"># API_KEY = &quot;...&quot;</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">[customization]</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">theme  = &quot;gruvbox-dark&quot;               # Color theme (7 options)</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">prompt = &quot;default&quot;                    # Starship preset (7 options)</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">layout = &quot;dev&quot;                        # Zellij layout (6 options)</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">[audio]</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">enabled      = false                  # Enable audio bridging</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">pulse_server = &quot;tcp:host.docker.internal:4714&quot;</span><br></span></code></pre></div></div>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="section-reference">Section Reference<a href="#section-reference" class="hash-link" aria-label="Direct link to Section Reference" title="Direct link to Section Reference" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="aibox">[aibox]<a href="#aibox" class="hash-link" aria-label="Direct link to [aibox]" title="Direct link to [aibox]" translate="no">​</a></h3>
+<p>Top-level project metadata.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td><code>version</code></td><td>String (semver)</td><td>Yes</td><td>--</td><td>Project version</td></tr><tr><td><code>base</code></td><td>String</td><td>No</td><td><code>&quot;debian&quot;</code></td><td>Base image: <code>debian</code></td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="container">[container]<a href="#container" class="hash-link" aria-label="Direct link to [container]" title="Direct link to [container]" translate="no">​</a></h3>
+<p>Container configuration. Controls the generated <code>docker-compose.yml</code> and <code>Dockerfile</code>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td><code>name</code></td><td>String</td><td>Yes</td><td>--</td><td>Container name (used by compose and runtime inspect)</td></tr><tr><td><code>hostname</code></td><td>String</td><td>No</td><td><code>&quot;aibox&quot;</code></td><td>Container hostname</td></tr><tr><td><code>user</code></td><td>String</td><td>No</td><td><code>&quot;aibox&quot;</code></td><td>Container user</td></tr><tr><td><code>post_create_command</code></td><td>String</td><td>No</td><td>--</td><td>Command to run after container creation</td></tr><tr><td><code>keepalive</code></td><td>Boolean</td><td>No</td><td><code>false</code></td><td>Network keepalive (prevents OrbStack/VM NAT idle dropout)</td></tr><tr><td><code>environment</code></td><td>Map (String → String)</td><td>No</td><td><code>{}</code></td><td>Environment variables injected into the container. Suitable for non-secret project-wide values; use <code>.aibox-local.toml</code> for secrets.</td></tr><tr><td><code>extra_volumes</code></td><td>Array of ExtraVolume</td><td>No</td><td><code>[]</code></td><td>Additional bind mounts. Each entry has <code>source</code>, <code>target</code>, and optional <code>read_only</code>.</td></tr></tbody></table>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="containerextra_volumes">[[container.extra_volumes]]<a href="#containerextra_volumes" class="hash-link" aria-label="Direct link to [[container.extra_volumes]]" title="Direct link to [[container.extra_volumes]]" translate="no">​</a></h4>
+<p>Each entry in the <code>extra_volumes</code> array is an <code>ExtraVolume</code> with these fields:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td><code>source</code></td><td>String</td><td>Yes</td><td>--</td><td>Host path (supports <code>~</code> expansion)</td></tr><tr><td><code>target</code></td><td>String</td><td>Yes</td><td>--</td><td>Container path where the volume is mounted</td></tr><tr><td><code>read_only</code></td><td>Boolean</td><td>No</td><td><code>false</code></td><td>Mount the volume read-only</td></tr></tbody></table>
+<p>Example — mount your GitHub CLI config:</p>
+<div class="language-toml codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-toml codeBlock_bY9V thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#F8F8F2"><span class="token plain">[[container.extra_volumes]]</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">source    = &quot;~/.config/gh&quot;</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">target    = &quot;/home/aibox/.config/gh&quot;</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">read_only = true</span><br></span></code></pre></div></div>
+<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>Customizing ports, packages, volumes, and environment variables</div><div class="admonitionContent_BuS1"><p>Use <code>Dockerfile.local</code> for installing additional packages, and <code>docker-compose.override.yml</code> for ports and additional services. Both files are scaffolded by <code>aibox init</code> and are never overwritten by <code>aibox sync</code>.</p><p>Environment variables and bind mounts can also be configured directly in <code>[container.environment]</code> / <code>[[container.extra_volumes]]</code> in <code>aibox.toml</code>, or — for secrets and per-developer settings that should not be committed — in <a class="" href="/aibox/docs/reference/local-config"><code>.aibox-local.toml</code></a>.</p></div></div>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="aibox-localtoml">.aibox-local.toml<a href="#aibox-localtoml" class="hash-link" aria-label="Direct link to .aibox-local.toml" title="Direct link to .aibox-local.toml" translate="no">​</a></h3>
+<p><code>.aibox-local.toml</code> is a personal, gitignored overlay for per-developer settings that should never be committed — API keys, personal bind mounts, and similar secrets. It lives next to <code>aibox.toml</code> in the project root and is automatically added to <code>.gitignore</code> by <code>aibox init</code> and <code>aibox sync</code>.</p>
+<p>Three sections are supported:</p>
+<ul>
+<li class=""><strong><code>[container.environment]</code></strong> — merged on top of <code>aibox.toml</code>&#x27;s <code>[container.environment]</code>. Local values win on conflicts.</li>
+<li class=""><strong><code>[[container.extra_volumes]]</code></strong> — appended after any volumes declared in <code>aibox.toml</code>.</li>
+<li class=""><strong><code>[[mcp.servers]]</code></strong> — personal MCP servers appended to the team MCP servers from <code>aibox.toml [mcp]</code>. All sources are merged into each generated MCP client config file.</li>
+</ul>
+<p>All other configuration (container name, addons, processkit version, etc.) must remain in <code>aibox.toml</code>.</p>
+<p>See the dedicated <a class="" href="/aibox/docs/reference/local-config">Local Config reference</a> for a full example and merge-behavior details.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="context">[context]<a href="#context" class="hash-link" aria-label="Direct link to [context]" title="Direct link to [context]" translate="no">​</a></h3>
+<p>Context-system metadata. Controls the schema version and the <strong>declarative</strong>
+processkit package selection — the list agents read to decide which subset of
+the installed processkit content is in scope for this project.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td><code>schema_version</code></td><td>String (semver)</td><td>No</td><td><code>&quot;1.0.0&quot;</code></td><td>Context schema version</td></tr><tr><td><code>packages</code></td><td>Array of strings</td><td>No</td><td><code>[&quot;managed&quot;]</code></td><td>processkit packages in scope for this project.</td></tr></tbody></table>
+<p><strong>Five processkit packages</strong>, defined by upstream YAMLs in
+<code>packages/{minimal,managed,software,research,product}.yaml</code> and composed via
+<code>extends:</code>:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Package</th><th>Purpose</th></tr></thead><tbody><tr><td><code>minimal</code></td><td>Bare-minimum skill set for scripts and experiments</td></tr><tr><td><code>managed</code></td><td>Recommended default — backlog, decisions, standups, handover</td></tr><tr><td><code>software</code></td><td><code>managed</code> + code review, testing, debugging, refactoring, architecture</td></tr><tr><td><code>research</code></td><td><code>managed</code> + data science, documentation, research artefacts</td></tr><tr><td><code>product</code></td><td>Everything — <code>software</code> + design, security, operations, product planning</td></tr></tbody></table>
+<blockquote>
+<p><code>packages</code> is <strong>declarative metadata for agents</strong> — it tells agents which
+skills to <em>prefer</em>, but does not filter what gets installed. Use
+<code>[skills].include</code> / <code>[skills].exclude</code> to control the installed skill set.</p>
+</blockquote>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="addons">[addons]<a href="#addons" class="hash-link" aria-label="Direct link to [addons]" title="Direct link to [addons]" translate="no">​</a></h3>
+<p>Addons install language runtimes, tool bundles, and AI agents into the container. Each addon is a named table with a <code>tools</code> sub-table.</p>
+<div class="language-toml codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-toml codeBlock_bY9V thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#F8F8F2"><span class="token plain">[addons.python.tools]</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">python = { version = &quot;3.13&quot; }</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">uv = { version = &quot;0.7&quot; }</span><br></span></code></pre></div></div>
+<p>Run <code>aibox addon list</code> to see all 25 available addons, or <code>aibox addon info &lt;name&gt;</code> for tool details and supported versions. See the <a class="" href="/aibox/docs/addons/overview">Addons page</a> for full documentation.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="skills">[skills]<a href="#skills" class="hash-link" aria-label="Direct link to [skills]" title="Direct link to [skills]" translate="no">​</a></h3>
+<p>Controls which skills from processkit are installed into <code>context/skills/</code>.
+By default every skill in the processkit version you&#x27;ve pinned is installed.</p>
+<div class="language-toml codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-toml codeBlock_bY9V thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#F8F8F2"><span class="token plain">[skills]</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">include = [&quot;python-best-practices&quot;, &quot;fastapi-patterns&quot;]  # install only these</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">exclude = [&quot;pandas-polars&quot;]                               # install all except these</span><br></span></code></pre></div></div>
+<p><code>include</code> and <code>exclude</code> are mutually exclusive: use one or the other, not both.
+Both accept skill names (the filename without <code>.md</code>). An empty <code>[skills]</code> table
+(or omitting the section entirely) installs all skills.</p>
+<p>See the <a class="" href="/aibox/docs/skills/">Skills page</a> for the full processkit boundary.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="ai">[ai]<a href="#ai" class="hash-link" aria-label="Direct link to [ai]" title="Direct link to [ai]" translate="no">​</a></h3>
+<p>AI provider configuration. Providers listed here are automatically installed as addons.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td><code>providers</code></td><td>Array of strings</td><td>No</td><td><code>[&quot;claude&quot;]</code></td><td>AI providers: <code>claude</code>, <code>aider</code>, <code>gemini</code>, <code>mistral</code>, <code>openai</code>, <code>copilot</code>, <code>continue</code>. <code>cursor</code> is MCP-registration only (no container CLI).</td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="processkit">[processkit]<a href="#processkit" class="hash-link" aria-label="Direct link to [processkit]" title="Direct link to [processkit]" translate="no">​</a></h3>
+<p>The <strong>load-bearing</strong> content section. Configures the content source
+the project consumes — skills, primitives, processes, package YAMLs, and the
+canonical <code>AGENTS.md</code> template. The default upstream is the canonical
+<a href="https://github.com/projectious-work/processkit" target="_blank" rel="noopener noreferrer" class="">projectious-work/processkit</a>
+repo, but any processkit-compatible source works (forks, self-hosted, private
+mirrors).</p>
+<p>If <code>version</code> is the sentinel <code>unset</code>, both <code>aibox init</code> and <code>aibox sync</code> skip
+the processkit fetch entirely. Pin a real tag (e.g. <code>v0.8.0</code>) to land the
+content. The downloaded tarball is git-tracked under
+<code>context/templates/processkit/&lt;version&gt;/</code> so derived projects always have the
+original to diff against.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td><code>source</code></td><td>String</td><td>No</td><td><code>https://github.com/projectious-work/processkit.git</code></td><td>Git URL of the content source.</td></tr><tr><td><code>version</code></td><td>String</td><td>No</td><td><code>unset</code></td><td>Semver tag to consume. The sentinel <code>unset</code> skips fetching until a real tag is set.</td></tr><tr><td><code>src_path</code></td><td>String</td><td>No</td><td><code>src</code></td><td>Subdirectory inside the source repo containing the shippable payload. Auto-detected for flat release-asset tarballs.</td></tr><tr><td><code>branch</code></td><td>String</td><td>No</td><td><em>(none)</em></td><td>Optional branch override for testing pre-release work. Discouraged but supported.</td></tr><tr><td><code>release_asset_url_template</code></td><td>String</td><td>No</td><td><em>(GitHub-style default)</em></td><td>URL template for the release-asset tarball. Placeholders: <code>{source}</code> (<code>.git</code> stripped), <code>{version}</code>, <code>{org}</code>, <code>{name}</code>. Set this for non-GitHub hosts.</td></tr></tbody></table>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="fetch-strategy">Fetch strategy<a href="#fetch-strategy" class="hash-link" aria-label="Direct link to Fetch strategy" title="Direct link to Fetch strategy" translate="no">​</a></h4>
+<p>The fetcher tries strategies in priority order:</p>
+<ol>
+<li class=""><strong>Branch override</strong> (if <code>branch</code> is set) — <code>git clone --branch &lt;name&gt;</code>.</li>
+<li class=""><strong>Release-asset tarball</strong> — downloads a purpose-built <code>.tar.gz</code> from
+the URL built from <code>release_asset_url_template</code> (or the GitHub-style
+default <code>{source}/releases/download/{version}/{name}-{version}.tar.gz</code>).
+When a sibling <code>&lt;asset&gt;.sha256</code> file is present, the tarball bytes
+are verified against it before extraction. The verified SHA256 is
+recorded in <code>aibox.lock</code> as <code>release_asset_sha256</code> for bit-exact
+reproducibility.</li>
+<li class=""><strong>Host auto-tarball</strong> — falls back to GitHub / GitLab&#x27;s auto-generated
+<code>archive/refs/tags/&lt;version&gt;.tar.gz</code> when no release asset is
+available.</li>
+<li class=""><strong>Git clone</strong> of the tag — last resort for hosts that serve neither
+tarball form (typical for self-hosted git over SSH).</li>
+</ol>
+<p>The release-asset path lets producers (processkit and any compatible
+content source) ship a smaller, explicit shippable artifact. Consumers
+get bit-exact reproducibility for free.</p>
+<p>A SHA256 mismatch is a hard error (does NOT fall through), since it
+indicates either tampering or a producer bug; both are situations the
+user should be told about.</p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="example-consume-a-gitea-hosted-fork">Example: consume a Gitea-hosted fork<a href="#example-consume-a-gitea-hosted-fork" class="hash-link" aria-label="Direct link to Example: consume a Gitea-hosted fork" title="Direct link to Example: consume a Gitea-hosted fork" translate="no">​</a></h4>
+<div class="language-toml codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-toml codeBlock_bY9V thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#F8F8F2"><span class="token plain">[processkit]</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">source                     = &quot;https://gitea.acme.com/platform/processkit-acme.git&quot;</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">version                    = &quot;v1.2.0&quot;</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">release_asset_url_template = &quot;https://gitea.acme.com/{org}/{name}/releases/download/{version}/{name}-{version}.tar.gz&quot;</span><br></span></code></pre></div></div>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="mcp">[mcp]<a href="#mcp" class="hash-link" aria-label="Direct link to [mcp]" title="Direct link to [mcp]" translate="no">​</a></h3>
+<p>MCP server definitions and permission configuration. <code>aibox sync</code> merges servers from three sources and regenerates all MCP client config files:</p>
+<ol>
+<li class=""><strong>Built-in processkit servers</strong> — always included (the processkit MCP server and any extras it ships)</li>
+<li class=""><strong><code>aibox.toml [mcp]</code></strong> — team-shared servers committed to version control</li>
+<li class=""><strong><code>.aibox-local.toml [mcp]</code></strong> — personal servers, gitignored</li>
+</ol>
+<p>Generated files (<code>.mcp.json</code>, <code>.cursor/mcp.json</code>, <code>.gemini/settings.json</code>, <code>.codex/config.toml</code>, <code>.continue/mcpServers/</code>) are <strong>gitignored</strong>. They are always reproducible from the config sources above and must not be committed — doing so would embed personal server definitions or credentials from <code>.aibox-local.toml</code>.</p>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="server-definitions-mcpservers">Server Definitions: [[mcp.servers]]<a href="#server-definitions-mcpservers" class="hash-link" aria-label="Direct link to Server Definitions: [[mcp.servers]]" title="Direct link to Server Definitions: [[mcp.servers]]" translate="no">​</a></h4>
+<p>Each <code>[[mcp.servers]]</code> entry has these fields:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td><code>name</code></td><td>String</td><td>Yes</td><td>--</td><td>Unique server name (used as the key in generated configs)</td></tr><tr><td><code>command</code></td><td>String</td><td>Yes</td><td>--</td><td>Executable to run (e.g. <code>npx</code>, <code>/usr/local/bin/my-server</code>)</td></tr><tr><td><code>args</code></td><td>Array of strings</td><td>No</td><td><code>[]</code></td><td>Arguments passed to <code>command</code></td></tr><tr><td><code>env</code></td><td>Map (String → String)</td><td>No</td><td><code>{}</code></td><td>Environment variables set when the server process starts</td></tr></tbody></table>
+<p>Example:</p>
+<div class="language-toml codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-toml codeBlock_bY9V thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#F8F8F2"><span class="token plain">[[mcp.servers]]</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">name    = &quot;github&quot;</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">command = &quot;npx&quot;</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">args    = [&quot;-y&quot;, &quot;@modelcontextprotocol/server-github&quot;]</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">[mcp.servers.env]</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">GITHUB_TOKEN = &quot;ghp_...&quot;</span><br></span></code></pre></div></div>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="permission-configuration-mcppermissions">Permission Configuration: [mcp.permissions]<a href="#permission-configuration-mcppermissions" class="hash-link" aria-label="Direct link to Permission Configuration: [mcp.permissions]" title="Direct link to Permission Configuration: [mcp.permissions]" translate="no">​</a></h4>
+<p>Controls which MCP servers harnesses are permitted to use, eliminating repetitive permission prompts. <code>aibox sync</code> expands glob patterns into concrete server names and regenerates harness-specific permission files for Claude Code, OpenCode, Continue, Cursor, Gemini CLI, GitHub Copilot, Aider, and Codex.</p>
+<p><strong>Global defaults:</strong></p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td><code>default_mode</code></td><td>String</td><td>No</td><td><code>&quot;allow&quot;</code></td><td>Default permission: <code>&quot;allow&quot;</code>, <code>&quot;ask&quot;</code>, or <code>&quot;deny&quot;</code>. Recommend <code>&quot;allow&quot;</code> for aibox-shipped processkit tools (trusted content).</td></tr><tr><td><code>allow_patterns</code></td><td>Array of strings</td><td>No</td><td><code>[&quot;mcp__processkit-*&quot;]</code></td><td>Glob patterns to auto-allow. Supports wildcards: <code>prefix-*</code>, <code>*-suffix</code>, <code>*-middle*</code>, exact matches. First-match-wins semantics.</td></tr><tr><td><code>deny_patterns</code></td><td>Array of strings</td><td>No</td><td><code>[]</code></td><td>Glob patterns to auto-deny (takes precedence over allow). Use for restricting specific tool families.</td></tr></tbody></table>
+<p><strong>Per-harness overrides</strong> (optional):</p>
+<div class="language-toml codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-toml codeBlock_bY9V thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#F8F8F2"><span class="token plain">[mcp.permissions.harness.claude-code]</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">mode = &quot;allow&quot;              # Override global default if needed</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">extra_patterns = []         # Add harness-specific patterns</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">[mcp.permissions.harness.opencode]</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">mode = &quot;allow&quot;</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">deny_patterns = []          # Restrict specific tools per harness</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">[mcp.permissions.harness.codex]</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">trust_level = &quot;trusted&quot;     # Codex uses project-level trust instead of per-tool lists</span><br></span></code></pre></div></div>
+<p><strong>Example:</strong></p>
+<div class="language-toml codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-toml codeBlock_bY9V thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#F8F8F2"><span class="token plain">[mcp.permissions]</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">default_mode    = &quot;allow&quot;</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">allow_patterns  = [&quot;mcp__processkit-*&quot;, &quot;bash&quot;]</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">deny_patterns   = [&quot;mcp__processkit-dangerous-admin&quot;]  # Deny a specific pattern if needed</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">[mcp.permissions.harness.claude-code]</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain"># Use default settings; Claude Code will auto-allow all processkit tools</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">[mcp.permissions.harness.continue]</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain"># Continue defaults to &quot;ask&quot; for safety; override to &quot;allow&quot; to auto-approve</span><br></span><span class="token-line" style="color:#F8F8F2"><span class="token plain">mode = &quot;allow&quot;</span><br></span></code></pre></div></div>
+<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>Personal MCP servers</div><div class="admonitionContent_BuS1"><p>Servers that require personal credentials or are not relevant to all team members belong in <code>[[mcp.servers]]</code> in <code>.aibox-local.toml</code>, not here. See <a class="" href="/aibox/docs/reference/local-config">Local Config</a>.</p></div></div>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="agents">[agents]<a href="#agents" class="hash-link" aria-label="Direct link to [agents]" title="Direct link to [agents]" translate="no">​</a></h3>
+<p>Controls how <code>aibox init</code> scaffolds the canonical agent entry document
+(<code>AGENTS.md</code>) and the provider-specific entry files (<code>CLAUDE.md</code>, future
+<code>CODEX.md</code>, …). The principle is <strong>provider neutrality</strong>: every agent
+harness reads the same <code>AGENTS.md</code> so a project doesn&#x27;t have to keep
+N copies of the same instructions in sync. Provider files exist only
+to satisfy specific harnesses&#x27; auto-load conventions (Claude Code
+auto-loads <code>CLAUDE.md</code> at startup, etc.).</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td><code>canonical</code></td><td>String</td><td>No</td><td><code>&quot;AGENTS.md&quot;</code></td><td>Filename of the canonical agent entry document. Almost no one should override this — the default matches the <a href="https://agents.md/" target="_blank" rel="noopener noreferrer" class="">agents.md</a> ecosystem convention.</td></tr><tr><td><code>provider_mode</code></td><td>String</td><td>No</td><td><code>&quot;pointer&quot;</code></td><td>How provider files are scaffolded. <code>pointer</code> (recommended): provider files are thin pointers that say &quot;see AGENTS.md&quot;. <code>full</code>: provider files contain the rich provider-flavoured content — use only when a project genuinely needs different instructions per harness.</td></tr></tbody></table>
+<p><code>aibox init</code> always creates <code>AGENTS.md</code> (write-if-missing — never
+overwrites). When the Claude provider is enabled, it also creates
+<code>CLAUDE.md</code>, either as a thin pointer (default) or with the full rich
+content (<code>provider_mode = &quot;full&quot;</code>). Other providers (Aider, Gemini,
+Mistral, OpenAI, Copilot, Continue) use config files rather than markdown
+entries and are not affected by this section.</p>
+<p>Existing files are never overwritten. If you already have a hand-written
+<code>AGENTS.md</code> or <code>CLAUDE.md</code>, <code>aibox init</code> leaves it alone.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="customization">[customization]<a href="#customization" class="hash-link" aria-label="Direct link to [customization]" title="Direct link to [customization]" translate="no">​</a></h3>
+<p>Visual and layout configuration. See <a class="" href="/aibox/docs/customization/themes">Themes</a> and <a class="" href="/aibox/docs/customization/layouts">Layouts</a> for details.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td><code>theme</code></td><td>String</td><td>No</td><td><code>&quot;gruvbox-dark&quot;</code></td><td>Color theme: <code>gruvbox-dark</code>, <code>catppuccin-mocha</code>, <code>catppuccin-latte</code>, <code>dracula</code>, <code>tokyo-night</code>, <code>nord</code>, <code>projectious</code></td></tr><tr><td><code>prompt</code></td><td>String</td><td>No</td><td><code>&quot;default&quot;</code></td><td>Starship preset: <code>default</code>, <code>plain</code>, <code>arrow</code>, <code>minimal</code>, <code>nerd-font</code>, <code>pastel</code>, <code>bracketed</code></td></tr><tr><td><code>layout</code></td><td>String</td><td>No</td><td><code>&quot;dev&quot;</code></td><td>Zellij layout: <code>dev</code>, <code>focus</code>, <code>cowork</code>, <code>cowork-swap</code>, <code>browse</code>, <code>ai</code></td></tr></tbody></table>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="audio">[audio]<a href="#audio" class="hash-link" aria-label="Direct link to [audio]" title="Direct link to [audio]" translate="no">​</a></h3>
+<p>Audio bridging configuration.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td><code>enabled</code></td><td>Boolean</td><td>No</td><td><code>false</code></td><td>Enable PulseAudio environment setup</td></tr><tr><td><code>pulse_server</code></td><td>String</td><td>No</td><td><code>&quot;tcp:host.docker.internal:4714&quot;</code></td><td>PulseAudio server address</td></tr></tbody></table>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="environment-variable-overrides">Environment Variable Overrides<a href="#environment-variable-overrides" class="hash-link" aria-label="Direct link to Environment Variable Overrides" title="Direct link to Environment Variable Overrides" translate="no">​</a></h2>
+<p>Some settings can be overridden via environment variables:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Variable</th><th>Overrides</th><th>Description</th></tr></thead><tbody><tr><td><code>AIBOX_HOST_ROOT</code></td><td><code>.aibox-home/</code> path</td><td>Host directory for persistent config (default: <code>.aibox-home/</code>)</td></tr><tr><td><code>AIBOX_WORKSPACE_DIR</code></td><td>Workspace mount source</td><td>Host directory mounted as <code>/workspace</code></td></tr><tr><td><code>AIBOX_LOG_LEVEL</code></td><td><code>--log-level</code></td><td>Log verbosity (<code>trace</code>, <code>debug</code>, <code>info</code>, <code>warn</code>, <code>error</code>)</td></tr></tbody></table>
+<p>Example:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#F8F8F2;--prism-background-color:#282A36"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#F8F8F2;background-color:#282A36"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#F8F8F2"><span class="token plain">AIBOX_WORKSPACE_DIR=/home/user/projects/my-app aibox start</span><br></span></code></pre></div></div></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/projectious-work/aibox/tree/main/docs-site/docs/reference/configuration.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"><a class="pagination-nav__link pagination-nav__link--prev" href="/aibox/docs/reference/cli-commands"><div class="pagination-nav__sublabel">Previous</div><div class="pagination-nav__label">CLI Commands</div></a><a class="pagination-nav__link pagination-nav__link--next" href="/aibox/docs/reference/local-config"><div class="pagination-nav__sublabel">Next</div><div class="pagination-nav__label">Local Config (.aibox-local.toml)</div></a></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#full-specification" class="table-of-contents__link toc-highlight">Full Specification</a></li><li><a href="#section-reference" class="table-of-contents__link toc-highlight">Section Reference</a><ul><li><a href="#aibox" class="table-of-contents__link toc-highlight">[aibox]</a></li><li><a href="#container" class="table-of-contents__link toc-highlight">[container]</a></li><li><a href="#aibox-localtoml" class="table-of-contents__link toc-highlight">.aibox-local.toml</a></li><li><a href="#context" class="table-of-contents__link toc-highlight">[context]</a></li><li><a href="#addons" class="table-of-contents__link toc-highlight">[addons]</a></li><li><a href="#skills" class="table-of-contents__link toc-highlight">[skills]</a></li><li><a href="#ai" class="table-of-contents__link toc-highlight">[ai]</a></li><li><a href="#processkit" class="table-of-contents__link toc-highlight">[processkit]</a></li><li><a href="#mcp" class="table-of-contents__link toc-highlight">[mcp]</a></li><li><a href="#agents" class="table-of-contents__link toc-highlight">[agents]</a></li><li><a href="#customization" class="table-of-contents__link toc-highlight">[customization]</a></li><li><a href="#audio" class="table-of-contents__link toc-highlight">[audio]</a></li></ul></li><li><a href="#environment-variable-overrides" class="table-of-contents__link toc-highlight">Environment Variable Overrides</a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="row footer__links"><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Docs</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/aibox/docs/getting-started/installation">Getting Started</a></li><li class="footer__item"><a class="footer__link-item" href="/aibox/docs/reference/configuration">Configuration</a></li><li class="footer__item"><a class="footer__link-item" href="/aibox/docs/skills/">Skills Library</a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Project</div><ul class="footer__items clean-list"><li class="footer__item"><a href="https://github.com/projectious-work/aibox" target="_blank" rel="noopener noreferrer" class="footer__link-item">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li><li class="footer__item"><a class="footer__link-item" href="/aibox/changelog">Changelog</a></li></ul></div></div><div class="footer__bottom text--center"><div class="footer__copyright">© 2026 projectious.work</div></div></div></footer></div>
+</body>
+</html>

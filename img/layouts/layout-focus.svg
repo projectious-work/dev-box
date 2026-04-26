@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="200" viewBox="0 0 900 200">
+  <style>
+    text { font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace; }
+    .tab-name  { font-size: 11px; font-weight: 700; fill: #444; }
+    .tab-num   { font-size: 10px; font-weight: 700; fill: #fff; }
+    .badge     { fill: #6c757d; }
+    .badge-act { fill: #4a6fa5; }
+    .screen    { fill: #1e1e2e; }
+    .panel     { fill: #2a2a3e; stroke: #4a4a6a; stroke-width: 1; }
+    .panel-act { fill: #313244; stroke: #7c7caa; stroke-width: 1; }
+    .lbl       { font-size: 13px; font-weight: 700; fill: #cdd6f4; }
+    .dim       { font-size: 10px; fill: #6c7086; }
+  </style>
+
+  <!-- 5 tabs: files, editor, claude, git, shell — width = (900-6×10)/5 = 168px -->
+
+  <!-- ── Tab 1: files (active) ─────────────── -->
+  <circle cx="19" cy="14" r="9" class="badge-act"/>
+  <text class="tab-num" x="19" y="18" text-anchor="middle">1</text>
+  <text class="tab-name" x="33" y="18" fill="#4a6fa5">files  ●</text>
+  <rect x="10" y="26" width="168" height="164" rx="4" class="screen"/>
+  <rect x="12" y="28" width="164" height="160" rx="2" class="panel-act"/>
+  <text class="lbl" x="94" y="113" text-anchor="middle">yazi</text>
+
+  <!-- ── Tab 2: editor ──────────────────────── -->
+  <circle cx="207" cy="14" r="9" class="badge"/>
+  <text class="tab-num" x="207" y="18" text-anchor="middle">2</text>
+  <text class="tab-name" x="221" y="18">editor</text>
+  <rect x="188" y="26" width="168" height="164" rx="4" class="screen"/>
+  <rect x="190" y="28" width="164" height="160" rx="2" class="panel"/>
+  <text class="lbl" x="272" y="113" text-anchor="middle">vim</text>
+
+  <!-- ── Tab 3: claude ──────────────────────── -->
+  <circle cx="385" cy="14" r="9" class="badge"/>
+  <text class="tab-num" x="385" y="18" text-anchor="middle">3</text>
+  <text class="tab-name" x="399" y="18">claude</text>
+  <rect x="366" y="26" width="168" height="164" rx="4" class="screen"/>
+  <rect x="368" y="28" width="164" height="160" rx="2" class="panel"/>
+  <text class="lbl" x="450" y="113" text-anchor="middle">claude</text>
+
+  <!-- ── Tab 4: git ─────────────────────────── -->
+  <circle cx="563" cy="14" r="9" class="badge"/>
+  <text class="tab-num" x="563" y="18" text-anchor="middle">4</text>
+  <text class="tab-name" x="577" y="18">git</text>
+  <rect x="544" y="26" width="168" height="164" rx="4" class="screen"/>
+  <rect x="546" y="28" width="164" height="160" rx="2" class="panel"/>
+  <text class="lbl" x="628" y="113" text-anchor="middle">lazygit</text>
+
+  <!-- ── Tab 5: shell ───────────────────────── -->
+  <circle cx="741" cy="14" r="9" class="badge"/>
+  <text class="tab-num" x="741" y="18" text-anchor="middle">5</text>
+  <text class="tab-name" x="755" y="18">shell</text>
+  <rect x="722" y="26" width="168" height="164" rx="4" class="screen"/>
+  <rect x="724" y="28" width="164" height="160" rx="2" class="panel"/>
+  <text class="lbl" x="806" y="113" text-anchor="middle">bash</text>
+</svg>

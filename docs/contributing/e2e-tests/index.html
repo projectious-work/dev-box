@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-contributing/e2e-tests" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.9.2">
+<title data-rh="true">E2E Test Catalogue | aibox</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://projectious-work.github.io/aibox/docs/contributing/e2e-tests"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="E2E Test Catalogue | aibox"><meta data-rh="true" name="description" content="This page describes every end-to-end and integration test in cli/tests/e2e/"><meta data-rh="true" property="og:description" content="This page describes every end-to-end and integration test in cli/tests/e2e/"><link data-rh="true" rel="icon" href="/aibox/img/favicon.ico"><link data-rh="true" rel="canonical" href="https://projectious-work.github.io/aibox/docs/contributing/e2e-tests"><link data-rh="true" rel="alternate" href="https://projectious-work.github.io/aibox/docs/contributing/e2e-tests" hreflang="en"><link data-rh="true" rel="alternate" href="https://projectious-work.github.io/aibox/docs/contributing/e2e-tests" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"E2E Test Catalogue","item":"https://projectious-work.github.io/aibox/docs/contributing/e2e-tests"}]}</script><link rel="icon" type="image/png" sizes="32x32" href="/aibox/img/favicon.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/aibox/img/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/aibox/img/apple-touch-icon.png">
+<link rel="stylesheet" href="/aibox/player/asciinema-player.css">
+<link rel="stylesheet" href="/aibox/player/asciinema-fonts.css">
+<script src="/aibox/player/asciinema-player.min.js"></script>
+<script src="/aibox/player/asciinema-init.js" defer="defer"></script><link rel="stylesheet" href="/aibox/assets/css/styles.ab1a9c31.css">
+<script src="/aibox/assets/js/runtime~main.b852c9ad.js" defer="defer"></script>
+<script src="/aibox/assets/js/main.449a359b.js" defer="defer"></script>
+</head>
+<body class="navigation-with-keyboard">
+<svg style="display: none;"><defs>
+<symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
+</defs></svg>
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")),document.documentElement.setAttribute("data-theme-choice",t||"system")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/aibox/img/logo-light.svg"><link rel="preload" as="image" href="/aibox/img/logo-dark.svg"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/aibox/"><div class="navbar__logo"><img src="/aibox/img/logo-light.svg" alt="aibox logo" class="themedComponent_mlkZ themedComponent--light_NVdE" height="32" width="32"><img src="/aibox/img/logo-dark.svg" alt="aibox logo" class="themedComponent_mlkZ themedComponent--dark_xIcU" height="32" width="32"></div><b class="navbar__title text--truncate">aibox</b></a><a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/aibox/docs/getting-started/installation">Docs</a><a class="navbar__item navbar__link" href="/aibox/features">Features</a><a class="navbar__item navbar__link" href="/aibox/changelog">Changelog</a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><a href="https://github.com/projectious-work/aibox" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="Switch between dark and light mode (currently system mode)"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><aside class="theme-doc-sidebar-container docSidebarContainer_YfHR"><div class="sidebarViewport_aRkj"><div class="sidebar_njMd"><nav aria-label="Docs sidebar" class="menu thin-scrollbar menu_SIkG"><ul class="theme-doc-sidebar-menu menu__list"><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="true" href="/aibox/docs/getting-started/installation"><span title="Getting Started" class="categoryLinkLabel_W154">Getting Started</span></a></div><ul class="menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/aibox/docs/getting-started/installation"><span title="Installation" class="linkLabel_WmDU">Installation</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/aibox/docs/getting-started/new-project"><span title="New Project" class="linkLabel_WmDU">New Project</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/aibox/docs/getting-started/existing-project"><span title="Existing Project" class="linkLabel_WmDU">Existing Project</span></a></li></ul></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/aibox/docs/container/base-image"><span title="Container" class="categoryLinkLabel_W154">Container</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/aibox/docs/addons/overview"><span title="Addons" class="categoryLinkLabel_W154">Addons</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/aibox/docs/providers/ai-claude"><span title="AI Providers" class="categoryLinkLabel_W154">AI Providers</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/aibox/docs/context/overview"><span title="Context System" class="categoryLinkLabel_W154">Context System</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/aibox/docs/skills/"><span title="Skills (via processkit)" class="categoryLinkLabel_W154">Skills (via processkit)</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/aibox/docs/customization/themes"><span title="Customization" class="categoryLinkLabel_W154">Customization</span></a></div></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret" role="button" aria-expanded="false" href="/aibox/docs/reference/cli-commands"><span title="Reference" class="categoryLinkLabel_W154">Reference</span></a></div></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-1 menu__list-item"><a class="menu__link" href="/aibox/docs/roadmap"><span title="Roadmap" class="linkLabel_WmDU">Roadmap</span></a></li><li class="theme-doc-sidebar-item-category theme-doc-sidebar-item-category-level-1 menu__list-item"><div class="menu__list-item-collapsible"><a class="categoryLink_byQd menu__link menu__link--sublist menu__link--sublist-caret menu__link--active" role="button" aria-expanded="true" href="/aibox/docs/contributing/"><span title="Contributing" class="categoryLinkLabel_W154">Contributing</span></a></div><ul class="menu__list"><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/aibox/docs/contributing/"><span title="Contributing" class="linkLabel_WmDU">Contributing</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link" tabindex="0" href="/aibox/docs/contributing/maintenance"><span title="Maintenance" class="linkLabel_WmDU">Maintenance</span></a></li><li class="theme-doc-sidebar-item-link theme-doc-sidebar-item-link-level-2 menu__list-item"><a class="menu__link menu__link--active" aria-current="page" tabindex="0" href="/aibox/docs/contributing/e2e-tests"><span title="E2E Test Catalogue" class="linkLabel_WmDU">E2E Test Catalogue</span></a></li></ul></li></ul></nav></div></div></aside><main class="docMainContainer_TBSr"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><nav class="theme-doc-breadcrumbs breadcrumbsContainer_Z_bl" aria-label="Breadcrumbs"><ul class="breadcrumbs"><li class="breadcrumbs__item"><a aria-label="Home page" class="breadcrumbs__link" href="/aibox/"><svg viewBox="0 0 24 24" class="breadcrumbHomeIcon_YNFT"><path d="M10 19v-5h4v5c0 .55.45 1 1 1h3c.55 0 1-.45 1-1v-7h1.7c.46 0 .68-.57.33-.87L12.67 3.6c-.38-.34-.96-.34-1.34 0l-8.36 7.53c-.34.3-.13.87.33.87H5v7c0 .55.45 1 1 1h3c.55 0 1-.45 1-1z" fill="currentColor"></path></svg></a></li><li class="breadcrumbs__item"><span class="breadcrumbs__link">Contributing</span></li><li class="breadcrumbs__item breadcrumbs__item--active"><span class="breadcrumbs__link">E2E Test Catalogue</span></li></ul></nav><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>E2E Test Catalogue</h1></header>
+<p>This page describes every end-to-end and integration test in <code>cli/tests/e2e/</code>
+in plain language. Each entry states the precondition and the expected outcome,
+followed by a reference to the exact test function for traceability.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="test-tiers">Test tiers<a href="#test-tiers" class="hash-link" aria-label="Direct link to Test tiers" title="Direct link to Test tiers" translate="no">​</a></h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Tier</th><th>Where it runs</th><th>What it needs</th></tr></thead><tbody><tr><td><strong>Tier 1</strong></td><td>Local temp directory</td><td>The compiled <code>aibox</code> binary only</td></tr><tr><td><strong>Tier 1 + Mock</strong></td><td>Local temp directory</td><td>Binary + mock <code>docker</code>/<code>podman</code> scripts on PATH</td></tr><tr><td><strong>Tier 2</strong></td><td>Remote SSH companion</td><td><code>aibox-e2e-testrunner</code> container reachable (feature flag <code>e2e</code>)</td></tr></tbody></table>
+<p>Tier 1 tests run automatically with <code>cargo test</code>. Tier 2 tests require the
+companion container and the <code>--features e2e</code> flag.</p>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="lifecycle--lifecyclers">Lifecycle — <code>lifecycle.rs</code><a href="#lifecycle--lifecyclers" class="hash-link" aria-label="Direct link to lifecycle--lifecyclers" title="Direct link to lifecycle--lifecyclers" translate="no">​</a></h2>
+<p><strong>Companion is reachable</strong>
+If the SSH connection to <code>aibox-e2e-testrunner</code> is attempted, then the host
+must respond with <code>ok</code>, confirming the companion container is up and reachable
+before any other Tier 2 test runs.
+<code>[lifecycle.rs · companion_is_reachable]</code></p>
+<p><strong>Init then sync produces valid project</strong>
+If <code>aibox init</code> is run followed by <code>aibox sync --no-build</code>, then
+<code>aibox.toml</code>, <code>.devcontainer/Dockerfile</code>, <code>.devcontainer/docker-compose.yml</code>,
+and <code>CLAUDE.md</code> must all exist in the workspace.
+<code>[lifecycle.rs · lifecycle_init_sync]</code></p>
+<p><strong>CLAUDE.md user content is preserved on sync</strong>
+If a user edits <code>CLAUDE.md</code> after <code>aibox init</code> and then runs <code>aibox sync</code>,
+then the edited content must still be present — aibox must not overwrite
+user-modified files.
+<code>[lifecycle.rs · claudemd_preserved_on_sync]</code></p>
+<p><strong>Generated files are overwritten on sync</strong>
+If a generated file (e.g. <code>.devcontainer/Dockerfile</code>) is manually tampered
+with and <code>aibox sync</code> is run, then the file must contain regenerated content
+and the tampered content must be gone.
+<code>[lifecycle.rs · generated_files_overwritten_on_sync]</code></p>
+<p><strong>Status reports missing when no container exists</strong>
+If <code>aibox status</code> is run in a project with no running container, then the
+output must contain <code>missing</code> or equivalent wording.
+<code>[lifecycle.rs · status_without_container_shows_missing]</code></p>
+<p><strong>Managed package writes the slim project skeleton</strong>
+If <code>aibox init --process managed</code> is run, then <code>aibox.toml</code> must contain
+<code>packages = [&quot;managed&quot;]</code> under <code>[context]</code>, an empty <code>context/</code> directory must
+exist, and a thin <code>CLAUDE.md</code> pointer must be created when the <code>claude</code>
+provider is enabled. The single-file context tracks (<code>BACKLOG.md</code>,
+<code>DECISIONS.md</code>, <code>STANDUPS.md</code>) are <strong>not</strong> scaffolded by <code>init</code> — the
+corresponding processkit skills create them in place on first use.</p>
+<p><strong>Software package selection is recorded in aibox.toml</strong>
+If <code>aibox init --process software</code> is run, then <code>aibox.toml</code> must contain
+<code>packages = [&quot;software&quot;]</code> under <code>[context]</code>. As with all processkit packages
+in v0.16.0, this is declarative metadata; the actual skills land under
+<code>context/skills/</code> only after <code>aibox sync</code> with a real <code>[processkit].version</code>
+pinned.</p>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="addon-management--addonrs">Addon management — <code>addon.rs</code><a href="#addon-management--addonrs" class="hash-link" aria-label="Direct link to addon-management--addonrs" title="Direct link to addon-management--addonrs" translate="no">​</a></h2>
+<p><strong>Addon add writes to aibox.toml</strong>
+If <code>aibox addon add python --no-build</code> is run in an initialized project, then
+<code>aibox.toml</code> must contain an <code>[addons.python]</code> section afterwards.
+<code>[addon.rs · addon_add_modifies_toml]</code></p>
+<p><strong>Addon remove cleans aibox.toml</strong>
+If a project is initialized with the <code>python</code> addon and then <code>aibox addon remove python --no-build</code> is run, then the <code>[addons.python]</code> section must no
+longer appear in <code>aibox.toml</code>.
+<code>[addon.rs · addon_remove_cleans_toml]</code></p>
+<p><strong>Addon content appears in generated Dockerfile after sync</strong>
+If a project is initialized with the <code>python</code> addon and <code>aibox sync</code> is run,
+then <code>.devcontainer/Dockerfile</code> must contain Python-related content (install
+commands or references to <code>uv</code>).
+<code>[addon.rs · addon_rebuild_includes_tools_in_dockerfile]</code></p>
+<p><strong>Addon list shows available addons</strong>
+If <code>aibox addon list</code> is run in an initialized project, then the output must
+list known addons such as <code>python</code>.
+<code>[addon.rs · addon_list_shows_available]</code></p>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="reset-and-backup--resetrs">Reset and backup — <code>reset.rs</code><a href="#reset-and-backup--resetrs" class="hash-link" aria-label="Direct link to reset-and-backup--resetrs" title="Direct link to reset-and-backup--resetrs" translate="no">​</a></h2>
+<p><strong>Reset with backup removes files and creates backup directory</strong>
+If <code>aibox reset --yes</code> is run in an initialized project, then <code>aibox.toml</code>
+must be deleted and <code>.aibox-backup/</code> must be created containing the backed-up
+files.
+<code>[reset.rs · reset_creates_backup]</code></p>
+<p><strong>Reset with --no-backup removes all files without creating a backup</strong>
+If <code>aibox reset --no-backup --yes</code> is run, then <code>aibox.toml</code> and
+<code>.devcontainer/</code> must be deleted and <code>.aibox-backup/</code> must not be created.
+<code>[reset.rs · reset_no_backup_deletes_all]</code></p>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="doctor-diagnostics--doctorrs">Doctor diagnostics — <code>doctor.rs</code><a href="#doctor-diagnostics--doctorrs" class="hash-link" aria-label="Direct link to doctor-diagnostics--doctorrs" title="Direct link to doctor-diagnostics--doctorrs" translate="no">​</a></h2>
+<p><strong>Doctor without a config reports an error</strong>
+If <code>aibox doctor</code> is run in a directory that has no <code>aibox.toml</code>, then the
+output must mention the missing config or config error and the command must
+still exit 0 (doctor is always non-fatal).
+<code>[doctor.rs · doctor_reports_missing_files]</code></p>
+<p><strong>Doctor after init reports healthy checks</strong>
+If <code>aibox doctor</code> is run immediately after a successful <code>aibox init</code>, then
+the output must contain at least one passing check indicator (<code>ok</code>, <code>✓</code>, or
+similar).
+<code>[doctor.rs · doctor_after_init_reports_healthy]</code></p>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="version-upgrade-flows--version_upgraders">Version upgrade flows — <code>version_upgrade.rs</code><a href="#version-upgrade-flows--version_upgraders" class="hash-link" aria-label="Direct link to version-upgrade-flows--version_upgraders" title="Direct link to version-upgrade-flows--version_upgraders" translate="no">​</a></h2>
+<p><strong>Generated Dockerfile contains version label</strong>
+If <code>aibox init</code> is run, then the generated <code>.devcontainer/Dockerfile</code> must
+contain a <code>LABEL aibox.version</code> line so the built image carries a
+machine-readable version stamp.
+<code>[version_upgrade.rs · dockerfile_contains_aibox_version_label]</code></p>
+<p><strong>Generated Dockerfile writes version to /etc/aibox-version</strong>
+If <code>aibox init</code> is run, then the generated <code>.devcontainer/Dockerfile</code> must
+contain a <code>RUN</code> statement that writes to <code>/etc/aibox-version</code> inside the
+image, making the build version queryable from within a running container.
+<code>[version_upgrade.rs · dockerfile_contains_etc_aibox_version_write]</code></p>
+<p><strong>Start fails when container image version mismatches config</strong>
+If an existing container was built from image <code>v0.0.1</code> (mock label) and
+<code>aibox.toml</code> pins the current version, then <code>aibox start</code> must exit non-zero
+and output a message containing <code>mismatch</code> and a suggestion to run
+<code>aibox sync</code>.
+<code>[version_upgrade.rs · start_fails_on_image_version_mismatch]</code></p>
+<p><strong>Start succeeds when container image version matches config</strong>
+If an existing container reports the same image version as the one pinned in
+<code>aibox.toml</code>, then <code>aibox start</code> must not produce a version mismatch error.
+<code>[version_upgrade.rs · start_does_not_error_when_versions_match]</code></p>
+<p><strong>Update -y exits zero without hanging</strong>
+If <code>aibox update -y</code> is run (the global <code>--yes</code> flag), then the command must
+exit 0 regardless of registry availability — confirming the flag is correctly
+wired to <code>cmd_update</code> and does not block on an interactive prompt.
+<code>[version_upgrade.rs · update_yes_flag_exits_zero]</code></p>
+<p><strong>Update --dry-run does not mention .aibox-version</strong>
+If <code>aibox update --dry-run</code> is run, then the output must not contain the
+phrase <code>Would update .aibox-version</code> — that write was removed in BACK-060
+because the image version is now tracked exclusively in <code>aibox.toml</code>.
+<code>[version_upgrade.rs · update_dry_run_does_not_mention_aibox_version_file]</code></p>
+<p><strong>Doctor warns when running container has a stale image label</strong>
+If the running container reports <code>aibox.version=0.0.1</code> (mock label) but
+<code>aibox.toml</code> pins the current version, then <code>aibox doctor</code> must emit a
+warning containing <code>mismatch</code> while still exiting 0.
+<code>[version_upgrade.rs · doctor_warns_on_container_version_mismatch]</code></p>
+<p><strong>Doctor warns when .aibox-version is outdated</strong>
+If <code>.aibox-version</code> is overwritten with <code>0.0.1</code> (an old CLI version) and
+<code>aibox doctor</code> is run, then the output must contain <code>CLI version mismatch</code>
+and suggest running <code>aibox sync</code> to update generated files.
+<code>[version_upgrade.rs · doctor_warns_on_cli_version_file_mismatch]</code></p>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="migration--migrationrs">Migration — <code>migration.rs</code><a href="#migration--migrationrs" class="hash-link" aria-label="Direct link to migration--migrationrs" title="Direct link to migration--migrationrs" translate="no">​</a></h2>
+<p><strong>Sync updates .aibox-version when it is outdated</strong>
+If <code>.aibox-version</code> is overwritten with <code>0.1.0</code> (an old version) and
+<code>aibox sync</code> is run, then <code>.aibox-version</code> must be updated to a non-empty
+value that is no longer <code>0.1.0</code>, indicating the migration system ran and
+stamped the current version.
+<code>[migration.rs · sync_updates_version_file]</code></p>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="update-command--updaters">Update command — <code>update.rs</code><a href="#update-command--updaters" class="hash-link" aria-label="Direct link to update-command--updaters" title="Direct link to update-command--updaters" translate="no">​</a></h2>
+<p><strong>Update exits zero when registry returns an error</strong>
+If <code>aibox update</code> is run in a project where the GHCR registry is unreachable
+or returns a non-2xx response, then the command must still exit 0 — the error
+must be treated as a warning, not a hard failure.
+<code>[update.rs · update_runs_without_crashing_in_derived_project]</code></p>
+<p><strong>Update --check exits zero</strong>
+If <code>aibox update --check</code> is run in an initialized project, then the command
+must exit 0 and print output containing either <code>Current CLI version:</code> or
+<code>Checking for updates</code>, regardless of whether the registry is reachable.
+<code>[update.rs · update_check_exits_cleanly]</code></p>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="appearance--appearancers">Appearance — <code>appearance.rs</code><a href="#appearance--appearancers" class="hash-link" aria-label="Direct link to appearance--appearancers" title="Direct link to appearance--appearancers" translate="no">​</a></h2>
+<p><strong>All themes render without error and without leftover placeholders</strong>
+If <code>aibox init</code> is run for each of the seven supported themes
+(<code>gruvbox-dark</code>, <code>catppuccin-mocha</code>, <code>catppuccin-latte</code>, <code>dracula</code>,
+<code>tokyo-night</code>, <code>nord</code>, <code>projectious</code>), then the seeded config files must
+contain no unreplaced template placeholders such as <code>AIBOX_THEME</code> or
+<code>AIBOX_VIM_COLORSCHEME</code>.
+<code>[appearance.rs · all_themes_render_without_error]</code></p>
+<p><strong>Gruvbox theme sets the correct vim colorscheme and zellij theme</strong>
+If <code>aibox init --theme gruvbox-dark</code> is run, then <code>vimrc</code> must contain
+<code>gruvbox</code> or <code>retrobox</code> as the colorscheme and <code>config.kdl</code> must reference
+<code>gruvbox-dark</code>.
+<code>[appearance.rs · theme_gruvbox_renders_correctly]</code></p>
+<p><strong>Catppuccin-mocha theme is reflected in zellij config</strong>
+If <code>aibox init --theme catppuccin-mocha</code> is run, then <code>config.kdl</code> must
+reference <code>catppuccin-mocha</code>.
+<code>[appearance.rs · theme_catppuccin_mocha_renders]</code></p>
+<p><strong>Changing the theme updates all themed tool configs</strong>
+If a project is initialized with <code>gruvbox-dark</code> and the theme is changed to
+<code>dracula</code> via <code>aibox sync</code>, then <code>config.kdl</code> must contain <code>dracula</code> and no
+longer <code>gruvbox-dark</code>, and <code>vimrc</code>, <code>yazi/theme.toml</code>, <code>lazygit/config.yml</code>,
+and <code>starship.toml</code> must all be non-empty and updated.
+<code>[appearance.rs · theme_change_updates_all_files]</code></p>
+<p><strong>Each theme produces matching configs across all tools</strong>
+If <code>aibox init</code> is run for each of five themes with known vim colorscheme
+names, then <code>vimrc</code> must contain the exact <code>colorscheme &lt;name&gt;</code> line,
+<code>config.kdl</code> must reference the theme name, and the yazi, lazygit, and
+starship configs must all be non-empty.
+<code>[appearance.rs · theme_alignment_all_tools_match_selected_theme]</code></p>
+<p><strong>Yazi keymap includes the open-in-editor binding</strong>
+If <code>aibox init</code> is run, then <code>yazi/keymap.toml</code> must contain an <code>&quot;e&quot;</code> key
+binding that invokes <code>open-in-editor</code>.
+<code>[appearance.rs · yazi_keymap_includes_edit_in_pane_binding]</code></p>
+<p><strong>All prompt presets produce a non-empty starship config</strong>
+If <code>aibox init</code> is run for each of the six prompt presets (<code>default</code>,
+<code>plain</code>, <code>minimal</code>, <code>nerd-font</code>, <code>pastel</code>, <code>bracketed</code>), then
+<code>starship.toml</code> must exist and be non-empty.
+<code>[appearance.rs · all_prompts_render_without_error]</code></p>
+<p><strong>Default prompt includes directory and git_branch modules</strong>
+If <code>aibox init --prompt default</code> is run, then <code>starship.toml</code> must contain
+both <code>directory</code> and <code>git_branch</code> module sections.
+<code>[appearance.rs · prompt_default_generates_starship]</code></p>
+<p><strong>Plain prompt uses ASCII-only symbols</strong>
+If <code>aibox init --prompt plain</code> is run, then <code>starship.toml</code> must not contain
+Nerd Font glyph characters (e.g. no <code>\ue0b0</code> powerline arrow).
+<code>[appearance.rs · prompt_plain_no_nerd_font]</code></p>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="config-coverage--config_coveragers">Config coverage — <code>config_coverage.rs</code><a href="#config-coverage--config_coveragers" class="hash-link" aria-label="Direct link to config-coverage--config_coveragers" title="Direct link to config-coverage--config_coveragers" translate="no">​</a></h2>
+<p><strong>Container name appears in docker-compose.yml</strong>
+If <code>aibox.toml</code> specifies a container name and <code>aibox sync</code> is run, then
+<code>docker-compose.yml</code> must contain that name.
+<code>[config_coverage.rs · container_name_in_compose]</code></p>
+<p><strong>Container hostname appears in docker-compose.yml</strong>
+If <code>aibox.toml</code> specifies a hostname and <code>aibox sync</code> is run, then
+<code>docker-compose.yml</code> must contain that hostname.
+<code>[config_coverage.rs · container_hostname_in_compose]</code></p>
+<p><strong>Port mappings appear in docker-compose.yml</strong>
+If <code>aibox.toml</code> defines ports (e.g. <code>&quot;8080:80&quot;</code>) and <code>aibox sync</code> is run,
+then <code>docker-compose.yml</code> must contain those port entries.
+<code>[config_coverage.rs · container_ports_in_compose]</code></p>
+<p><strong>Extra packages appear in the generated Dockerfile</strong>
+If <code>aibox.toml</code> lists extra packages and <code>aibox sync</code> is run, then
+<code>.devcontainer/Dockerfile</code> must contain those package names in an apt install
+block.
+<code>[config_coverage.rs · container_extra_packages_in_dockerfile]</code></p>
+<p><strong>Environment variables appear in docker-compose.yml</strong>
+If <code>aibox.toml</code> defines environment variables and <code>aibox sync</code> is run, then
+<code>docker-compose.yml</code> must contain those key-value pairs.
+<code>[config_coverage.rs · container_environment_in_compose]</code></p>
+<p><strong>Extra volumes appear in docker-compose.yml</strong>
+If <code>aibox.toml</code> defines extra volume mounts and <code>aibox sync</code> is run, then
+<code>docker-compose.yml</code> must contain those source and target paths.
+<code>[config_coverage.rs · container_extra_volumes_in_compose]</code></p>
+<p><strong>Claude AI provider adds volume mount</strong>
+If <code>aibox.toml</code> lists <code>claude</code> as an AI provider and <code>aibox sync</code> is run,
+then <code>docker-compose.yml</code> must contain a volume mount for the <code>.claude</code>
+config directory.
+<code>[config_coverage.rs · ai_claude_provider_volume_mount]</code></p>
+<p><strong>Aider AI provider adds volume mount</strong>
+If <code>aibox.toml</code> lists <code>aider</code> as an AI provider and <code>aibox sync</code> is run,
+then <code>docker-compose.yml</code> must contain a volume mount for the <code>.aider</code>
+config directory.
+<code>[config_coverage.rs · ai_aider_provider_volume_mount]</code></p>
+<p><strong>Multiple AI providers each add their own volume mounts</strong>
+If <code>aibox.toml</code> lists both <code>claude</code> and <code>gemini</code> as providers and <code>aibox sync</code> is run, then <code>docker-compose.yml</code> must contain volume mounts for both
+<code>.claude</code> and <code>.gemini</code>.
+<code>[config_coverage.rs · ai_multiple_providers_volume_mounts]</code></p>
+<p><strong>Audio enabled adds PulseAudio mounts and socket</strong>
+If <code>aibox.toml</code> enables audio and <code>aibox sync</code> is run, then
+<code>docker-compose.yml</code> must contain audio-related volume mounts or socket
+references.
+<code>[config_coverage.rs · audio_enabled_adds_mounts]</code></p>
+<p><strong>Audio disabled produces no audio mounts</strong>
+If <code>aibox.toml</code> has audio disabled (the default) and <code>aibox sync</code> is run,
+then <code>docker-compose.yml</code> must not contain audio-related content.
+<code>[config_coverage.rs · audio_disabled_no_mounts]</code></p>
+<p><strong>Python addon adds install commands to Dockerfile</strong>
+If <code>aibox.toml</code> includes the <code>python</code> addon and <code>aibox sync</code> is run, then
+<code>.devcontainer/Dockerfile</code> must contain Python install instructions.
+<code>[config_coverage.rs · addon_python_in_dockerfile]</code></p>
+<p><strong>Rust addon adds rustup install to Dockerfile</strong>
+If <code>aibox.toml</code> includes the <code>rust</code> addon and <code>aibox sync</code> is run, then
+<code>.devcontainer/Dockerfile</code> must contain <code>rustup</code> installation instructions.
+<code>[config_coverage.rs · addon_rust_in_dockerfile]</code></p>
+<p><strong>Multiple addons each contribute to the Dockerfile</strong>
+If <code>aibox.toml</code> includes both the <code>python</code> and <code>rust</code> addons and <code>aibox sync</code>
+is run, then <code>.devcontainer/Dockerfile</code> must contain install content for
+both.
+<code>[config_coverage.rs · addon_multiple_in_dockerfile]</code></p>
+<p><strong>Minimal package creates slim project skeleton</strong>
+If <code>aibox init --process minimal</code> is run, then <code>aibox.toml</code>, <code>.aibox-version</code>,
+an empty <code>context/</code> directory, and a thin <code>CLAUDE.md</code> pointer must exist.
+The single-file context tracks (<code>BACKLOG.md</code>, <code>DECISIONS.md</code>, <code>STANDUPS.md</code>)
+are <strong>not</strong> created at init time — the corresponding processkit skills create
+them in place on first use.</p>
+<p><strong>Managed package is the recommended default</strong>
+If <code>aibox init --process managed</code> is run, then the slim project skeleton must
+exist. With a real <code>[processkit].version</code> pinned, <code>aibox sync</code> then installs
+the full processkit skill catalogue under <code>context/skills/</code> and the immutable
+upstream snapshot under <code>context/templates/processkit/&lt;version&gt;/</code>.</p>
+<p><strong>Product / research / software packages</strong>
+The five processkit packages (<code>minimal</code>, <code>managed</code>, <code>software</code>, <code>research</code>,
+<code>product</code>) are declarative metadata in <code>[context].packages</code>. In v0.16.0 they
+do not change which files land on disk — every project gets every processkit
+skill — but they tell agents which subset to prefer.</p>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="file-preview--previewrs">File preview — <code>preview.rs</code><a href="#file-preview--previewrs" class="hash-link" aria-label="Direct link to file-preview--previewrs" title="Direct link to file-preview--previewrs" translate="no">​</a></h2>
+<p><strong>svg.yazi plugin is seeded into .aibox-home after init</strong>
+If <code>aibox init</code> is run, then
+<code>.aibox-home/.config/yazi/plugins/svg.yazi/init.lua</code> must exist.
+<code>[preview.rs · svg_yazi_plugin_seeded]</code></p>
+<p><strong>eps.yazi plugin is seeded into .aibox-home after init</strong>
+If <code>aibox init</code> is run, then
+<code>.aibox-home/.config/yazi/plugins/eps.yazi/init.lua</code> must exist.
+<code>[preview.rs · eps_yazi_plugin_seeded]</code></p>
+<p><strong>svg.yazi plugin invokes resvg for conversion</strong>
+If <code>svg.yazi/init.lua</code> is read after init, then its content must reference
+<code>resvg</code> as the SVG-to-PNG conversion tool.
+<code>[preview.rs · svg_yazi_plugin_uses_resvg]</code></p>
+<p><strong>eps.yazi plugin invokes ghostscript for conversion</strong>
+If <code>eps.yazi/init.lua</code> is read after init, then its content must reference
+<code>gs</code> (ghostscript) as the EPS-to-PNG conversion tool.
+<code>[preview.rs · eps_yazi_plugin_uses_ghostscript]</code></p>
+<p><strong>yazi.toml has a [plugin] section with prepend_previewers</strong>
+If <code>aibox init</code> is run, then <code>yazi.toml</code> must contain a <code>[plugin]</code> section
+that defines <code>prepend_previewers</code>.
+<code>[preview.rs · yazi_toml_has_plugin_section]</code></p>
+<p>*<em>yazi.toml routes <em>.svg to the svg previewer</em></em>
+If <code>aibox init</code> is run, then <code>yazi.toml</code> must contain a
+<code>prepend_previewers</code> entry matching <code>*.svg</code> with <code>run = &quot;svg&quot;</code>.
+<code>[preview.rs · yazi_toml_svg_previewer_entry]</code></p>
+<p>*<em>yazi.toml routes <em>.eps to the eps previewer</em></em>
+If <code>aibox init</code> is run, then <code>yazi.toml</code> must contain a
+<code>prepend_previewers</code> entry matching <code>*.eps</code> with <code>run = &quot;eps&quot;</code>.
+<code>[preview.rs · yazi_toml_eps_previewer_entry]</code></p>
+<p><strong>SVG and EPS entries appear before built-in image entries</strong>
+If <code>aibox init</code> is run, then the <code>*.svg</code> and <code>*.eps</code> entries in
+<code>prepend_previewers</code> must appear at a lower byte offset than the <code>*.jpg</code>
+entry, ensuring first-match semantics dispatch SVG/EPS to the custom
+plugins rather than the built-in image previewer.
+<code>[preview.rs · yazi_toml_svg_and_eps_precede_builtin_previewers]</code></p>
+<p><strong>sample.svg fixture is valid XML</strong>
+If <code>tests/e2e/fixtures/sample.svg</code> is read, then its content must start
+with <code>&lt;svg</code> or <code>&lt;?xml</code>, confirming the fixture file is intact.
+<code>[preview.rs · fixture_sample_svg_is_valid_xml]</code></p>
+<p><strong>sample.eps fixture has a valid EPS header</strong>
+If <code>tests/e2e/fixtures/sample.eps</code> is read, then its content must start
+with <code>%!PS-Adobe</code> or contain <code>%%BoundingBox</code>, confirming the fixture file
+is intact.
+<code>[preview.rs · fixture_sample_eps_has_eps_header]</code></p>
+<hr>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="smoke-tests--smokers">Smoke tests — <code>smoke.rs</code><a href="#smoke-tests--smokers" class="hash-link" aria-label="Direct link to smoke-tests--smokers" title="Direct link to smoke-tests--smokers" translate="no">​</a></h2>
+<p>These tests validate that the Tier 2 companion container&#x27;s container runtime
+is functional end-to-end (Tier 2 only).</p>
+<p><strong>Podman is available on the companion</strong>
+If the companion container is queried for <code>podman --version</code>, then the
+command must succeed and the output must contain <code>podman</code>.
+<code>[smoke.rs · podman_available_on_companion]</code></p>
+<p><strong>Podman can pull an image</strong>
+If <code>podman pull docker.io/library/alpine:latest</code> is run on the companion,
+then the pull must succeed, confirming rootless registry access works.
+<code>[smoke.rs · podman_can_pull_image]</code></p>
+<p><strong>Podman can run a container</strong>
+If <code>podman run --rm alpine echo hello-e2e</code> is run on the companion, then
+the command must succeed and the output must contain <code>hello-e2e</code>,
+confirming full rootless container execution.
+<code>[smoke.rs · podman_can_run_container]</code></p></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/projectious-work/aibox/tree/main/docs-site/docs/contributing/e2e-tests.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"><a class="pagination-nav__link pagination-nav__link--prev" href="/aibox/docs/contributing/maintenance"><div class="pagination-nav__sublabel">Previous</div><div class="pagination-nav__label">Maintenance</div></a></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#test-tiers" class="table-of-contents__link toc-highlight">Test tiers</a></li><li><a href="#lifecycle--lifecyclers" class="table-of-contents__link toc-highlight">Lifecycle — <code>lifecycle.rs</code></a></li><li><a href="#addon-management--addonrs" class="table-of-contents__link toc-highlight">Addon management — <code>addon.rs</code></a></li><li><a href="#reset-and-backup--resetrs" class="table-of-contents__link toc-highlight">Reset and backup — <code>reset.rs</code></a></li><li><a href="#doctor-diagnostics--doctorrs" class="table-of-contents__link toc-highlight">Doctor diagnostics — <code>doctor.rs</code></a></li><li><a href="#version-upgrade-flows--version_upgraders" class="table-of-contents__link toc-highlight">Version upgrade flows — <code>version_upgrade.rs</code></a></li><li><a href="#migration--migrationrs" class="table-of-contents__link toc-highlight">Migration — <code>migration.rs</code></a></li><li><a href="#update-command--updaters" class="table-of-contents__link toc-highlight">Update command — <code>update.rs</code></a></li><li><a href="#appearance--appearancers" class="table-of-contents__link toc-highlight">Appearance — <code>appearance.rs</code></a></li><li><a href="#config-coverage--config_coveragers" class="table-of-contents__link toc-highlight">Config coverage — <code>config_coverage.rs</code></a></li><li><a href="#file-preview--previewrs" class="table-of-contents__link toc-highlight">File preview — <code>preview.rs</code></a></li><li><a href="#smoke-tests--smokers" class="table-of-contents__link toc-highlight">Smoke tests — <code>smoke.rs</code></a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="row footer__links"><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Docs</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/aibox/docs/getting-started/installation">Getting Started</a></li><li class="footer__item"><a class="footer__link-item" href="/aibox/docs/reference/configuration">Configuration</a></li><li class="footer__item"><a class="footer__link-item" href="/aibox/docs/skills/">Skills Library</a></li></ul></div><div class="theme-layout-footer-column col footer__col"><div class="footer__title">Project</div><ul class="footer__items clean-list"><li class="footer__item"><a href="https://github.com/projectious-work/aibox" target="_blank" rel="noopener noreferrer" class="footer__link-item">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a></li><li class="footer__item"><a class="footer__link-item" href="/aibox/changelog">Changelog</a></li></ul></div></div><div class="footer__bottom text--center"><div class="footer__copyright">© 2026 projectious.work</div></div></div></footer></div>
+</body>
+</html>
