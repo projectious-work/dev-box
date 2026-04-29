@@ -144,11 +144,19 @@ pub const SYNC_PERIMETER: &[&str] = &[
     ".claude/commands/",
     // ── Other harness slash-command adapters (v0.20.x) ──────────────────
     // Same restriction: only the commands subdirectory of each harness
-    // root is in-perimeter; the rest stays provider-managed. Codex's
-    // prompts dir lives under the mounted .aibox-home/.codex tree.
+    // root is in-perimeter; the rest stays provider-managed.
     ".cursor/commands/",
     ".gemini/commands/",
     ".opencode/commands/",
+    // ── Codex Skills (v0.21.2+, DEC-20260426_1636-MightySky) ────────────
+    // Codex CLI 0.125.0 surfaces custom workflows from this layout, NOT
+    // from ~/.codex/prompts/. aibox writes one subdirectory per pk-*
+    // command: .agents/skills/<name>/SKILL.md.
+    ".agents/skills/",
+    // ── Legacy Codex prompts dir (cleanup-only as of v0.21.2) ───────────
+    // Kept in perimeter so v0.21.2's one-shot migration in
+    // harness_commands::cleanup_legacy_codex_prompts can remove orphan
+    // files left by v0.21.1.
     ".aibox-home/.codex/prompts/",
 ];
 
@@ -539,12 +547,28 @@ mod tests {
     #[test]
     fn other_harness_command_dirs_are_in_perimeter_v0_20() {
         // v0.20.x: aibox scaffolds slash-command adapters into per-harness
-        // directories for Codex, Cursor, Gemini, OpenCode (in addition to
-        // Claude). All four target dirs must be in perimeter so that the
-        // sync write isn't tripped by the perimeter guard.
+        // directories for Cursor, Gemini, OpenCode (in addition to Claude).
+        // All target dirs must be in perimeter so that the sync write
+        // isn't tripped by the perimeter guard.
         assert!(within(".cursor/commands/pk-resume.md"));
         assert!(within(".gemini/commands/pk-resume.toml"));
         assert!(within(".opencode/commands/pk-resume.md"));
+    }
+
+    #[test]
+    fn codex_skills_layout_is_in_perimeter_v0_21_2() {
+        // v0.21.2+ DEC-20260426_1636-MightySky: aibox writes Codex Skills
+        // (one subdirectory per command) under .agents/skills/.
+        assert!(within(".agents/skills"));
+        assert!(within(".agents/skills/pk-resume/SKILL.md"));
+        assert!(within(".agents/skills/pk-doctor/SKILL.md"));
+    }
+
+    #[test]
+    fn legacy_codex_prompts_dir_remains_in_perimeter_for_cleanup() {
+        // v0.21.2+: kept in perimeter so the one-shot migration in
+        // harness_commands::cleanup_legacy_codex_prompts can remove
+        // orphans left by v0.21.1.
         assert!(within(".aibox-home/.codex/prompts/pk-resume.md"));
     }
 

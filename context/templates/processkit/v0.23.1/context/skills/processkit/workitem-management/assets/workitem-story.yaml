@@ -1,0 +1,26 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: WorkItem
+metadata:
+  id: BACK-TODO
+  created: TODO
+spec:
+  title: TODO
+  state: backlog
+  type: story
+  priority: medium
+  assignee: null
+---
+
+## User story
+
+As a TODO, I want TODO, so that TODO.
+
+## Acceptance criteria
+
+- [ ] TODO
+- [ ] TODO
+
+## Notes
+
+TODO

@@ -1,0 +1,12 @@
+{
+  "hook_event_name": "PreToolUse",
+  "session_id": "test-session-fixture-001",
+  "transcript_path": "/tmp/claude-code-transcript-test-session-fixture-001.jsonl",
+  "cwd": "/workspace",
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "context/workitems/FEAT-99999999_0000-TestItem-fixture.md",
+    "old_string": "state: backlog",
+    "new_string": "state: in-progress"
+  }
+}

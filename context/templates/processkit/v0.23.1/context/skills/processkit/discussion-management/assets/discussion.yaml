@@ -1,0 +1,26 @@
+---
+apiVersion: processkit.projectious.work/v1
+kind: Discussion
+metadata:
+  id: DISC-TODO
+  title: TODO
+  created: TODO
+  participants: []
+spec:
+  state: active          # active | resolved | archived
+  question: TODO
+  related: []
+  outcomes: []           # DEC IDs produced
+  opened_at: TODO
+  closed_at: null
+---
+
+# TODO: Discussion body
+
+## 1. Problem statement
+
+## 2. Options considered
+
+## 3. Analysis
+
+## 4. Decisions produced

@@ -14,14 +14,23 @@
 //! SHA** (what upstream ships now), and the **live SHA** (what the project
 //! has on disk right now). The classification follows:
 //!
-//! | reference vs cache | reference vs live    | classification         |
-//! |--------------------|----------------------|------------------------|
-//! | equal              | equal                | Unchanged              |
-//! | equal              | different (or missing)| ChangedLocallyOnly    |
-//! | different          | equal                | ChangedUpstreamOnly    |
-//! | different          | different            | Conflict               |
-//! | (in cache, not in reference)  | n/a       | NewUpstream            |
-//! | (in reference, not in cache)  | n/a       | RemovedUpstream        |
+//! | reference vs cache | live vs reference | live vs cache | classification         |
+//! |--------------------|-------------------|---------------|------------------------|
+//! | equal              | equal             | (= ref)       | Unchanged              |
+//! | equal              | differ / missing  | (= cache)     | ChangedLocallyOnly     |
+//! | differ             | equal             | differ        | ChangedUpstreamOnly    |
+//! | differ             | differ            | equal         | Unchanged (live already at new upstream) |
+//! | differ             | differ            | differ        | Conflict               |
+//! | (in cache, not in reference)  | n/a   | n/a           | NewUpstream            |
+//! | (in reference, not in cache)  | n/a   | n/a           | RemovedUpstream        |
+//!
+//! The "live already at new upstream" row covers the stale-lock case:
+//! `aibox.lock` says the project is at version *N*, the templates mirror at
+//! `context/templates/processkit/N/` is therefore the reference, but the
+//! user's live tree has independently been brought to version *N+1* (e.g.,
+//! a fresh checkout where `context/` was committed at N+1 while the lock
+//! still records N). Without the `live == cache` check the classifier
+//! would report every such file as a Conflict (BACK-TrueRaven, 2026-04-26).
 //!
 //! Files whose install-action is `Skip` (processkit-internal, not
 //! user-facing) are excluded from the diff entirely — they live in the
@@ -70,7 +79,12 @@ use crate::lock::{group_for_path, sha256_of_file, should_skip_entry};
 /// borrows or clones; see callers for the change.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FileClassification {
-    /// Reference, cache, and live all match — nothing to do.
+    /// Reference, cache, and live all match — nothing to do. Also covers
+    /// the stale-lock case where `live == cache` but the on-disk
+    /// reference (templates mirror at `lock.version`) is older: the live
+    /// tree is already at the new upstream, so there is nothing to apply
+    /// for this file. (See the "live already at new upstream" row of the
+    /// truth table at the top of this module.)
     Unchanged,
     /// Reference matches cache but not live — user has edited it locally;
     /// upstream has not changed. No-op for this migration but worth noting.
@@ -78,8 +92,10 @@ pub enum FileClassification {
     /// Reference matches live but not cache — upstream has changed; user
     /// has not touched it. Safe to take with one approval.
     ChangedUpstreamOnly,
-    /// Reference matches neither — both sides changed. Conflict, must be
-    /// resolved by hand.
+    /// Reference, cache, and live are all distinct — three-way divergence.
+    /// Must be resolved by hand. (When `live == cache` but `cache !=
+    /// reference`, the file is reported as `Unchanged` instead — see that
+    /// variant's docs.)
     Conflict,
     /// File exists in cache but not in reference (i.e. wasn't in the
     /// previous version of upstream). New addition.
@@ -140,7 +156,14 @@ pub type GroupedDiff = BTreeMap<String, Vec<FileDiff>>;
 ///
 /// - If `reference_sha` is `None` and `cache_sha` is `Some` → `NewUpstream`.
 /// - If `reference_sha` is `Some` and `cache_sha` is `None` → `RemovedUpstream`.
-/// - Otherwise consult the three-way truth table using `live_sha`.
+/// - Otherwise consult the three-way truth table at the top of this module.
+///
+/// The classifier is "stale-lock-aware": when `cache != reference` but
+/// `live == cache`, the live tree is already at the new upstream and the
+/// file is classified `Unchanged`, not `Conflict`. Without this guard a
+/// fresh checkout (where `context/` was committed ahead of `aibox.lock`)
+/// produces a flood of false-positive conflicts during `aibox sync`
+/// (BACK-TrueRaven, 2026-04-26).
 pub fn classify(
     reference_sha: Option<&str>,
     cache_sha: Option<&str>,
@@ -151,13 +174,25 @@ pub fn classify(
         (Some(_), None) => FileClassification::RemovedUpstream,
         (None, None) => FileClassification::Unchanged, // should not happen in practice
         (Some(r), Some(c)) => {
-            let cache_eq = r == c;
-            let live_eq = live_sha.map(|l| l == r).unwrap_or(false);
-            match (cache_eq, live_eq) {
-                (true, true) => FileClassification::Unchanged,
-                (true, false) => FileClassification::ChangedLocallyOnly,
-                (false, true) => FileClassification::ChangedUpstreamOnly,
-                (false, false) => FileClassification::Conflict,
+            let cache_eq_ref = r == c;
+            let live_eq_ref = live_sha.map(|l| l == r).unwrap_or(false);
+            let live_eq_cache = live_sha.map(|l| l == c).unwrap_or(false);
+            match (cache_eq_ref, live_eq_ref, live_eq_cache) {
+                // Upstream hasn't moved (cache == reference). live_eq_cache
+                // is implied by live_eq_ref in this branch, so the third
+                // bit is redundant.
+                (true, true, _) => FileClassification::Unchanged,
+                (true, false, _) => FileClassification::ChangedLocallyOnly,
+                // Upstream moved.
+                (false, true, _) => FileClassification::ChangedUpstreamOnly,
+                // Live already matches the new upstream — nothing to apply.
+                // Reference is stale relative to the live tree (e.g. fresh
+                // checkout where `context/` shipped at version N+1 but the
+                // lock still records N). Treat as Unchanged so the
+                // migration document doesn't cry "conflict" on every file.
+                (false, false, true) => FileClassification::Unchanged,
+                // Genuine three-way divergence.
+                (false, false, false) => FileClassification::Conflict,
             }
         }
     }
@@ -1015,6 +1050,20 @@ mod tests {
     }
 
     #[test]
+    fn classify_live_already_at_new_upstream_is_unchanged() {
+        // BACK-TrueRaven: stale-lock case. cache != reference (upstream
+        // moved), but live == cache (the project's content/ tree was
+        // committed at the new upstream version even though aibox.lock
+        // still records the old version). There is nothing to apply for
+        // this file; the previous behaviour was to misclassify it as
+        // Conflict, which crashed every fresh checkout's migration plan.
+        assert_eq!(
+            classify(Some("ref"), Some("new"), Some("new")),
+            FileClassification::Unchanged
+        );
+    }
+
+    #[test]
     fn classify_new_upstream() {
         assert_eq!(
             classify(None, Some("c"), None),
@@ -1618,6 +1667,52 @@ mod tests {
             FileClassification::ChangedLocallyOnly,
             "user-extended file must NOT be reclassified to RemovedUpstreamStale; got {:?}",
             cls
+        );
+    }
+
+    /// Regression: BACK-TrueRaven — when the live tree has been brought
+    /// to the new upstream content but `aibox.lock` still records the old
+    /// version, the three-way diff would report every modified file as a
+    /// Conflict because reference (templates mirror at lock.version) ≠
+    /// live and reference ≠ cache. The fix in `classify` checks
+    /// `live == cache` and reports `Unchanged` for those files.
+    ///
+    /// Reproduces the v0.22.0 → v0.23.0 case captured in
+    /// MIG-20260426T155754 where 50 of 50 "conflicts" were actually
+    /// stale-lock false-positives.
+    #[test]
+    fn three_way_diff_live_already_at_new_cache_is_unchanged_not_conflict() {
+        let tmp = TempDir::new().unwrap();
+        let project = tmp.path().join("project");
+        fs::create_dir_all(&project).unwrap();
+
+        // Cache holds the NEW upstream content.
+        let cache_src = tmp.path().join("cache/src");
+        fs::create_dir_all(cache_src.join("skills/event-log")).unwrap();
+        fs::write(cache_src.join("skills/event-log/SKILL.md"), "# v0.23.0\n").unwrap();
+
+        // Live tree already matches the new cache (fresh checkout where
+        // context/ shipped at v0.23.0).
+        install_files_from_cache(&cache_src, &project).unwrap();
+
+        // Reference (templates mirror) is the OLD v0.22.0 snapshot — its
+        // SKILL.md content differs from cache.
+        let templates = templates_dir_for_version(&project, "v0.22.0");
+        let templates_skill = templates.join("skills/event-log/SKILL.md");
+        fs::create_dir_all(templates_skill.parent().unwrap()).unwrap();
+        fs::write(&templates_skill, "# v0.22.0\n").unwrap();
+
+        let (diffs, _) = three_way_diff(&project, &cache_src, &templates).unwrap();
+        let cls = diffs
+            .iter()
+            .find(|d| d.cache_rel_path == "skills/event-log/SKILL.md")
+            .map(|d| d.classification.clone())
+            .expect("SKILL.md should appear in diff");
+
+        assert_eq!(
+            cls,
+            FileClassification::Unchanged,
+            "live==cache (stale-lock case) must be Unchanged, not Conflict"
         );
     }
 

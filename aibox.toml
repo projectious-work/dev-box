@@ -145,7 +145,7 @@ harnesses = ["claude", "codex"]
 #   "latest" — resolve to the newest available tag at every `aibox sync`.
 [processkit]
 source   = "https://github.com/projectious-work/processkit.git"
-version  = "v0.23.0"
+version  = "v0.23.1"
 src_path = "src"
 # branch = "main"   # optional — for tracking a moving branch (discouraged)
 #

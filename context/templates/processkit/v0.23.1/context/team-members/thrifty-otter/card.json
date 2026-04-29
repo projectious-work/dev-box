@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "a2a/v0.3",
+  "name": "Bernhard",
+  "description": "Human project owner",
+  "role": "ROLE-ceo",
+  "seniority": "principal",
+  "skills": [
+    "product-strategy",
+    "systems-architecture",
+    "ai-agent-orchestration"
+  ],
+  "modalities": [
+    "text"
+  ],
+  "provider": "human",
+  "contact": {
+    "email": "bernhard.gerlach@web.de"
+  },
+  "signature": {
+    "alg": "none",
+    "value": ""
+  }
+}

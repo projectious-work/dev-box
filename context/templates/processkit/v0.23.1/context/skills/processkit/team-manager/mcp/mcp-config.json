@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "processkit-team-manager": {
+      "command": "uv",
+      "args": [
+        "run",
+        "context/skills/processkit/team-manager/mcp/server.py"
+      ],
+      "env": {}
+    }
+  }
+}

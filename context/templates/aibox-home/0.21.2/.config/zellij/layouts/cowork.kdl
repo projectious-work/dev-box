@@ -1,0 +1,48 @@
+layout {
+    default_tab_template {
+        children
+        pane size=1 borderless=true {
+            plugin location="zellij:status-bar"
+        }
+    }
+    tab name="cowork" focus=true {
+        pane split_direction="vertical" {
+            pane size="50%" split_direction="horizontal" {
+                pane size="40%" name="files" focus=true {
+                    command "bash"
+                    args "-c" "AIBOX_EDITOR_DIR=down exec yazi"
+                    cwd "/workspace"
+                }
+                pane size="60%" name="editor" {
+                    command "bash"
+                    args "-c" "AIBOX_EDITOR_DIR=down exec vim-loop"
+                    cwd "/workspace"
+                }
+            }
+            pane size="50%" {
+        pane stacked=true {
+        pane name="claude" {
+            command "claude"
+            cwd "/workspace"
+        }
+        pane name="codex" {
+            command "codex"
+            cwd "/workspace"
+        }
+        }
+            }
+        }
+    }
+    tab name="git" {
+        pane name="lazygit" {
+            command "lazygit"
+            cwd "/workspace"
+        }
+    }
+    tab name="shell" {
+        pane name="bash" {
+            command "bash"
+            cwd "/workspace"
+        }
+    }
+}

@@ -159,6 +159,12 @@ pub fn cmd_doctor(config_path: &Option<String>) -> Result<()> {
     output::info("Checking command file registrations...");
     check_command_registrations(&config, &mut diag);
 
+    // 6d. Codex prompt-path drift check (BACK-20260426_1627-StrongHawk).
+    // Loud failure if `pk-*` managed files reappear in the legacy
+    // `~/.codex/prompts/` path that aibox v0.21.1 mistakenly used —
+    // catches a regression in the codex profile of harness_commands.
+    check_codex_prompt_path_drift(&config, &mut diag);
+
     // 7. Security audit tools
     crate::audit::doctor_check_audit_tools();
 
@@ -227,54 +233,55 @@ fn check_command_registrations(config: &AiboxConfig, diag: &mut DiagResult) {
         }
     }
 
-    // Per-harness target dirs (path, file extension, label). Mirrors the
-    // profiles in `harness_commands::profile_for`. Keep this list in sync
-    // when adding new scaffoldable harnesses.
+    // Per-harness target dirs. `path_template` is a `{stem}` substitution
+    // pattern relative to the project root. Mirrors the profiles in
+    // `harness_commands::profile_for`. Keep this list in sync when
+    // adding new scaffoldable harnesses.
     use crate::config::AiHarness;
+    // (label, target_dir_for_message, path_template_with_{stem}, enabled)
     let mut targets: Vec<(&'static str, &'static str, &'static str, bool)> = Vec::new();
     targets.push((
         "claude",
         ".claude/commands",
-        "md",
+        ".claude/commands/{stem}.md",
         true, // always-on
     ));
     targets.push((
         "codex",
-        ".aibox-home/.codex/prompts",
-        "md",
+        ".agents/skills",
+        ".agents/skills/{stem}/SKILL.md",
         config.ai.harnesses.contains(&AiHarness::Codex),
     ));
     targets.push((
         "cursor",
         ".cursor/commands",
-        "md",
+        ".cursor/commands/{stem}.md",
         config.ai.harnesses.contains(&AiHarness::Cursor),
     ));
     targets.push((
         "gemini",
         ".gemini/commands",
-        "toml",
+        ".gemini/commands/{stem}.toml",
         config.ai.harnesses.contains(&AiHarness::Gemini),
     ));
     targets.push((
         "opencode",
         ".opencode/commands",
-        "md",
+        ".opencode/commands/{stem}.md",
         config.ai.harnesses.contains(&AiHarness::OpenCode),
     ));
 
-    for (harness, target_dir, ext, enabled) in &targets {
+    for (harness, target_dir, path_template, enabled) in &targets {
         if !*enabled {
             continue;
         }
-        let target = std::path::Path::new(target_dir);
         let mut missing_count = 0;
         for (commands_src, filename) in &source_commands {
             let stem = match filename.strip_suffix(".md") {
                 Some(s) => s,
                 None => continue,
             };
-            let deployed = target.join(format!("{stem}.{ext}"));
+            let deployed = std::path::PathBuf::from(path_template.replace("{stem}", stem));
             if !deployed.exists() {
                 output::warn(&format!(
                     "{harness}: command file missing: {}/{} exists but {} is not registered",
@@ -294,6 +301,63 @@ fn check_command_registrations(config: &AiboxConfig, diag: &mut DiagResult) {
             output::warn(&format!(
                 "[{harness}] {missing_count} command file(s) missing — run 'aibox sync' to register them"
             ));
+        }
+    }
+}
+
+/// Detect drift on the Codex slash-command path. Codex CLI 0.125.0 surfaces
+/// custom workflows as Skills under `<workspace>/.agents/skills/<name>/SKILL.md`
+/// — NOT from `~/.codex/prompts/` (the legacy aibox v0.21.1 location). If
+/// any managed `pk-*.md` file reappears in the legacy path, treat that as
+/// a regression error: aibox is again writing to the wrong place. Also
+/// errors if Codex is enabled but no skills landed under `.agents/skills/`.
+///
+/// See DEC-20260426_1636-MightySky and BACK-20260426_1627-StrongHawk.
+fn check_codex_prompt_path_drift(config: &AiboxConfig, diag: &mut DiagResult) {
+    use crate::config::AiHarness;
+    let codex_enabled = config.ai.harnesses.contains(&AiHarness::Codex);
+
+    let legacy_dir = std::path::Path::new(".aibox-home/.codex/prompts");
+    if let Ok(entries) = std::fs::read_dir(legacy_dir) {
+        let stale: Vec<String> = entries
+            .flatten()
+            .filter_map(|e| e.file_name().into_string().ok())
+            .filter(|n| n.starts_with("pk-") && n.ends_with(".md"))
+            .collect();
+        if !stale.is_empty() {
+            output::error(&format!(
+                "codex: stale managed prompt(s) in legacy path .aibox-home/.codex/prompts/: \
+                 {}. Codex 0.125.0 ignores this directory; commands must be Codex Skills \
+                 under .agents/skills/<name>/SKILL.md (DEC-20260426_1636-MightySky). \
+                 Run 'aibox sync' to migrate.",
+                stale.join(", ")
+            ));
+            diag.errors += 1;
+        }
+    }
+
+    if codex_enabled {
+        let skills_dir = std::path::Path::new(".agents/skills");
+        let has_pk_skill = std::fs::read_dir(skills_dir)
+            .map(|it| {
+                it.flatten().any(|e| {
+                    e.file_name()
+                        .to_str()
+                        .map(|n| n.starts_with("pk-"))
+                        .unwrap_or(false)
+                        && e.path().join("SKILL.md").is_file()
+                })
+            })
+            .unwrap_or(false);
+        if !has_pk_skill {
+            output::warn(
+                "codex: no pk-* Codex Skills found under .agents/skills/ — \
+                 run 'aibox sync' to scaffold them (Codex 0.125.0 surfaces \
+                 these as $skill-name mentions and via /skills)",
+            );
+            diag.warnings += 1;
+        } else {
+            output::ok("codex: pk-* Codex Skills present under .agents/skills/");
         }
     }
 }
